@@ -13,33 +13,26 @@ use Illuminate\Http\Request;
 class PlanController extends Controller
 {
     //
-    public function index($id = null)
+    public function index(Request $request, $id = null)
     {
         if ($id) {
             $plan = Plan::find($id);
-            $plan['clients'] = [];
             $plan['level'] = $plan->level;
-
-            foreach ($plan->clients as $client) {
-                # code...
-                $client['user_info'] = $client->user;
-                array_push($plan['clients'], $client);
-            }
-
+            $plan['departement'] = $plan->level->departement->name;
             return response()->json($plan, 200);
         } else {
-            $plans = Plan::all();
-            foreach ($plans as  $plan) {
-                # code...
-                $plan['level'] = $plan->level;
-                $plan['clients'] = [];
-                foreach ($plan->clients as $client) {
-                    # code...
-                    $client['user_info'] = $client->user;
-                    array_push($plan['clients'], $client);
+            $departements = Departement::where('name', "LIKE", "%{$request->departement}%")->get();
+            $plans = [];
+            foreach ($departements as $departement) {
+
+                foreach ($departement->levels as $level) {
+                    foreach ($level->plans as $plan) {
+                        $plan['level'] = $plan->level;
+                        $plan['departement'] = $departement->name;
+                        $plans[] = $plan;
+                    }
                 }
             }
-
             return response()->json($plans, 200);
         }
     }
@@ -51,15 +44,19 @@ class PlanController extends Controller
         if ($id) {
             $plan = Plan::find($id);
             $plan['level'] = $plan->level;
+            $plan['departement'] = $plan->level->departement->name;
             return response()->json($plan, 200);
         } else {
-            $departement = Departement::where('name', $request->departement)->first();
+            $departements = Departement::where('name', "LIKE", "%{$request->departement}%")->get();
             $plans = [];
+            foreach ($departements as $departement) {
 
-            foreach ($departement->levels as $level) {
-                foreach ($level->plans as $plan) {
-                    $plan['level'] = $plan->level;
-                    $plans[] = $plan;
+                foreach ($departement->levels as $level) {
+                    foreach ($level->plans as $plan) {
+                        $plan['level'] = $plan->level;
+                        $plan['departement'] = $departement->name;
+                        $plans[] = $plan;
+                    }
                 }
             }
             return response()->json($plans, 200);

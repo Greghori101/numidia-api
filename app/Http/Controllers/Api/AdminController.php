@@ -46,15 +46,16 @@ class AdminController extends Controller
         $extension = 'jpeg';
         $name = "profile picture";
 
-        $password = Str::random(32);
+        $code = Str::upper(Str::random(6));
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'role' => $request->user_role,
             'gender' => $request->gender,
-            'password' => Hash::make($password),
-            'code' => Str::random(10),
+            'phone_number'=>$request->phone_number,
+            'password' => Hash::make($code),
+            'code' => $code,
         ]);
 
         if ($user->role == 'teacher') {
@@ -128,6 +129,7 @@ class AdminController extends Controller
         $user->name = $request->name;
         $user->role = $request->user_role;
         $user->gender = $request->gender;
+        $user->phone_number = $request->phone_number;
 
         $user->save();
 
@@ -145,9 +147,9 @@ class AdminController extends Controller
     {
         if (!$id) {
             $teachers = Teacher::all();
-            foreach ($teachers as $key => $value) {
+            foreach ($teachers as $teacher) {
                 # code...
-                $teachers[$key] = $value->user;
+                $teacher["user"] = $teacher->user;
             }
         } else {
             $teachers = Teacher::where('id', $id)->first()->user;
@@ -186,9 +188,9 @@ class AdminController extends Controller
     {
         if (!$id) {
             $students = Student::all();
-            foreach ($students as $key => $value) {
+            foreach ($students as $student) {
                 # code...
-                $students[$key] = $value->user;
+                $student['user'] = $student->user;
             }
         } else {
             $students = Student::where('id', $id)->first()->user;
@@ -319,8 +321,6 @@ class AdminController extends Controller
             'ends_at' => $request->ends_at,
         ]);
 
-        $session->teacher()->save(Teacher::find($request->teacher_id));
-
         $session->group()->save(Group::find($request->group_id));
 
         $session->save();
@@ -349,8 +349,6 @@ class AdminController extends Controller
             'starts_at' => $request->starts_at,
             'ends_at' => $request->ends_at,
         ]);
-
-        $session->teacher()->save(Teacher::find($request->teacher_id));
 
         $session->group()->save(Group::find($request->group_id));
 

@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class LevelController extends Controller
 {
     //
-    public function index(Request $request,$id = null)
+    public function index(Request $request, $id = null)
     {
         if ($id) {
             $level = Level::find($id);
@@ -23,15 +23,21 @@ class LevelController extends Controller
             }
 
             return response()->json($level, 200);
-        } else if($request->departement_id){
-            $levels = Level::where('departement_id',$request->departement_id);
-
+        } else if ($request->departement_id) {
+            $levels = Level::where('departement_id', $request->departement_id);
+            foreach ($levels as $level) {
+                # code...
+                $level['departement'] = $level->departement;
+            }
 
             return response()->json($levels, 200);
-        }else{
+        } else {
             $levels = Level::all();
 
-
+            foreach ($levels as $level) {
+                # code...
+                $level['departement'] = $level->departement;
+            }
             return response()->json($levels, 200);
         }
     }
@@ -64,7 +70,7 @@ class LevelController extends Controller
     public function update(Request $request, $id)
     {
 
-        
+
 
         $level = Level::updateOrCreate(['id' => $id], [
             'education' => $request->education,
@@ -72,7 +78,7 @@ class LevelController extends Controller
             'year' => $request->year,
         ]);
         $departement = Departement::find($request->departement_id);
-        $level->departement()->save($departement);
+        $level->departement()->associate($departement);
 
         $level->save();
 
@@ -92,6 +98,4 @@ class LevelController extends Controller
             return response()->json($departements, 200);
         }
     }
-
-    
 }

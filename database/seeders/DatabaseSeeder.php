@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
         $content = Storage::get('default-profile-picture.jpeg');
         $extension = 'jpeg';
         $name = "profile picture";
-        $code =  Str::random(6);
+        $code =  Str::upper(Str::random(6));
         $user = User::create([
             'name' => "Numidia Admin",
             'email' =>env('APP_MAIL_ADMIN'),

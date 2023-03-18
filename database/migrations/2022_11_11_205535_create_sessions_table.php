@@ -16,12 +16,10 @@ return new class extends Migration
         Schema::create('sessions', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->string('classroom');
-            $table->timestamp('starts_at');
-            $table->timestamp('ends_at');
+            $table->timestamp('starts_at')->nullable();
+            $table->timestamp('ends_at')->nullable();
             $table->string('state')->default('pending');
 
-            $table->uuid('teacher_id')->nullable();
-            $table->foreign('teacher_id')->references('id')->on('teachers');
             $table->uuid('group_id')->nullable();
             $table->foreign('group_id')->references('id')->on('groups');
 

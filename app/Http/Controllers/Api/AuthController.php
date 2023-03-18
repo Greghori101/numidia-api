@@ -75,7 +75,7 @@ class AuthController extends Controller
             'role' => $request->role,
             'gender' => $request->gender,
             'password' => Hash::make($request->password),
-            'code' => Str::random(6),
+            'code' => Str::upper(Str::random(6)),
         ]);
 
 
@@ -153,16 +153,14 @@ class AuthController extends Controller
         if (!$user) {
             abort(404);
         }
-        $password = Str::random(32);
-        $user->password = Hash::make($password);
-        $user->save();
+        $url = "";
         try {
             //code...
             // Email the user new password
             $data = [
                 'name' => $user->name,
                 'email' => $user->email,
-                'password' => $password,
+                'url' => $url,
             ];
             Mail::to($user)->send(new ForgotPasswordEmail($data));
         } catch (\Throwable $th) {
@@ -218,7 +216,7 @@ class AuthController extends Controller
         } else {
             try {
                 //code...
-                $user->code = Str::random(6);
+                $user->code = Str::upper(Str::random(6));
                 $user->save();
                 $data = [
                     'url' => env('APP_URL') . '/api/email/verify?id=' . $user->id . '&code=' . $user->code,
@@ -237,7 +235,7 @@ class AuthController extends Controller
     public function email_verified(Request $request)
     {
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('id', $request->id)->first();
         return response()->json(["verified" => $user->hasVerifiedEmail()], 200);
     }
     public function update(Request $request, $id)

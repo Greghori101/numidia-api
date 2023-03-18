@@ -21,9 +21,7 @@ class Session extends Model
     public $incrementing = false;
 
 
-    function teacher(){
-        return $this->belongsTo(Teacher::class);
-    }
+    
     function group(){
         return $this->belongsTo(Group::class);
     }
