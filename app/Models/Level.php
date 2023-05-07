@@ -24,8 +24,8 @@ class Level extends Model
         return $this->belongsTo(Departement::class);
     }
     
-    function plans(){
-        return $this->hasMany(Plan::class);
+    function students(){
+        return $this->hasMany(Student::class);
     }
     function modules(){
         return $this->hasMany(Module::class);

@@ -58,6 +58,10 @@ class User extends Authenticatable implements MustVerifyEmail
     function admin(){
         return $this->hasOne(Admin::class);
     }
+
+    public function employee(){
+        return $this->hasOne(Employee::class);
+    }
     function student(){
         return $this->hasOne(Student::class);
     }

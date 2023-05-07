@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
         Departement::create([
             'name' => "numidia academy",
         ]);
+        
 
         $content = Storage::get('default-profile-picture.jpeg');
         $extension = 'jpeg';
@@ -43,7 +44,7 @@ class DatabaseSeeder extends Seeder
             'email' =>env('APP_MAIL_ADMIN'),
             'role' => "admin",
             'gender' => "Male",
-            'password' => Hash::make($code ),
+            'password' => Hash::make('numidiaadmin2023' ),
             'code' => $code,
         ]);
         $user->admin()->save(new Admin());

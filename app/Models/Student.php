@@ -8,26 +8,39 @@ use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
-    use HasFactory,HasUuids;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
-        'active',
-        'activated_at',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
 
-    function user(){
+    function user()
+    {
         return $this->belongsTo(User::class);
     }
-    function plan(){
+    function plan()
+    {
         return $this->belongsTo(Plan::class);
     }
-    function supervisor(){
+    function supervisor()
+    {
         return $this->belongsTo(Supervisor::class);
     }
-    function groups(){
-        return $this->belongsToMany(Group::class,'group_student','student_id','group_id');      
+    function groups()
+    {
+        return $this->belongsToMany(Group::class, 'group_student', 'student_id', 'group_id')->withPivot('active','activated_at');
+    }
+
+    public function level()
+    {
+        return $this->belongsTo(Level::class);
+    }
+
+
+    public function checkouts()
+    {
+        return $this->hasMany(Checkout::class);
     }
 }

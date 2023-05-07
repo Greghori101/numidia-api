@@ -15,6 +15,9 @@ return new class extends Migration
     {
         Schema::create('group_student', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
+            $table->boolean('active')->default(0);
+            $table->timestamp('activated_at')->nullable();
+            
             $table->uuid('group_id')->nullable();
             $table->foreign('group_id')->references('id')->on('groups');
             $table->uuid('student_id')->nullable();

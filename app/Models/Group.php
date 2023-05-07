@@ -21,12 +21,12 @@ class Group extends Model
 
     function students()
     {
-        return $this->belongsToMany(Student::class, 'group_student', 'group_id', 'student_id');
+        return $this->belongsToMany(Student::class, 'group_student', 'group_id', 'student_id')->withPivot('active','activated_at');
     }
 
-    function departement()
+    function level()
     {
-        return $this->belongsTo(Departement::class);
+        return $this->belongsTo(Level::class);
     }
 
     function teacher()
@@ -37,5 +37,10 @@ class Group extends Model
     function sessions()
     {
         return $this->hasMany(Session::class);
+    }
+
+    public function checkouts()
+    {
+        return $this->hasMany(Checkout::class);
     }
 }

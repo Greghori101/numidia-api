@@ -24,12 +24,12 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
-            $user = User::where('email',$request->email)->first();
-            if($user->role==="student"){
+            $user = User::where('email', $request->email)->first();
+            if ($user->role === "student") {
 
                 $active  = $user->student->active;
-            }else{
-                $active =false;
+            } else {
+                $active = false;
             }
             $remember = $request->remember_me;
             Auth::login($user, $remember);
@@ -37,8 +37,8 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'role' => $user->role,
                 'profile_picture' => $user->profile_picture,
-                'verified'=>$user->hasVerifiedEmail(),
-                'active'=>$active,
+                'verified' => $user->hasVerifiedEmail(),
+                'active' => $active,
                 'token' => $user->createToken('API Token')->accessToken,
             ];
 
@@ -113,19 +113,19 @@ class AuthController extends Controller
             //throw $th;
             abort(400);
         }
-        if($user->role==="student"){
+        if ($user->role === "student") {
 
             $active  = $user->student->active;
-        }else{
-            $active =false;
+        } else {
+            $active = false;
         }
         Auth::login($user);
         $data = [
             'id' => $user->id,
             'role' => $user->role,
             'profile_picture' => $user->profile_picture,
-            'verified'=>$user->hasVerifiedEmail(),
-            'active'=>$active,
+            'verified' => $user->hasVerifiedEmail(),
+            'active' => $active,
             'token' => $user->createToken('API Token')->accessToken,
         ];
         return response()->json($data, 200);
@@ -239,10 +239,13 @@ class AuthController extends Controller
     {
 
         $user = User::where('email', $request->email)->first();
-        if(!$user){
-           $user = User::where('id', $request->id)->first(); 
+        if (!$user) {
+            $user = User::where('id', $request->id)->first();
         }
-        
+        if (!$user) {
+            abort(404);
+        }
+
         return response()->json(["verified" => $user->hasVerifiedEmail()], 200);
     }
     public function update(Request $request, $id)
@@ -330,20 +333,40 @@ class AuthController extends Controller
 
     public function provider_login(Request $request, $provider)
     {
-        if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
-            $user = Auth::user();
-            $remember = $request->remember_me;
-            Auth::login($user, $remember);
-            $data = [
-                'id' => $user->id,
-                'role' => $user->role,
-                'token' => $user->createToken('API Token')->accessToken,
-            ];
 
-            return response()->json($data, 200);
+        $user = User::where('email', $request->email)->first();
+        $remember = $request->remember_me;
+        Auth::login($user, $remember);
+        if ($user->role === "student") {
+
+            $active  = $user->student->active;
         } else {
-            return abort(403);
+            $active = false;
         }
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
+        if ($provider == "google") {
+            if (!$user->google_id) {
+                $user->google = $request->id;
+            }
+        } else if ($provider == "facebook") {
+            if (!$user->facebook_id) {
+                $user->facebook_id = $request->id;
+            }
+        }
+
+        $data = [
+            'id' => $user->id,
+            'role' => $user->role,
+            'profile_picture' => $user->profile_picture,
+            'verified' => $user->hasVerifiedEmail(),
+            'active' => $active,
+            'token' => $user->createToken('API Token')->accessToken,
+        ];
+
+        return response()->json($data, 200);
     }
 
 

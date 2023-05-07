@@ -27,4 +27,5 @@ class Teacher extends Model
     function module(){
         return $this->belognsTo(Module::class);
     }
+    
 }
