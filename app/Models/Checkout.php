@@ -14,7 +14,6 @@ class Checkout extends Model
         'price',
         'nb_session',
         'total',
-        'nb_month',
         'end_date',
     ];
 

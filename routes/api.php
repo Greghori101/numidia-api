@@ -37,19 +37,46 @@ use Illuminate\Support\Facades\Route;
 
 //Public routes
 Route::post('/login', [AuthController::class, 'login']);
+// email
+// password confirmed
+// response : 
+//  200 ok
 Route::post('/register', [AuthController::class, 'store']);
+// email
+// password  confirmed
+// name
+// role
+// phone_number
+// gender
+// response : 
+//  200 ok
 Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login']);
 Route::post('/auth/{provider}/register', [AuthController::class, 'provider_store']);
 Route::post('/forgotpassword', [AuthController::class, 'forgotpassword']);
+// email
+// response :
+// 200 ok
 
 
 //Protected routes
 
 Route::middleware(['auth:api'])->group(function () {
     Route::get('logout', [AuthController::class, 'logout']);
+    // response :
+    // 200 ok
     Route::post('/email/verify', [AuthController::class, 'verify']);
+    // email
+    // code
+    // response :
+    // 200 ok
     Route::post('/email/resent/code', [AuthController::class, 'resent_verification']);
+    // email
+    // response :
+    // 200 ok
     Route::get('/email/isverified', [AuthController::class, 'email_verified']);
+    // email
+    // response :
+    // verified
 
 });
 
@@ -63,9 +90,25 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
 
     Route::controller(PostController::class)->group(function () {
         Route::get('posts/{id?}', 'index');
+        // response:
+        // title
+        // content
+        // author
         Route::post('posts/create', 'create');
+        // title
+        // content
+        // author
+        // response : 
+        // 200 ok
         Route::delete('posts/{id}/delete', 'delete');
+        // response :
+        // 200 ok
         Route::put('posts/{id}/update', 'update');
+        // title
+        // content
+        // author
+        // response : 
+        // 200 ok
     });
 
     Route::get('profile/{id}', [AuthController::class, 'show']);
@@ -81,61 +124,234 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         Route::get('stats', [DashboardController::class, 'stats']);
 
         Route::get('departements/{id?}', [LevelController::class, 'departements']);
+        // response :
+        // 200 ok
         Route::get('users/{id?}', [AdminController::class, 'users']);
+        // response :
+        // email
+        // password  confirmed
+        // name
+        // role
+        // phone_number
+        // gender
         Route::get('teachers/{id?}', [AdminController::class, 'teachers']);
+        // response :
+        // email
+        // name
+        // role
+        // phone_number
+        // gender
         Route::get('parents/{id?}', [AdminController::class, 'parents']);
-
+        // response :
+        // user.email
+        // user.name
+        // user.role
+        // user.phone_number
+        // user.gender
         Route::post('users/create', [AdminController::class, 'store']);
+        // email
+        // password  confirmed
+        // name
+        // role
+        // phone_number
+        // gender
+        // response : 
+        //  200 ok
         Route::delete('users/{id}/delete', [AdminController::class, 'destroy']);
+        // response : 
+        //  200 ok
         Route::put('users/update', [AdminController::class, 'update']);
+        // email
+        // password  confirmed
+        // name
+        // role
+        // phone_number
+        // gender
+        // response : 
+        //  200 ok
 
         Route::get('archive', [AdminController::class, 'archive']); //not now
 
         Route::get('sessions/{id?}', [AdminController::class, 'sessions']);
+        // response : 
+        // starts_at
+        // ends_at
+        // state
+        // teacher
+        // group
+        // classroom
         Route::post('sessions/create', [AdminController::class, 'create_session']);
+        // starts_at
+        // ends_at
+        // state
+        // group
+        // classroom
+        // response :
+        // 200 ok
         Route::delete('sessions/{id}/delete', [AdminController::class, 'delete_session']);
+        // response :
+        // 200 ok
         Route::put('sessions/{id}/update', [AdminController::class, 'update_session']);
+        // starts_at
+        // ends_at
+        // state
+        // group
+        // classroom
+        // response :
+        // 200 ok
 
         Route::get('groups/{id?}', [AdminController::class, 'groups']);
+        // response :
+        // name
+        // teacher
+        // level
+        // memebers
         Route::post('groups/create', [AdminController::class, 'create_group']);
+        // name
+        // teacher
+        // level
+        // capacity
+        // response :
+        // 200 ok
         Route::delete('groups/{id}/delete', [AdminController::class, 'delete_group']);
+        // response :
+        // 200 ok
         Route::put('groups/{id}/update', [AdminController::class, 'update_group']);
+        // name
+        // teacher
+        // level
+        // capacity
+        // response :
+        // 200 ok
         Route::post('groups/{id}/members/add', [AdminController::class, 'group_student_add']);
+        // members : ids of students
+        // response :
+        // 200 ok
         Route::delete('groups/{id}/members/{member_key}/delete', [AdminController::class, 'group_student_remove']);
+        // response :
+        // 200 ok
         Route::get('students/excluding/groups/{id}', [AdminController::class, 'student_notin_group']);
-        
-        Route::get('students/{id?}', [AdminController::class, 'students']);
-        Route::get('students/{id}/groups', [AdminController::class, 'student_group']);
-        Route::post('students/{student_id}/groups/{group_id}/activate', [AdminController::class, 'student_group_activate']);
-        Route::post('students/{student_id}/groups/{group_id}/add', [AdminController::class, 'student_group_add']);
-        Route::delete('students/{student_id}/groups/{group_id}/delete', [AdminController::class, 'student_group_remove']);
-        Route::get('groups/excluding/students/{id}', [AdminController::class, 'group_notin_student']);
+        // response :
+        // members not in this group
 
-        Route::get('checkouts/{id?}',[CheckoutController::class,'checkout_info']);
+        Route::get('students/{id?}', [AdminController::class, 'students']);
+        // response :
+        // email
+        // name
+        // role
+        // phone_number
+        // gender
+        Route::get('students/{id}/groups', [AdminController::class, 'student_group']);
+        // response :
+        // group=> 
+        //  teacher
+        //  level 
+        //  active
+        Route::post('students/{student_id}/groups/{group_id}/activate', [AdminController::class, 'student_group_activate']);
+        // price
+        // nb_session
+        // end_date
+        // reponse :
+        // 200 ok
+        Route::post('students/{student_id}/groups/{group_id}/add', [AdminController::class, 'student_group_add']);
+        // response :
+        // 200 ok
+        Route::delete('students/{student_id}/groups/{group_id}/delete', [AdminController::class, 'student_group_remove']);
+        // response :
+        // 200 ok
+        Route::get('groups/excluding/students/{id}', [AdminController::class, 'group_notin_student']);
+        // response :
+        // name
+        // teacher
+        // level 
+
+        Route::get('checkouts/{id?}', [CheckoutController::class, 'checkout_info']);
 
         Route::get('levels/{id?}', [LevelController::class, 'index']);
+        // response :
+        // education
+        // specialty
+        // year
         Route::post('levels/create', [LevelController::class, 'create']);
+        // education
+        // specialty
+        // year
+        // departement
+        // response :
+        // 200 ok
         Route::delete('levels/{id}/delete', [LevelController::class, 'delete']);
+        // response :
+        // 200 ok
         Route::put('levels/{id}/update', [LevelController::class, 'update']);
+        // education
+        // specialty
+        // year
+        // departement
+        // response :
+        // 200 ok
     });
 
     Route::middleware('permission:teacher')->prefix('teacher')->group(function () {
         Route::get('sessions/{id}', [TeacherController::class, 'sessions']);
+        // response : list of session belongs to teacher/ id
+        // starts_at
+        // ends_at
+        // state
+        // group
         Route::get('session/{id}', [TeacherController::class, 'show']);
+        // response : session/id detail
+        // starts_at
+        // ends_at
+        // state
+        // group
         Route::put('sessions/{id}/reject', [TeacherController::class, 'reject_session']);
+        // explanation
+        // response :
+        // 200 ok
         Route::put('sessions/{id}/approve', [TeacherController::class, 'approve_session']);
+        // response :
+        // 200 ok
     });
 
     Route::middleware('permission:supervisor')->prefix('parent')->group(function () {
         Route::get('sessions/{id?}', [ParentController::class, 'sessions']);
-
+        // response : 
+        // starts_at
+        // ends_at
+        // state
+        // group
         Route::get('students/{id?}', [ParentController::class, 'students']);
+        // response :
+        // email
+        // name
+        // role
+        // phone_number
+        // gender
         Route::post('students/create', [ParentController::class, 'add_student']);
+        // email
+        // name
+        // phone_number
+        // gender
+        // response : 
+        // 200 ok
         Route::put('students/{id}/update', [ParentController::class, 'update_student']);
+        // email
+        // name
+        // phone_number
+        // gender
+        // response : 
+        // 200 ok
         Route::delete('students/{id}/delete', [ParentController::class, 'delete_student']);
+        // response : 
+        // 200 ok
     });
 
     Route::middleware('permission:student')->prefix('student')->group(function () {
         Route::get('sessions/{id?}', [StudentController::class, 'sessions']);
+        // response : 
+        // starts_at
+        // ends_at
+        // state
+        // group
     });
 });

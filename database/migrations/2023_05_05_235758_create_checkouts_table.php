@@ -16,7 +16,6 @@ return new class extends Migration
             $table->integer('price');
             $table->integer('nb_session');
             $table->integer('total');
-            $table->integer('nb_month');
             $table->date('end_date');
 
             $table->uuid('student_id')->nullable();

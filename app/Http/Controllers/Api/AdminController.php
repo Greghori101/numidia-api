@@ -386,8 +386,7 @@ class AdminController extends Controller
         $checkout = Checkout::create([
             'price'=>$request->price,
             'nb_session'=>$request->nb_session,
-            'total'=>$request->total,
-            'nb_month'=>$request->nb_month,
+            'total'=>$request->nb_session*$request->price,
             'end_date'=>$request->end_date,
         ]);
 
