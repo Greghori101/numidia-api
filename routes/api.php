@@ -41,6 +41,11 @@ Route::post('/login', [AuthController::class, 'login']);
 // password confirmed
 // response : 
 //  200 ok
+// 'id'
+// 'role' 
+// 'profile_picture'
+// 'verified'
+// 'token'
 Route::post('/register', [AuthController::class, 'store']);
 // email
 // password  confirmed
@@ -50,6 +55,11 @@ Route::post('/register', [AuthController::class, 'store']);
 // gender
 // response : 
 //  200 ok
+// 'id'
+// 'role' 
+// 'profile_picture'
+// 'verified'
+// 'token'
 Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login']);
 Route::post('/auth/{provider}/register', [AuthController::class, 'provider_store']);
 Route::post('/forgotpassword', [AuthController::class, 'forgotpassword']);
@@ -125,7 +135,8 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
 
         Route::get('departements/{id?}', [LevelController::class, 'departements']);
         // response :
-        // 200 ok
+        // all departements
+        // name 
         Route::get('users/{id?}', [AdminController::class, 'users']);
         // response :
         // email
@@ -156,7 +167,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // phone_number
         // gender
         // response : 
-        //  200 ok
+        // 200 ok
         Route::delete('users/{id}/delete', [AdminController::class, 'destroy']);
         // response : 
         //  200 ok
@@ -168,7 +179,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // phone_number
         // gender
         // response : 
-        //  200 ok
+        // 200 ok
 
         Route::get('archive', [AdminController::class, 'archive']); //not now
 

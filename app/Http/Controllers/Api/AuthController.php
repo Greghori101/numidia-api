@@ -25,12 +25,7 @@ class AuthController extends Controller
     {
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             $user = User::where('email', $request->email)->first();
-            if ($user->role === "student") {
-
-                $active  = $user->student->active;
-            } else {
-                $active = false;
-            }
+            
             $remember = $request->remember_me;
             Auth::login($user, $remember);
             $data = [
@@ -38,7 +33,6 @@ class AuthController extends Controller
                 'role' => $user->role,
                 'profile_picture' => $user->profile_picture,
                 'verified' => $user->hasVerifiedEmail(),
-                'active' => $active,
                 'token' => $user->createToken('API Token')->accessToken,
             ];
 
@@ -113,19 +107,12 @@ class AuthController extends Controller
             //throw $th;
             abort(400);
         }
-        if ($user->role === "student") {
-
-            $active  = $user->student->active;
-        } else {
-            $active = false;
-        }
         Auth::login($user);
         $data = [
             'id' => $user->id,
             'role' => $user->role,
             'profile_picture' => $user->profile_picture,
             'verified' => $user->hasVerifiedEmail(),
-            'active' => $active,
             'token' => $user->createToken('API Token')->accessToken,
         ];
         return response()->json($data, 200);
@@ -135,6 +122,7 @@ class AuthController extends Controller
     {
 
         $user = Auth::user();
+        $user = User::find($user->id);
         if (Auth::check($user)) {
             $user->token()->revoke();
             $user->tokens()->delete();
