@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('group_student', function (Blueprint $table) {
-            $table->uuid('id')->primary()->unique();
+            $table->id();
             $table->boolean('active')->default(0);
             $table->timestamp('activated_at')->nullable();
             

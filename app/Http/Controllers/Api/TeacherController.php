@@ -17,7 +17,7 @@ class TeacherController extends Controller
         $sessions = $teacher->sessions;
         foreach ($sessions as $session) {
             # code...
-            $session['teacher'] = $session->teacher;
+            $session['teacher'] = $teacher;
             $session['group'] = $session->group;
         }
 

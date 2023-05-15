@@ -9,6 +9,7 @@ use App\Models\Checkout;
 use App\Models\Level;
 use App\Models\File;
 use App\Models\Group;
+use App\Models\Module;
 use App\Models\Session;
 use App\Models\Student;
 use App\Models\Supervisor;
@@ -61,7 +62,10 @@ class AdminController extends Controller
         ]);
 
         if ($user->role == 'teacher') {
-            $user->teacher()->save(new Teacher());
+            $teacher  = new Teacher();
+            $user->teacher()->save($teacher);
+            $module = Module::find($request->module_id);
+            $module->teachers()->save($teacher);
         } else if ($user->role == 'student') {
 
             $level = Level::find($request->level_id);
@@ -297,12 +301,10 @@ class AdminController extends Controller
     {
 
         $group = Group::find($id);
-        $group->students()->detach();
         if ($request->students) {
-            foreach ($request->students as $student_id) {
-                # code...
-                $group->students()->attach($student_id, ['id' =>  Str::uuid()]);
-            }
+            $group->students()->sync($request->students );
+        }else{
+            $group->students()->detach();
         }
         return response()->json(200);
     }
@@ -332,7 +334,7 @@ class AdminController extends Controller
     {
 
         $student = Student::find($student_id);
-        $student->groups()->attach($group_id, ['id' =>  Str::uuid()]);
+        $student->groups()->attach($group_id);
         return response()->json(200);
     }
     public function student_group($id)
@@ -367,15 +369,14 @@ class AdminController extends Controller
             # code...
             $group['teacher'] = $group->teacher->user;
             $group['level'] = $group->level;
-
         }
         return response()->json($groups, 200);
     }
 
-    public function student_group_activate(Request $request,$student_id, $group_id)
+    public function student_group_activate(Request $request, $student_id, $group_id)
     {
         $group =  Student::find($student_id)->groups()->find($group_id);
-        if(!$group){
+        if (!$group) {
             $student = Student::find($student_id);
             $student->groups()->attach($group_id, ['id' =>  Str::uuid()]);
             $group = Student::find($student_id)->groups()->find($group_id);
@@ -384,20 +385,20 @@ class AdminController extends Controller
         $pivot->active = true;
         $pivot->activated_at = Carbon::now()->toDateTimeString();
         $checkout = Checkout::create([
-            'price'=>$request->price,
-            'nb_session'=>$request->nb_session,
-            'total'=>$request->nb_session*$request->price,
-            'end_date'=>$request->end_date,
+            'price' => $request->price,
+            'nb_session' => $request->nb_session,
+            'total' => $request->nb_session * $request->price,
+            'end_date' => $request->end_date,
         ]);
 
         $checkout->student()->associate(Student::find($student_id));
         $checkout->group()->associate(Group::find($group_id));
 
         $pivot->save();
-         return response()->json(200);
+        return response()->json(200);
     }
 
-    
+
 
 
     public function sessions($id = null)
@@ -427,7 +428,8 @@ class AdminController extends Controller
             'ends_at' => $request->ends_at,
         ]);
 
-        $session->group()->save(Group::find($request->group_id));
+        $session->group()->associate(Group::find($request->group_id));
+        $session->teacher()->associate(Teacher::find($request->teacher_id));
 
         $session->save();
 
@@ -447,16 +449,16 @@ class AdminController extends Controller
     public function update_session(Request $request, $id)
     {
 
-        $old_session = Session::find($id);
-        $old_session->delete();
+        $session = Session::find($id);
 
-        $session = Session::create([
+        $session->update([
             'classroom' => $request->classroom,
             'starts_at' => $request->starts_at,
             'ends_at' => $request->ends_at,
         ]);
 
-        $session->group()->save(Group::find($request->group_id));
+        $session->group()->associate(Group::find($request->group_id));
+        $session->teacher()->associate(Teacher::find($request->teacher_id));
 
         $session->save();
 

@@ -16,7 +16,7 @@ class StudentController extends Controller
     {
         if ($id) {
             $session = Session::find($id);
-            $session['teacher'] = $session->teacher;
+            $session['teacher'] = $session->teacher->user;
             $session['group'] = $session->group;
             return response()->json($session, 200);
         } else {

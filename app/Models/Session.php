@@ -25,5 +25,9 @@ class Session extends Model
     function group(){
         return $this->belongsTo(Group::class);
     }
+
+    function teacher(){
+        return $this->belongsTo(Teacher::class);
+    }
     
 }

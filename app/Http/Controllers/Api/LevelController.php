@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Departement;
 use App\Models\Level;
+use App\Models\Module;
 use Illuminate\Http\Request;
 
 class LevelController extends Controller
@@ -97,5 +98,67 @@ class LevelController extends Controller
 
             return response()->json($departements, 200);
         }
+    }
+
+
+    public function modules(Request $request, $id = null)
+    {
+        if ($id) {
+            $module = Module::find($id);
+            $module['level'] = $module->level;
+            $module['teachers'] = [];
+            foreach ($module->teachers as $teacher) {
+                # code...
+                array_push($module['teachers'], $teacher->user);
+            }
+
+            return response()->json($module, 200);
+        } else {
+            $modules = Module::all();
+            foreach ($modules as $module) {
+                # code...
+
+                $module['level'] = $module->level;
+            }
+
+            return response()->json($modules, 200);
+        }
+    }
+
+    public function create_module(Request $request)
+    {
+        $module = Module::create([
+            'name' => $request->name,
+
+        ]);
+        $level =  Level::find($request->level_id);
+        $level->modules()->save($module);
+
+
+        return response()->json(200);
+    }
+
+    public function delete_module($id)
+    {
+
+        $module = Module::find($id);
+
+        $module->delete();
+
+        return response()->json(200);
+    }
+
+    public function update_module(Request $request, $id)
+    {
+
+
+
+        $module = Module::updateOrCreate(['id' => $id], [
+            'name' => $request->name,
+        ]);
+        $module->level()->associate(Level::find($request->level_id));
+
+
+        return response()->json(200);
     }
 }

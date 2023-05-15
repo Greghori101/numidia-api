@@ -22,6 +22,8 @@ return new class extends Migration
 
             $table->uuid('group_id')->nullable();
             $table->foreign('group_id')->references('id')->on('groups');
+            $table->uuid('teacher_id')->nullable();
+            $table->foreign('teacher_id')->references('id')->on('teachers');
 
             $table->timestamps();
         });

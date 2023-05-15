@@ -38,7 +38,7 @@ use Illuminate\Support\Facades\Route;
 //Public routes
 Route::post('/login', [AuthController::class, 'login']);
 // email
-// password confirmed
+// password 
 // response : 
 //  200 ok
 // 'id'
@@ -298,6 +298,24 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // specialty
         // year
         // departement
+        // response :
+        // 200 ok
+
+        Route::get('modules/{id?}', [LevelController::class, 'modules']);
+        // response :
+        // name
+        // teachers
+        Route::post('modules/create', [LevelController::class, 'create_module']);
+        // name
+        // level_id
+        // response :
+        // 200 ok
+        Route::delete('modules/{id}/delete', [LevelController::class, 'delete_module']);
+        // response :
+        // 200 ok
+        Route::put('modules/{id}/update', [LevelController::class, 'update_module']);
+        // name
+        // level_id
         // response :
         // 200 ok
     });

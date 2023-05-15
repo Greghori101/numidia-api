@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class Authorize
 {
@@ -23,6 +22,7 @@ class Authorize
         // if ($request->role != $role or Auth::user()->role != $role) {
         //     abort(402, 'Unauthorized action.');
         // }
+
         return $next($request);
     }
 }

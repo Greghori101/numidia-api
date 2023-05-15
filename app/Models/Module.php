@@ -21,6 +21,6 @@ class Module extends Model
         return $this->hasMany(Teacher::class);
     }
     function level(){
-        return $this->belongsTo(Departement::class);
+        return $this->belongsTo(Level::class);
     }
 }
