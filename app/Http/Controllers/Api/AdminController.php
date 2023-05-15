@@ -428,10 +428,11 @@ class AdminController extends Controller
             'ends_at' => $request->ends_at,
         ]);
 
-        $session->group()->associate(Group::find($request->group_id));
-        $session->teacher()->associate(Teacher::find($request->teacher_id));
+        $group = Group::find($request->group_id);
+        $teacher = Teacher::find($request->teacher_id);
+        $session->group()->associate($group)->save();
+        $session->teacher()->associate($teacher)->save();
 
-        $session->save();
 
         return response()->json(200);
     }
