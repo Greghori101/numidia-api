@@ -124,7 +124,6 @@ class AuthController extends Controller
         $user = Auth::user();
         $user = User::find($user->id);
         if (Auth::check($user)) {
-            $user->token()->revoke();
             $user->tokens()->delete();
             return response(200);
         } else {

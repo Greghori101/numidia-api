@@ -378,7 +378,7 @@ class AdminController extends Controller
         $group =  Student::find($student_id)->groups()->find($group_id);
         if (!$group) {
             $student = Student::find($student_id);
-            $student->groups()->attach($group_id, ['id' =>  Str::uuid()]);
+            $student->groups()->attach($group_id);
             $group = Student::find($student_id)->groups()->find($group_id);
         }
         $pivot = $group->pivot;
