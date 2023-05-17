@@ -166,6 +166,8 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // role
         // phone_number
         // gender
+        // module_id
+        // level_id
         // response : 
         // 200 ok
         Route::delete('users/{id}/delete', [AdminController::class, 'destroy']);
@@ -195,7 +197,8 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // starts_at
         // ends_at
         // state
-        // group
+        // group_id
+        // teacher_id
         // classroom
         // response :
         // 200 ok

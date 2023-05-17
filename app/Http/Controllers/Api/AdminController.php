@@ -216,21 +216,18 @@ class AdminController extends Controller
                 # code...
                 $group['teacher'] = $group->teacher->user;
                 $group['level'] = $group->level;
-                $group['members'] = $group->students;
-                foreach ($group['members'] as $member) {
-                    # code...
-                    $member = $member->user;
-                }
             }
         } else {
             $groups = Group::find($id);
             $groups['teacher'] = $groups->teacher->user;
             $groups['level'] = $groups->level;
-            $groups['members'] = $groups->students;
-            foreach ($groups['members'] as $member) {
+            $members = $groups->students;
+            foreach ($members as $member) {
                 # code...
+                $member['active'] = $member->pivot->active;
                 $member = $member->user;
             }
+            $groups['members'] = $members;
         }
 
         return response()->json($groups, 200);
@@ -302,8 +299,8 @@ class AdminController extends Controller
 
         $group = Group::find($id);
         if ($request->students) {
-            $group->students()->sync($request->students );
-        }else{
+            $group->students()->sync($request->students);
+        } else {
             $group->students()->detach();
         }
         return response()->json(200);

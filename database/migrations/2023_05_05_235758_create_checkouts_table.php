@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary()->unique();
             $table->integer('price');
             $table->integer('nb_session');
-            $table->integer('total');
+            $table->bigInteger('total');
             $table->date('end_date');
 
             $table->uuid('student_id')->nullable();
