@@ -43,7 +43,7 @@ Route::post('/login', [AuthController::class, 'login']);
 //  200 ok
 // 'id'
 // 'role' 
-// 'profile_picture'
+// 'profile_picture'=> content , extension, name
 // 'verified'
 // 'token'
 Route::post('/register', [AuthController::class, 'store']);
@@ -57,7 +57,7 @@ Route::post('/register', [AuthController::class, 'store']);
 //  200 ok
 // 'id'
 // 'role' 
-// 'profile_picture'
+// 'profile_picture'=>content , extension, name
 // 'verified'
 // 'token'
 Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login']);
@@ -103,11 +103,11 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // response:
         // title
         // content
-        // author
+        // author=>email,name,gender,phone_number
         Route::post('posts/create', 'create');
         // title
         // content
-        // author
+        // author=>id of the user
         // response : 
         // 200 ok
         Route::delete('posts/{id}/delete', 'delete');
@@ -116,7 +116,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         Route::put('posts/{id}/update', 'update');
         // title
         // content
-        // author
+        // author=>id of the user
         // response : 
         // 200 ok
     });
@@ -137,10 +137,19 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // response :
         // all departements
         // name 
+        Route::get('users/list', [AdminController::class, 'users_list']);
+        // ids => list of id of users
+        // response :
+        // 'profile_picture'=>content , extension, name
+        // email
+        // name
+        // role
+        // phone_number
+        // gender
+
         Route::get('users/{id?}', [AdminController::class, 'users']);
         // response :
         // email
-        // password  confirmed
         // name
         // role
         // phone_number
@@ -190,8 +199,8 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // starts_at
         // ends_at
         // state
-        // teacher
-        // group
+        // teacher=>user.email,user.name,user.gender,user.phone_number
+        // group=>level,name,teacher
         // classroom
         Route::post('sessions/create', [AdminController::class, 'create_session']);
         // starts_at
@@ -209,7 +218,8 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // starts_at
         // ends_at
         // state
-        // group
+        // group_id
+        // teacher_id
         // classroom
         // response :
         // 200 ok
@@ -217,13 +227,13 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         Route::get('groups/{id?}', [AdminController::class, 'groups']);
         // response :
         // name
-        // teacher
-        // level
+        // teacher=>user.email,user.name,user.gender,user.phone_number
+        // level=>education,speciality,year,departement
         // memebers
         Route::post('groups/create', [AdminController::class, 'create_group']);
         // name
-        // teacher
-        // level
+        // teacher_id
+        // level_id
         // capacity
         // response :
         // 200 ok
@@ -232,8 +242,8 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // 200 ok
         Route::put('groups/{id}/update', [AdminController::class, 'update_group']);
         // name
-        // teacher
-        // level
+        // teacher_id
+        // level_id
         // capacity
         // response :
         // 200 ok
@@ -258,8 +268,8 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         Route::get('students/{id}/groups', [AdminController::class, 'student_group']);
         // response :
         // group=> 
-        //  teacher
-        //  level 
+        //  teacher=>user.email,user.name,user.gender,user.phone_number
+        //  level=>education,speciality,year,departement 
         //  active
         Route::post('students/{student_id}/groups/{group_id}/activate', [AdminController::class, 'student_group_activate']);
         // price
@@ -276,8 +286,8 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         Route::get('groups/excluding/students/{id}', [AdminController::class, 'group_notin_student']);
         // response :
         // name
-        // teacher
-        // level 
+        // teacher=>user.email,user.name,user.gender,user.phone_number
+        // level=>education,speciality,year,departement
 
         Route::get('checkouts/{id?}', [CheckoutController::class, 'checkout_info']);
 
@@ -290,7 +300,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // education
         // specialty
         // year
-        // departement
+        // departement_id
         // response :
         // 200 ok
         Route::delete('levels/{id}/delete', [LevelController::class, 'delete']);
@@ -300,7 +310,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // education
         // specialty
         // year
-        // departement
+        // departement_id
         // response :
         // 200 ok
 
@@ -361,6 +371,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // gender
         Route::post('students/create', [ParentController::class, 'add_student']);
         // email
+        // level_id
         // name
         // phone_number
         // gender
@@ -369,6 +380,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         Route::put('students/{id}/update', [ParentController::class, 'update_student']);
         // email
         // name
+        // level_id
         // phone_number
         // gender
         // response : 

@@ -35,6 +35,14 @@ class AdminController extends Controller
         }
         return $users;
     }
+    public function users_list(Request $request)
+    {
+        $users = User::find($request->ids);
+        foreach($users as $user){
+            $user['profile_picture'] = $user->profile_picture;
+        }
+        return response()->json(200, $users);
+    }
 
     public function store(Request $request)
     {
