@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Departement;
+use App\Models\Department;
 use App\Models\Level;
 use App\Models\Checkout;
 use App\Models\User;
@@ -14,32 +14,31 @@ class CheckoutController extends Controller
     //
 
 
-    public function checkout_info($id){
+    public function checkout_info($id)
+    {
         $checkout = Checkout::find($id);
         $checkout['student'] = $checkout->student->user;
         $checkout['teacher'] = $checkout->group->teacher->user;
         $checkout['module'] = $checkout->group->teacher->module;
 
-        return response()->json($checkout,200);
-        
-
+        return response()->json($checkout, 200);
     }
     public function index(Request $request, $id = null)
     {
         if ($id) {
             $checkout = Checkout::find($id);
             $checkout['level'] = $checkout->level;
-            $checkout['departement'] = $checkout->level->departement->name;
+            $checkout['department'] = $checkout->level->department->name;
             return response()->json($checkout, 200);
         } else {
-            $departements = Departement::where('name', "LIKE", "%{$request->departement}%")->get();
+            $departments = Department::where('name', "LIKE", "%{$request->department}%")->get();
             $checkouts = [];
-            foreach ($departements as $departement) {
+            foreach ($departments as $department) {
 
-                foreach ($departement->levels as $level) {
+                foreach ($department->levels as $level) {
                     foreach ($level->checkouts as $checkout) {
                         $checkout['level'] = $checkout->level;
-                        $checkout['departement'] = $departement->name;
+                        $checkout['department'] = $department->name;
                         $checkouts[] = $checkout;
                     }
                 }
@@ -55,17 +54,17 @@ class CheckoutController extends Controller
         if ($id) {
             $checkout = Checkout::find($id);
             $checkout['level'] = $checkout->level;
-            $checkout['departement'] = $checkout->level->departement->name;
+            $checkout['department'] = $checkout->level->department->name;
             return response()->json($checkout, 200);
         } else {
-            $departements = Departement::where('name', "LIKE", "%{$request->departement}%")->get();
+            $departments = Department::where('name', "LIKE", "%{$request->department}%")->get();
             $checkouts = [];
-            foreach ($departements as $departement) {
+            foreach ($departments as $department) {
 
-                foreach ($departement->levels as $level) {
+                foreach ($department->levels as $level) {
                     foreach ($level->checkouts as $checkout) {
                         $checkout['level'] = $checkout->level;
-                        $checkout['departement'] = $departement->name;
+                        $checkout['department'] = $department->name;
                         $checkouts[] = $checkout;
                     }
                 }

@@ -6,7 +6,7 @@ namespace Database\Seeders;
 
 use App\Mail\VerifyEmail;
 use App\Models\Admin;
-use App\Models\Departement;
+use App\Models\Department;
 use App\Models\File;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -24,16 +24,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        Departement::create([
+        Department::create([
             'name' => "numidia school",
         ]);
-        Departement::create([
+        Department::create([
             'name' => "numidia profession",
         ]);
-        Departement::create([
+        Department::create([
             'name' => "numidia academy",
         ]);
-        
+
 
         $content = Storage::get('default-profile-picture.jpeg');
         $extension = 'jpeg';
@@ -41,10 +41,10 @@ class DatabaseSeeder extends Seeder
         $code =  Str::upper(Str::random(6));
         $user = User::create([
             'name' => "Numidia Admin",
-            'email' =>env('APP_MAIL_ADMIN'),
+            'email' => env('APP_MAIL_ADMIN'),
             'role' => "admin",
             'gender' => "Male",
-            'password' => Hash::make('numidiaadmin2023' ),
+            'password' => Hash::make('numidiaadmin2023'),
             'code' => $code,
         ]);
         $user->admin()->save(new Admin());

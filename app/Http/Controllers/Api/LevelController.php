@@ -4,7 +4,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Departement;
+use App\Models\Department;
 use App\Models\Level;
 use App\Models\Module;
 use Illuminate\Http\Request;
@@ -16,7 +16,7 @@ class LevelController extends Controller
     {
         if ($id) {
             $level = Level::find($id);
-            $level['departement'] = $level->departement;
+            $level['department'] = $level->department;
             $level['groups'] = [];
             foreach ($level->groups as $group) {
                 # code...
@@ -24,11 +24,11 @@ class LevelController extends Controller
             }
 
             return response()->json($level, 200);
-        } else if ($request->departement_id) {
-            $levels = Level::where('departement_id', $request->departement_id);
+        } else if ($request->department_id) {
+            $levels = Level::where('department_id', $request->department_id);
             foreach ($levels as $level) {
                 # code...
-                $level['departement'] = $level->departement;
+                $level['department'] = $level->department;
             }
 
             return response()->json($levels, 200);
@@ -37,7 +37,7 @@ class LevelController extends Controller
 
             foreach ($levels as $level) {
                 # code...
-                $level['departement'] = $level->departement;
+                $level['department'] = $level->department;
             }
             return response()->json($levels, 200);
         }
@@ -47,12 +47,12 @@ class LevelController extends Controller
     {
         $level = Level::create([
             'education' => $request->education,
-            'specialty' => $request->specialty,
+            'speciality' => $request->speciality,
             'year' => $request->year,
 
         ]);
-        $departement = Departement::find($request->departement_id);
-        $level->departement()->associate($departement);
+        $department = Department::find($request->department_id);
+        $level->department()->associate($department);
         $level->save();
 
         return response()->json(200);
@@ -78,25 +78,25 @@ class LevelController extends Controller
             'sepciality' => $request->sepciality,
             'year' => $request->year,
         ]);
-        $departement = Departement::find($request->departement_id);
-        $level->departement()->associate($departement);
+        $department = Department::find($request->department_id);
+        $level->department()->associate($department);
 
         $level->save();
 
         return response()->json(200);
     }
 
-    public function departements($id = null)
+    public function departments($id = null)
     {
         if ($id) {
-            $departement = Departement::find($id);
+            $department = Department::find($id);
 
-            return response()->json($departement, 200);
+            return response()->json($department, 200);
         } else {
-            $departements = Departement::all();
+            $departments = Department::all();
 
 
-            return response()->json($departements, 200);
+            return response()->json($departments, 200);
         }
     }
 

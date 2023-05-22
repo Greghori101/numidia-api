@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Level extends Model
 {
-    use HasFactory,HasUuids;
-    
+    use HasFactory, HasUuids;
+
     protected $fillable = [
         'education',
-        'specialty',
+        'speciality',
         'year',
 
     ];
@@ -20,18 +20,22 @@ class Level extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    public function departement(){
-        return $this->belongsTo(Departement::class);
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
     }
-    
-    function students(){
+
+    function students()
+    {
         return $this->hasMany(Student::class);
     }
-    function modules(){
+    function modules()
+    {
         return $this->hasMany(Module::class);
     }
 
-    function groups(){
+    function groups()
+    {
         return $this->hasMany(Group::class);
     }
 }

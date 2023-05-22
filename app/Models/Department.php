@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Departement extends Model
+class Department extends Model
 {
-    use HasFactory,HasUuids;
-    
+    use HasFactory, HasUuids;
+
     protected $fillable = [
         'name',
 
@@ -19,8 +19,9 @@ class Departement extends Model
     public $incrementing = false;
 
 
-    
-    function levels(){
+
+    function levels()
+    {
         return $this->hasMany(Level::class);
     }
 }

@@ -16,11 +16,11 @@ return new class extends Migration
         Schema::create('levels', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->string('education');
-            $table->string('specialty')->nullable();
+            $table->string('speciality')->nullable();
             $table->integer('year');
 
-            $table->uuid('departement_id')->nullable();
-            $table->foreign('departement_id')->references('id')->on('departements');
+            $table->uuid('department_id')->nullable();
+            $table->foreign('department_id')->references('id')->on('departments');
             $table->timestamps();
         });
     }
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('departements');
+        Schema::dropIfExists('departments');
     }
 };

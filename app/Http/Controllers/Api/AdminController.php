@@ -209,9 +209,14 @@ class AdminController extends Controller
             foreach ($students as $student) {
                 # code...
                 $student['user'] = $student->user;
+                $student['level'] = $student->level;
             }
         } else {
-            $students = Student::where('id', $id)->first()->user;
+            $students = Student::find($id);
+            $students['user'] = $students->user;
+
+            $students['level'] = $students->level;
+
         }
         return $students;
     }

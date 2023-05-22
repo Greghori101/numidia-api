@@ -133,9 +133,9 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
     Route::middleware('permission:admin')->prefix('admin')->group(function () {
         Route::get('stats', [DashboardController::class, 'stats']);
 
-        Route::get('departements/{id?}', [LevelController::class, 'departements']);
+        Route::get('departments/{id?}', [LevelController::class, 'departments']);
         // response :
-        // all departements
+        // all departments
         // name 
         Route::get('users/list', [AdminController::class, 'users_list']);
         // ids => list of id of users
@@ -228,7 +228,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // response :
         // name
         // teacher=>user.email,user.name,user.gender,user.phone_number
-        // level=>education,speciality,year,departement
+        // level=>education,speciality,year,department
         // memebers
         Route::post('groups/create', [AdminController::class, 'create_group']);
         // name
@@ -269,7 +269,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // response :
         // group=> 
         //  teacher=>user.email,user.name,user.gender,user.phone_number
-        //  level=>education,speciality,year,departement 
+        //  level=>education,speciality,year,department 
         //  active
         Route::post('students/{student_id}/groups/{group_id}/activate', [AdminController::class, 'student_group_activate']);
         // price
@@ -287,20 +287,20 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // response :
         // name
         // teacher=>user.email,user.name,user.gender,user.phone_number
-        // level=>education,speciality,year,departement
+        // level=>education,speciality,year,department
 
         Route::get('checkouts/{id?}', [CheckoutController::class, 'checkout_info']);
 
         Route::get('levels/{id?}', [LevelController::class, 'index']);
         // response :
         // education
-        // specialty
+        // speciality
         // year
         Route::post('levels/create', [LevelController::class, 'create']);
         // education
-        // specialty
+        // speciality
         // year
-        // departement_id
+        // department_id
         // response :
         // 200 ok
         Route::delete('levels/{id}/delete', [LevelController::class, 'delete']);
@@ -308,9 +308,9 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         // 200 ok
         Route::put('levels/{id}/update', [LevelController::class, 'update']);
         // education
-        // specialty
+        // speciality
         // year
-        // departement_id
+        // department_id
         // response :
         // 200 ok
 
