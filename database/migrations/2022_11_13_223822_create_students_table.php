@@ -17,11 +17,11 @@ return new class extends Migration
             $table->uuid('id')->primary()->unique();
 
             $table->uuid('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->uuid('level_id')->nullable();
-            $table->foreign('level_id')->references('id')->on('levels');
+            $table->foreign('level_id')->references('id')->on('levels')->onDelete('cascade');
             $table->uuid('supervisor_id')->nullable();
-            $table->foreign('supervisor_id')->references('id')->on('supervisors');
+            $table->foreign('supervisor_id')->references('id')->on('supervisors')->onDelete('null');
 
             $table->timestamps();
         });

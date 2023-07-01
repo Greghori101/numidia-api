@@ -5,22 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Notification extends Model
+class Wallet extends Model
 {
-    use HasFactory, SoftDeletes,HasUuids;
+    use HasFactory, HasUuids;
+
     protected $fillable = [
-        'type',
-        'title',
-        'content',
-        'displayed',
+        'balance',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
 
-    function to(){
-        return $this->belongsTo(User::class,'to');
+
+    public function user(){
+        return $this->belongsTo(User::class);
     }
 }

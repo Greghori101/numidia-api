@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('employees', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->uuid('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });
     }

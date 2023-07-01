@@ -16,12 +16,10 @@ class Authorize
      */
     public function handle(Request $request, Closure $next, $role)
     {
-        // if ((Auth::user()->role == 'student' or Auth::user()->role == 'parent')) {
-        //     return $next($request);
-        // }
-        // if ($request->role != $role or Auth::user()->role != $role) {
-        //     abort(402, 'Unauthorized action.');
-        // }
+        
+        if ( $request->auth_user->role != $role) {
+            abort(402, 'Unauthorized action.');
+        }
 
         return $next($request);
     }

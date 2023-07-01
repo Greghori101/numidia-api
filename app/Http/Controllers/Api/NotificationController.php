@@ -15,11 +15,8 @@ class NotificationController extends Controller
     public function send_intern(Notification $notification,$to,$from)
     {
 
-        $from = User::find($from);
         $to = User::find($to);
         $to->received_notifications()->save($notification);
-        $from->sent_notifications()->save($notification);
-
 
         // open websoket
         // send new notifications
@@ -32,7 +29,6 @@ class NotificationController extends Controller
             'type' => 'string|required',
             'content' => 'string|required',
             'to' => 'required',
-            'from' => 'required'
         ]);
 
         $notification = Notification::create([
@@ -41,10 +37,8 @@ class NotificationController extends Controller
             'content' => $request['content'],
         ]);
 
-        $from = User::find($request->from);
         $to = User::find($request->to);
         $to->received_notifications()->save($notification);
-        $from->sent_notifications()->save($notification);
 
         // open websoket
         // send new notifications
@@ -61,12 +55,7 @@ class NotificationController extends Controller
         } else {
             $notifications = $user->received_notifications->where('displayed', 0);
         }
-        $list = [];
-        foreach ($notifications as $notification) {
-            $notification['from'] = User::find($notification->to);
-            array_push($list, $notification);
-        }
-        return $list;
+        return $notifications;
     }
     public function all()
     {
@@ -74,12 +63,7 @@ class NotificationController extends Controller
 
         $notifications = $user->received_notifications->all();
 
-        $list = [];
-        foreach ($notifications as $notification) {
-            $notification['from'] = User::find($notification->to);
-            array_push($list, $notification);
-        }
-        return $list;
+        return $notifications;
     }
 
     public function seen($id = null)

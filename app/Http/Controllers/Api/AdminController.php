@@ -85,7 +85,7 @@ class AdminController extends Controller
         } else if ($user->role == 'supervisor') {
             $user->supervisor()->save(new Supervisor());
         }
-
+$transacton = 0;
         $user->profile_picture()->save(new File([
             'name' => $name,
             'content' => base64_encode($content),

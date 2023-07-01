@@ -8,26 +8,26 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('admins', function (Blueprint $table) {
+        Schema::create('wallets', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
+
+            $table->bigInteger('balance')->default(0);
+
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+
             $table->timestamps();
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
-        Schema::dropIfExists('admins');
+        Schema::dropIfExists('wallets');
     }
 };

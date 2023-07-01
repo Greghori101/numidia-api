@@ -18,12 +18,12 @@ return new class extends Migration
             $table->string('classroom');
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();
-            $table->string('state')->default('pending');
+            $table->string('status')->default('pending');
 
             $table->uuid('group_id')->nullable();
-            $table->foreign('group_id')->references('id')->on('groups');
+            $table->foreign('group_id')->references('id')->on('groups')->onDelete('cascade');
             $table->uuid('teacher_id')->nullable();
-            $table->foreign('teacher_id')->references('id')->on('teachers');
+            $table->foreign('teacher_id')->references('id')->on('teachers')->onDelete('cascade');
 
             $table->timestamps();
         });

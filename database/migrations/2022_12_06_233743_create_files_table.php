@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('extension');
             $table->uuid('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps(); 
         });
 

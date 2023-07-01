@@ -21,9 +21,7 @@ return new class extends Migration
             $table->boolean('displayed')->default(0);
 
             $table->uuid('to')->nullable();
-            $table->foreign('to')->references('id')->on('users');
-            $table->uuid('from')->nullable();
-            $table->foreign('from')->references('id')->on('users');
+            $table->foreign('to')->references('id')->on('users')->onDelete('cascade');
             
             $table->softDeletes($column = 'deleted_at', $precision = 0);
             $table->timestamps();

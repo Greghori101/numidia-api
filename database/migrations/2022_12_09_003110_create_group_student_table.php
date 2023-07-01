@@ -19,9 +19,9 @@ return new class extends Migration
             $table->timestamp('activated_at')->nullable();
             
             $table->uuid('group_id')->nullable();
-            $table->foreign('group_id')->references('id')->on('groups');
+            $table->foreign('group_id')->references('id')->on('groups')->onDelete('cascade');
             $table->uuid('student_id')->nullable();
-            $table->foreign('student_id')->references('id')->on('students');
+            $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');
             //
         });
     }

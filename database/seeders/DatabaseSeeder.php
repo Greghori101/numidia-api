@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
             'email' => env('APP_MAIL_ADMIN'),
             'role' => "admin",
             'gender' => "Male",
-            'password' => Hash::make('numidiaadmin2023'),
+            'password' => Hash::make('admin'),
             'code' => $code,
         ]);
         $user->admin()->save(new Admin());
