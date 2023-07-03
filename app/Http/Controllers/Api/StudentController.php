@@ -12,6 +12,27 @@ use Illuminate\Support\Facades\Auth;
 
 class StudentController extends Controller
 {
+
+    public function students()
+    {
+            $students = Student::all();
+            foreach ($students as $student) {
+                # code...
+                $student['user'] = $student->user;
+                $student['level'] = $student->level;
+            }
+        
+        return $students;
+    }
+
+    public function show($id)  {
+        $student = Student::find($id);
+            $student['user'] = $student->user;
+
+            $student['level'] = $student->level;
+            return $student;
+        
+    }
     public function sessions($id = null)
     {
         if ($id) {
