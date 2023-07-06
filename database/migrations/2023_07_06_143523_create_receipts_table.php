@@ -11,16 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('checkouts', function (Blueprint $table) {
+        Schema::create('receipts', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->integer('price');
-            $table->integer('nb_session');
-            $table->integer('month');
+            $table->integer('total');
+            $table->integer('type');
 
-            $table->uuid('student_id')->nullable();
-            $table->foreign('student_id')->references('id')->on('students'); 
-            $table->uuid('group_id')->nullable();
-            $table->foreign('group_id')->references('id')->on('groups');
+            $table->uuid('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users'); 
+            
             $table->timestamps();
             $table->softDeletes($column = 'deleted_at', $precision = 0);
         });
@@ -31,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('checkouts');
+        Schema::dropIfExists('receipts');
     }
 };

@@ -21,9 +21,10 @@ return new class extends Migration
             $table->uuid('level_id')->nullable();
             $table->foreign('level_id')->references('id')->on('levels')->onDelete('cascade');
             $table->uuid('supervisor_id')->nullable();
-            $table->foreign('supervisor_id')->references('id')->on('supervisors')->onDelete('null');
+            $table->foreign('supervisor_id')->references('id')->on('supervisors')->onDelete('set null');
 
             $table->timestamps();
+            $table->softDeletes($column = 'deleted_at', $precision = 0);
         });
     }
 

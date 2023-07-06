@@ -20,10 +20,11 @@ return new class extends Migration
             $table->integer('capacity');
 
             $table->uuid('teacher_id')->nullable();
-            $table->foreign('teacher_id')->references('id')->on('teachers')->onDelete('cascade');
+            $table->foreign('teacher_id')->references('id')->on('teachers')->onDelete('set null');
             $table->uuid('level_id')->nullable();
             $table->foreign('level_id')->references('id')->on('levels')->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes($column = 'deleted_at', $precision = 0);
         });
     }
 

@@ -25,12 +25,7 @@ class CheckoutController extends Controller
     }
     public function index(Request $request, $id = null)
     {
-        if ($id) {
-            $checkout = Checkout::find($id);
-            $checkout['level'] = $checkout->level;
-            $checkout['department'] = $checkout->level->department->name;
-            return response()->json($checkout, 200);
-        } else {
+        
             $departments = Department::where('name', "LIKE", "%{$request->department}%")->get();
             $checkouts = [];
             foreach ($departments as $department) {
@@ -44,7 +39,14 @@ class CheckoutController extends Controller
                 }
             }
             return response()->json($checkouts, 200);
-        }
+        
+    }
+
+    public function show($id){
+        $checkout = Checkout::find($id);
+        $checkout['level'] = $checkout->level;
+        $checkout['department'] = $checkout->level->department->name;
+        return response()->json($checkout, 200);
     }
 
     public function all(Request $request, $id = null)
@@ -81,7 +83,8 @@ class CheckoutController extends Controller
             'benefits' => $request->benefits,
         ]);
 
-        $checkout->level()->associate(Level::find($request->level_id))->save();
+        $level = Level::find($request->level_id);
+        $checkout->level()->associate($level)->save();
         // $checkout->teacher()->associate(Teacher::find($request->teacher_id));
 
         $checkout->save();
@@ -111,24 +114,13 @@ class CheckoutController extends Controller
             'benefits' => $request->benefits,
         ]);
 
-        $checkout->level()->associate($request->level_id)->save();
+        $level = Level::find($request->level_id);
+        $checkout->level()->associate($level)->save();
         // $checkout->teacher()->save(Teacher::find($request->teacher_id));
 
         $checkout->save();
 
         return response()->json(200);
     }
-    public function choose_checkout(Request $request)
-    {
-        $request->validate([
-
-            'client_id' => ['required', 'string'],
-            'checkout_id' => ['required', 'string',],
-        ]);
-        $client = User::find($request->client_id)->student;
-        $checkout = Checkout::find($request->checkout_id);
-        $checkout->clients()->save($client);
-
-        return response()->json($client, 200);
-    }
+    
 }

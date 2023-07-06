@@ -20,7 +20,7 @@ class Notification extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    function to(){
-        return $this->belongsTo(User::class,'to');
+    function user(){
+        return $this->belongsTo(User::class);
     }
 }

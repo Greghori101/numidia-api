@@ -20,12 +20,16 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-
     public function login(Request $request)
     {
-        if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+        if (
+            Auth::attempt([
+                'email' => $request->email,
+                'password' => $request->password,
+            ])
+        ) {
             $user = User::where('email', $request->email)->first();
-            
+
             $remember = $request->remember_me;
             Auth::login($user, $remember);
             $data = [
@@ -42,25 +46,29 @@ class AuthController extends Controller
         }
     }
 
-
     public function store(Request $request)
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'role' => ['required', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:10'],
-            'gender' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed',],
+            'gender' => 'required|in:male,female',
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                'unique:users',
+            ],
+            'password' => ['required', 'confirmed'],
         ]);
         $request->merge([
-            "role" =>  strtolower($request->role),
+            'role' => strtolower($request->role),
         ]);
-
 
         $content = Storage::get('default-profile-picture.jpeg');
         $extension = 'jpeg';
-        $name = "profile picture";
+        $name = 'profile picture';
 
         $user = User::create([
             'name' => $request->name,
@@ -72,32 +80,35 @@ class AuthController extends Controller
             'code' => Str::upper(Str::random(6)),
         ]);
 
-
         if ($user->role == 'teacher') {
             $user->teacher()->save(new Teacher());
-        } else if ($user->role == 'student') {
+        } elseif ($user->role == 'student') {
             $user->student()->save(new Student());
-        } else if ($user->role == 'admin') {
+        } elseif ($user->role == 'admin') {
             $user->admin()->save(new Admin());
-        } else if ($user->role == 'supervisor') {
+        } elseif ($user->role == 'supervisor') {
             $user->supervisor()->save(new Supervisor());
         }
 
-
-
-
-        $user->profile_picture()->save(new File([
-            'name' => $name,
-            'content' => base64_encode($content),
-            'extension' => $extension,
-        ]));
+        $user->profile_picture()->save(
+            new File([
+                'name' => $name,
+                'content' => base64_encode($content),
+                'extension' => $extension,
+            ])
+        );
 
         // $user->refresh();
 
         try {
             //code...
             $data = [
-                'url' => env('APP_URL') . '/api/email/verify?id=' . $user->id . '&code=' . $user->code,
+                'url' =>
+                    env('APP_URL') .
+                    '/api/email/verify?id=' .
+                    $user->id .
+                    '&code=' .
+                    $user->code,
                 'name' => $user->name,
                 'email' => $user->email,
                 'code' => $user->code,
@@ -120,7 +131,6 @@ class AuthController extends Controller
 
     public function logout()
     {
-
         $user = Auth::user();
         $user = User::find($user->id);
         if (Auth::check($user)) {
@@ -131,27 +141,47 @@ class AuthController extends Controller
         }
     }
 
-    public function forgotpassword(Request $request)
+    public function restpassword(Request $request)
     {
         $request->validate([
-            'email' => 'required|string'
+            'code' => 'required|string',
+            'email' => 'required|string',
+            'password' => ['required', 'confirmed'],
         ]);
         $user = User::where('email', $request['email'])->first();
         if (!$user) {
             abort(404);
         }
-        $url = "";
-        $user->password  = Str::random(6);
+        if ($request->code != $user->code) {
+            $message = 'wrong code';
+            abort(401, $message);
+        } else {
+            $user->password = Hash::make($request->password);
+            $user->save();
+        }
+
+        return response(200);
+    }
+    public function forgotpassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string',
+        ]);
+        $user = User::where('email', $request['email'])->first();
+        if (!$user) {
+            abort(404);
+        }
+        $url = '';
+        $user->code = Str::random(6);
         try {
             //code...
             // Email the user new password
             $data = [
                 'name' => $user->name,
                 'email' => $user->email,
-                'password' => $user->password,
+                'code' => $user->code,
                 'url' => $url,
             ];
-            $user->password = Hash::make($user->password);
             Mail::to($user)->send(new ForgotPasswordEmail($data));
         } catch (\Throwable $th) {
             //throw $th;
@@ -164,9 +194,8 @@ class AuthController extends Controller
     public function verify(Request $request)
     {
         $request->validate([
-
             'email' => ['required', 'string', 'email', 'max:255'],
-            'code' => ['required', 'string',],
+            'code' => ['required', 'string'],
         ]);
         $user = User::where('email', $request->email)->first();
         if (!$user) {
@@ -187,7 +216,10 @@ class AuthController extends Controller
                 ];
                 return response()->json($data, 200);
             } else {
-                return response()->json('the code you have entered is wrong', 403);
+                return response()->json(
+                    'the code you have entered is wrong',
+                    403
+                );
             }
         }
     }
@@ -209,7 +241,12 @@ class AuthController extends Controller
                 $user->code = Str::upper(Str::random(6));
                 $user->save();
                 $data = [
-                    'url' => env('APP_URL') . '/api/email/verify?id=' . $user->id . '&code=' . $user->code,
+                    'url' =>
+                        env('APP_URL') .
+                        '/api/email/verify?id=' .
+                        $user->id .
+                        '&code=' .
+                        $user->code,
                     'name' => $user->name,
                     'email' => $user->email,
                     'code' => $user->code,
@@ -224,7 +261,6 @@ class AuthController extends Controller
     }
     public function email_verified(Request $request)
     {
-
         $user = User::where('email', $request->email)->first();
         if (!$user) {
             $user = User::where('id', $request->id)->first();
@@ -233,7 +269,7 @@ class AuthController extends Controller
             abort(404);
         }
 
-        return response()->json(["verified" => $user->hasVerifiedEmail()], 200);
+        return response()->json(['verified' => $user->hasVerifiedEmail()], 200);
     }
     public function update(Request $request, $id)
     {
@@ -264,8 +300,8 @@ class AuthController extends Controller
         $message = null;
         if ($request->password) {
             $request->validate([
-                'old_password' => ['required',],
-                'password' => ['required', 'confirmed',],
+                'old_password' => ['required'],
+                'password' => ['required', 'confirmed'],
             ]);
             if (Hash::check($request->old_password, $user->password)) {
                 $data['password'] = Hash::make($request->password);
@@ -280,7 +316,6 @@ class AuthController extends Controller
         $user->refresh();
 
         User::where('id', $id)->update($data);
-
 
         $file = $user->profile_picture;
 
@@ -299,34 +334,21 @@ class AuthController extends Controller
 
     public function show($id)
     {
-        $user = User::find($id);
+        $user = User::with(['profile_picture', 'wallet'])->find($id);
         if (!$user) {
             abort(404);
         }
 
-        $file = $user->profile_picture;
-
-        $data = [
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone_number' => $user->phone_number,
-            'gender' => $user->gender,
-            'profile_picture' => $file,
-            'role' => $user->role,
-        ];
-
-        return response()->json($data, 200);
+        return response()->json($user, 200);
     }
 
     public function provider_login(Request $request, $provider)
     {
-
         $user = User::where('email', $request->email)->first();
         $remember = $request->remember_me;
         Auth::login($user, $remember);
-        if ($user->role === "student") {
-
-            $active  = $user->student->active;
+        if ($user->role === 'student') {
+            $active = $user->student->active;
         } else {
             $active = false;
         }
@@ -334,11 +356,11 @@ class AuthController extends Controller
             $user->markEmailAsVerified();
         }
 
-        if ($provider == "google") {
+        if ($provider == 'google') {
             if (!$user->google_id) {
                 $user->google = $request->id;
             }
-        } else if ($provider == "facebook") {
+        } elseif ($provider == 'facebook') {
             if (!$user->facebook_id) {
                 $user->facebook_id = $request->id;
             }
@@ -353,80 +375,6 @@ class AuthController extends Controller
             'token' => $user->createToken('API Token')->accessToken,
         ];
 
-        return response()->json($data, 200);
-    }
-
-
-    public function provider_store(Request $request, $provider)
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'role' => ['required', 'string', 'max:255'],
-            'phone_number' => ['required', 'string', 'max:10'],
-            'gender' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed',],
-        ]);
-        $request->merge([
-            "role" =>  strtolower($request->role),
-        ]);
-
-
-        $content = Storage::get('default-profile-picture.jpeg');
-        $extension = 'jpeg';
-        $name = "profile picture";
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'role' => $request->role,
-            'gender' => $request->gender,
-            'password' => Hash::make($request->password),
-            'code' => Str::random(6),
-        ]);
-
-
-        if ($user->role == 'teacher') {
-            $user->teacher()->save(new Teacher());
-        } else if ($user->role == 'student') {
-            $user->student()->save(new Student());
-        } else if ($user->role == 'admin') {
-            $user->admin()->save(new Admin());
-        } else if ($user->role == 'supervisor') {
-            $user->supervisor()->save(new Supervisor());
-        }
-
-
-
-
-        $user->profile_picture()->save(new File([
-            'name' => $name,
-            'content' => base64_encode($content),
-            'extension' => $extension,
-        ]));
-
-        // $user->refresh();
-
-        try {
-            //code...
-            $data = [
-                'url' => env('APP_URL') . '/api/email/verify?id=' . $user->id . '&code=' . $user->code,
-                'name' => $user->name,
-                'email' => $user->email,
-                'code' => $user->code,
-            ];
-            Mail::to($user)->send(new VerifyEmail($data));
-        } catch (\Throwable $th) {
-            //throw $th;
-            abort(400);
-        }
-        Auth::login($user);
-        $data = [
-            'id' => $user->id,
-            'role' => $user->role,
-            'token' => $user->createToken('API Token')->accessToken,
-        ];
         return response()->json($data, 200);
     }
 }

@@ -13,7 +13,7 @@ use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable,SoftDeletes,HasUuids;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasUuids;
 
     /**
      * The attributes that are mass assignable.
@@ -43,6 +43,9 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'code',
+        'google_id',
+        'facebook_id',
     ];
 
     /**
@@ -52,36 +55,49 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'id'=>'string',
+        'id' => 'string',
     ];
 
-    function admin(){
+    function admin()
+    {
         return $this->hasOne(Admin::class);
     }
+    function reciepts()
+    {
+        return $this->hasMany(Reciept::class);
+    }
 
-    public function employee(){
+    public function employee()
+    {
         return $this->hasOne(Employee::class);
     }
-    function student(){
+    function student()
+    {
         return $this->hasOne(Student::class);
     }
-    function teacher(){
+    function teacher()
+    {
         return $this->hasOne(Teacher::class);
     }
-    function supervisor(){
+    function supervisor()
+    {
         return $this->hasOne(Supervisor::class);
     }
-    function received_notifications(){
-        return $this->hasMany(Notification::class,'from');
+    function received_notifications()
+    {
+        return $this->hasMany(Notification::class,'user_id');
     }
-    function sent_notifications(){
-        return $this->hasMany(Notification::class,'to');
-    }
-    public function profile_picture(){
+    
+    public function profile_picture()
+    {
         return $this->hasOne(File::class);
     }
-    function posts(){
+    function posts()
+    {
         return $this->hasMany(Post::class);
     }
-
+    function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
 }

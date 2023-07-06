@@ -10,27 +10,23 @@ use Illuminate\Http\Request;
 class PostController extends Controller
 {
     //
-    public function index($id = null)
+    public function index()
     {
-        if ($id) {
-            $post = Post::find($id);
+        $posts = Post::all();
+        foreach ($posts as $post) {
+            # code...
             $post['author'] = $post->author;
-            $post['author']['profile_picture'] =  $post->author->profile_picture;
-
-            return response()->json($post, 200);
-        } else {
-            $posts = Post::all();
-            foreach ($posts as $post) {
-                # code...
-                $post['author'] = $post->author;
-                $post['author']['profile_picture'] =  $post->author->profile_picture;
-
-
-            }
-            return response()->json($posts, 200);
+            $post['author']['profile_picture'] = $post->author->profile_picture;
         }
+        return response()->json($posts, 200);
     }
 
+    public function show($id)
+    {
+        $post = Post::with(['author.profile-picture', 'author'])->find($id);
+
+        return response()->json($post, 200);
+    }
     public function create(Request $request)
     {
         $post = Post::create([
@@ -54,10 +50,13 @@ class PostController extends Controller
 
     public function update(Request $request, $id)
     {
-        $post = Post::updateOrCreate(['id' => $id], [
-            'title' => $request->title,
-            'content' => $request->content,
-        ]);
+        $post = Post::updateOrCreate(
+            ['id' => $id],
+            [
+                'title' => $request->title,
+                'content' => $request->content,
+            ]
+        );
         return response()->json(200);
     }
 }

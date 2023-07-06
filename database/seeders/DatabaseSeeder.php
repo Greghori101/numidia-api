@@ -25,40 +25,46 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         Department::create([
-            'name' => "numidia school",
+            'name' => 'numidia school',
         ]);
         Department::create([
-            'name' => "numidia profession",
+            'name' => 'numidia profession',
         ]);
         Department::create([
-            'name' => "numidia academy",
+            'name' => 'numidia academy',
         ]);
-
 
         $content = Storage::get('default-profile-picture.jpeg');
         $extension = 'jpeg';
-        $name = "profile picture";
-        $code =  Str::upper(Str::random(6));
+        $name = 'profile picture';
+        $code = Str::upper(Str::random(6));
         $user = User::create([
-            'name' => "Numidia Admin",
+            'name' => 'Numidia Admin',
             'email' => env('APP_MAIL_ADMIN'),
-            'role' => "admin",
-            'gender' => "Male",
+            'role' => 'admin',
+            'gender' => 'Male',
             'password' => Hash::make('admin'),
             'code' => $code,
         ]);
         $user->admin()->save(new Admin());
 
-        $user->profile_picture()->save(new File([
-            'name' => $name,
-            'content' => base64_encode($content),
-            'extension' => $extension,
-        ]));
+        $user->profile_picture()->save(
+            new File([
+                'name' => $name,
+                'content' => base64_encode($content),
+                'extension' => $extension,
+            ])
+        );
 
         try {
             //code...
             $data = [
-                'url' => env('APP_URL') . '/api/email/verify?id=' . $user->id . '&code=' . $user->code,
+                'url' =>
+                    env('APP_URL') .
+                    '/api/email/verify?id=' .
+                    $user->id .
+                    '&code=' .
+                    $user->code,
                 'name' => $user->name,
                 'email' => $user->email,
                 'code' => $user->code,

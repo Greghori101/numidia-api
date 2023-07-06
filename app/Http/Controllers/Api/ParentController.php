@@ -9,6 +9,7 @@ use App\Models\Session;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\Student;
+use App\Models\Supervisor;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -17,39 +18,32 @@ use Illuminate\Support\Str;
 
 class ParentController extends Controller
 {
-    public function sessions($id = null)
+    public function index()
     {
-
-        if ($id) {
-            $session = Session::find($id);
-            $session['teacher'] = $session->teacher->user;
-            $session['group'] = $session->group;
-            return response()->json($session, 200);
-        } else {
-            $user = User::find(Auth::user()->id);
-            $supervisor = $user->supervisor;
-            $all_sessions = [];
-            foreach ($supervisor->students as $student) {
-
-                foreach ($student->groups as $group) {
-                    # code..
-                    $sessions = $group->sessions;
-                    $temp = [];
-                    foreach ($sessions as $session) {
-
-                        if ($session->state == 'approved') {
-                            $session['teacher'] = $session->teacher->user;
-                            array_push($temp, $session);
-                        }
-                    }
-                }
-                $all_sessions[$student->id]['sessions'] = $temp;
-                $all_sessions[$student->id]['group'] = $group;
+        $parents = Supervisor::all();
+        foreach ($parents as $key => $value) {
+            # code...
+            $temp = [];
+            foreach ($value->students as $student) {
+                $temp[] = $student->user;
+                # code...
             }
+            $parents[$key] = $value->user;
 
-
-            return response()->json($all_sessions, 200);
+            $parents[$key]['students'] = $temp;
         }
+        return $parents;
+    }
+    public function show($id)
+    {
+        $parent = Supervisor::where('id', $id)->first();
+        $temp = [];
+        foreach ($parent->students as $student) {
+            $temp[] = $student->user;
+            # code...
+        }
+        $parent['students'] = $temp;
+        return $parent;
     }
 
     public function add_student(Request $request)
@@ -60,7 +54,7 @@ class ParentController extends Controller
 
         $content = Storage::get('default-profile-picture.jpeg');
         $extension = 'jpeg';
-        $name = "profile picture";
+        $name = 'profile picture';
 
         $user = User::create([
             'name' => $request->name,
@@ -75,11 +69,13 @@ class ParentController extends Controller
         $user->student()->save($student);
         $supervisor->students()->save($student);
 
-        $user->profile_picture()->save(new File([
-            'name' => $name,
-            'content' => base64_encode($content),
-            'extension' => $extension,
-        ]));
+        $user->profile_picture()->save(
+            new File([
+                'name' => $name,
+                'content' => base64_encode($content),
+                'extension' => $extension,
+            ])
+        );
 
         // $user->refresh();
 
@@ -99,47 +95,16 @@ class ParentController extends Controller
         return response()->json(200);
     }
 
-    public function students($id = null)
+    public function students()
     {
-        if (!$id) {
-            $user = User::find(Auth::user()->id);
-            $supervisor = $user->supervisor;
-            $students = $supervisor->students;
-            foreach ($students as $key => $value) {
-                # code...
-                $students[$key] = $value->user;
-            }
-        } else {
-            $students = Student::where('id', $id)->first()->user();
+        $user = User::find(Auth::user()->id);
+        $supervisor = $user->supervisor;
+        $students = $supervisor->students;
+        foreach ($students as $key => $value) {
+            # code...
+            $students[$key] = $value->user;
         }
+
         return $students;
-    }
-
-
-    public function update_student(Request $request)
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'user_role' => ['required', 'string', 'max:255'],
-            'gender' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string'],
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        $user->name = $request->name;
-        $user->role = $request->user_role;
-        $user->gender = $request->gender;
-
-        $user->save();
-
-        return response()->json(200);
-    }
-
-    public function delete_student($id)
-    {
-        $user = User::where('id', $id)->first();
-        $user->forceDelete();
-        return response()->json(200);
     }
 }

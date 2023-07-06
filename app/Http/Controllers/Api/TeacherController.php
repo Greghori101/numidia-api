@@ -4,33 +4,30 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Session;
+use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Http\Request;
 
 class TeacherController extends Controller
 {
     //
-    public function sessions($id)
-    {
-        $user = User::find($id);
-        $teacher = $user->teacher;
-        $sessions = $teacher->sessions;
-        foreach ($sessions as $session) {
-            # code...
-            $session['teacher'] = $teacher;
-            $session['group'] = $session->group;
-        }
 
-        return response()->json($sessions, 200);
+    public function index()
+    {
+            $teachers = Teacher::all();
+            foreach ($teachers as $teacher) {
+                # code...
+                $teacher["user"] = $teacher->user;
+            }
+        return $teachers;
     }
 
-    public function show($id)
-    {
-        $session = Session::find($id);
-        $session['teacher'] = $session->teacher;
-        $session['group'] = $session->group;
-        return response()->json($session, 200);
+    public function show($id){
+        $teacher = Teacher::where('id', $id)->first()->user;
+        return $teacher;
     }
+
+    
 
     public function  reject_session(Request $request, $id)
     {

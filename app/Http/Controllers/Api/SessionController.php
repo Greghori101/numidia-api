@@ -13,17 +13,18 @@ class SessionController extends Controller
     //
     public function index()
     {
-            $sessions = Session::all();
-            foreach ($sessions as  $session) {
-                # code...
-                $session['teacher'] = $session->teacher->user;
-                $session['group'] = $session->group;
-            }
+        $sessions = Session::all();
+        foreach ($sessions as $session) {
+            # code...
+            $session['teacher'] = $session->teacher->user;
+            $session['group'] = $session->group;
+        }
 
-            return response()->json($sessions, 200);
+        return response()->json($sessions, 200);
     }
 
-    public function show($id){
+    public function show($id)
+    {
         $session = Session::find($id);
         $session['teacher'] = $session->teacher->user;
         $session['group'] = $session->group;
@@ -40,16 +41,20 @@ class SessionController extends Controller
 
         $group = Group::find($request->group_id);
         $teacher = Teacher::find($request->teacher_id);
-        $session->group()->associate($group)->save();
-        $session->teacher()->associate($teacher)->save();
-
+        $session
+            ->group()
+            ->associate($group)
+            ->save();
+        $session
+            ->teacher()
+            ->associate($teacher)
+            ->save();
 
         return response()->json(200);
     }
 
-    public function destroy($id)
+    public function delete($id)
     {
-
         $session = Session::find($id);
 
         $session->delete();
@@ -59,7 +64,6 @@ class SessionController extends Controller
 
     public function update(Request $request, $id)
     {
-
         $session = Session::find($id);
 
         $session->update([

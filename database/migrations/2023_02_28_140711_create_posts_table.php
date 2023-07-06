@@ -17,6 +17,7 @@ return new class extends Migration
             $table->uuid('id')->primary()->unique();
             $table->string('title');
             $table->string('content');
+            
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->softDeletes($column = 'deleted_at', $precision = 0);

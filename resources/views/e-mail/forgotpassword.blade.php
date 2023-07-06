@@ -58,9 +58,9 @@
         <p style="text-transform:capitalize;">Dear {{ $data['name'] }},</p>
 
         <p>We received a request to reset your password for your account with us. If you did not make this request, simply ignore this email.</p>
-        <p>To reset your password, we generate for you a temparery password till you changed id:</p>
+        <p>To reset your password, we generate for you a code to change your password:</p>
         <!-- <a href="{{ $reset_link }}">Reset Password</a> -->
-        <h2>$data['password']</h2>
+        <h2>$data['code']</h2>
         <p>If you need further assistance, please feel free to reach out to us at support@example.com.</p>
         <p>Best regards,</p>
         <p>The Support Team</p>

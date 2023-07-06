@@ -22,6 +22,7 @@ return new class extends Migration
             $table->foreign('group_id')->references('id')->on('groups')->onDelete('cascade');
             $table->uuid('student_id')->nullable();
             $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');
+            
             //
         });
     }

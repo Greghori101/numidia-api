@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-
             $table->string('status')->default('pending');
             $table->bigInteger('amount')->default(0);
 
@@ -23,6 +22,7 @@ return new class extends Migration
             $table->foreign('from')->references('id')->on('wallets')->onDelete('cascade');
 
             $table->timestamps();
+            $table->softDeletes($column = 'deleted_at', $precision = 0);
         });
     }
 

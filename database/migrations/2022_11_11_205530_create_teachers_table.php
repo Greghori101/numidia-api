@@ -15,11 +15,11 @@ return new class extends Migration
     {
         Schema::create('teachers', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
+            $table->string('module');
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->uuid('module_id')->nullable();
-            $table->foreign('module_id')->references('id')->on('modules')->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes($column = 'deleted_at', $precision = 0);
         });
     }
 
