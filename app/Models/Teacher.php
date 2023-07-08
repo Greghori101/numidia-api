@@ -13,7 +13,8 @@ class Teacher extends Model
 
 
     protected $fillable = [
-        'module'
+        'module',
+        'percentage',
     ];
 
     protected $keyType = 'string';

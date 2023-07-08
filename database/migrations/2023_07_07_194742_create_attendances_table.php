@@ -8,18 +8,18 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('teachers', function (Blueprint $table) {
+        Schema::create('attendances', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->float('percentage');
-            $table->string('module');
+            $table->date('date');
+            $table->string('name');
+            $table->timestamp('time_in')->nullable();
+
+            $table->uuid('student_id')->nullable();
+            $table->foreign('student_id')->references('id')->on('students'); 
             
-            $table->uuid('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes($column = 'deleted_at', $precision = 0);
         });
@@ -27,11 +27,9 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
-        Schema::dropIfExists('teachers');
+        Schema::dropIfExists('attendances');
     }
 };

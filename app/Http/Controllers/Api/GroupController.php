@@ -13,36 +13,29 @@ use Illuminate\Http\Request;
 
 class GroupController extends Controller
 {
-    
     public function index()
     {
-            $groups = Group::all();
-            foreach ($groups as $group) {
-                # code...
-                $group['teacher'] = $group->teacher->user;
-                $group['level'] = $group->level;
-            }
-       
+        $groups = Group::all();
+        foreach ($groups as $group) {
+            # code...
+            $group['teacher'] = $group->teacher->user;
+            $group['level'] = $group->level;
+        }
 
         return response()->json($groups, 200);
     }
 
-    public function show($id){
-        $groups = Group::find($id);
-            $groups['teacher'] = $groups->teacher->user;
-            $groups['level'] = $groups->level;
-            $members = $groups->students;
-            foreach ($members as $member) {
-                # code...
-                $member['active'] = $member->pivot->active;
-                $member = $member->user;
-            }
-            $groups['members'] = $members;
+    public function show($id)
+    {
+        $group = Group::with(['teacher.user', 'level', 'students.user'])->find($id);
+        $group->students->each(function ($student) {
+            $student->pivot->active = $student->pivot->active ;
+        });
+        return response()->json($group, 200);
     }
 
     public function create(Request $request)
     {
-
         $request->validate([
             'teacher_id' => ['required'],
             'level_id' => ['required'],
@@ -55,6 +48,7 @@ class GroupController extends Controller
         $group = Group::create([
             'name' => $request->name,
             'capacity' => $request->capacity,
+            'price_per_month' => $request->price_per_month,
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
@@ -64,7 +58,6 @@ class GroupController extends Controller
 
     public function delete($id)
     {
-
         $group = Group::find($id);
 
         $group->delete();
@@ -74,13 +67,11 @@ class GroupController extends Controller
 
     public function update(Request $request, $id)
     {
-
         $request->validate([
             'teacher_id' => ['required'],
             'level_id' => ['required'],
             'name' => ['required', 'string'],
             'capacity' => ['required', 'integer'],
-
         ]);
         $group = Group::find($id);
         $group->delete();
@@ -93,9 +84,6 @@ class GroupController extends Controller
         $teacher->groups()->save($group);
         $level->groups()->save($group);
 
-
-
-
         $group->save();
 
         return response()->json(200);
@@ -103,7 +91,6 @@ class GroupController extends Controller
 
     public function group_student_add(Request $request, $id)
     {
-
         $group = Group::find($id);
         if ($request->students) {
             $group->students()->sync($request->students);
@@ -112,11 +99,10 @@ class GroupController extends Controller
         }
         return response()->json(200);
     }
-    public function group_student_remove(Request $request, $id, $member_key)
+    public function group_student_remove(Request $request, $id, $student_id)
     {
-
         $group = Group::find($id);
-        $group->students()->detach($member_key);
+        $group->students()->detach($student_id);
         return response()->json(200);
     }
     public function student_notin_group($id)
@@ -124,8 +110,9 @@ class GroupController extends Controller
         $group = Group::find($id);
         $level = $group->level;
 
-        $students = $level->students()
-            ->whereNotIn('id',  $group->students->modelKeys())
+        $students = $level
+            ->students()
+            ->whereNotIn('id', $group->students->modelKeys())
             ->get();
         foreach ($students as $student) {
             # code...
@@ -133,5 +120,10 @@ class GroupController extends Controller
         }
         return response()->json($students, 200);
     }
-
+    public function student_group($id)
+    {
+        $group = Group::with(['students.user'])->find($id);
+        $students = $group->students;
+        return response()->json($students, 200);
+    }
 }

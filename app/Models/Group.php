@@ -9,20 +9,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Group extends Model
 {
-    use HasFactory, HasUuids,SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
-    protected $fillable = [
-        'name',
-        'members',
-        'capacity',
-    ];
+    protected $fillable = ['name', 'capacity', 'price_per_month'];
 
     protected $keyType = 'string';
     public $incrementing = false;
 
     function students()
     {
-        return $this->belongsToMany(Student::class, 'group_student', 'group_id', 'student_id')->withPivot('active','activated_at');
+        return $this->belongsToMany(
+            Student::class,
+            'group_student',
+            'group_id',
+            'student_id'
+        )->withPivot('active', 'activated_at');
     }
 
     function level()

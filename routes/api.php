@@ -2,13 +2,16 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\DepartmentController;
+use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\LevelController;
-use App\Http\Controllers\Api\ModuleController;
 use App\Http\Controllers\Api\ParentController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ReceiptController;
+use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\TeacherController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\DashboardController;
 use BeyondCode\LaravelWebSockets\Facades\WebSocketsRouter;
 use Illuminate\Support\Facades\Route;
@@ -104,17 +107,13 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::post('/', 'create');
             Route::delete('/{id}', 'delete');
             Route::put('/{id}', 'update');
-            Route::get('students/{id}/groups', 'student_group');
+            Route::get('/{id}/groups', 'student_group');
             Route::post('/{student_id}/groups/{group_id}', 'student_group_add');
             Route::delete(
                 '/{student_id}/groups/{group_id}',
                 'student_group_remove'
             );
-            Route::get('/{id}/groups/not-in', 'group_notin_student');
-            Route::post(
-                '/{student_id}/groups/{group_id}/activate',
-                'student_group_activate'
-            );
+            Route::get('/{id}/groups/unenrolled', 'group_notin_student');
         });
 
     Route::prefix('teachers')
@@ -152,7 +151,12 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::delete('/delete/{id}', 'delete');
             Route::delete('/delete_all', 'delete_all');
         });
-
+    Route::prefix('departments')
+        ->controller(DepartmentController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
+        });
     Route::prefix('levels')
         ->controller(LevelController::class)
         ->group(function () {
@@ -161,8 +165,8 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::post('/', 'create');
             Route::put('/{id}', 'update');
             Route::delete('/{id}', 'delete');
-            Route::get('departments', 'departments');
-            Route::get('departments/{id}', 'departments');
+            Route::get('/departments', 'departments');
+            Route::get('/departments/{id}', 'departments');
         });
 
     Route::prefix('groups')
@@ -173,10 +177,11 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::post('/', 'create');
             Route::put('/{id}', 'update');
             Route::delete('/{id}', 'delete');
-            Route::get('/{id}/students', 'student_notin_group');
+            Route::get('/{id}/students', 'student_group');
+            Route::get('/{id}/students/unenrolled', 'student_notin_group');
             Route::post('/{id}/students', 'group_student_add');
             Route::delete(
-                '/{id}/students/{member_key}',
+                '/{id}/students/{student_id}',
                 'group_student_remove'
             );
         });

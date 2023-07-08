@@ -78,6 +78,7 @@ class StudentController extends Controller
         return response()->json($groups, 200);
     }
 
+    
     public function student_group_activate(Request $request, $student_id, $group_id)
     {
         $group =  Student::find($student_id)->groups()->find($group_id);

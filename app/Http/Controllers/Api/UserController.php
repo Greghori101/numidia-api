@@ -74,7 +74,10 @@ class UserController extends Controller
         ]);
 
         if ($user->role == 'teacher') {
-            $teacher = new Teacher();
+            $teacher = new Teacher([
+                'module' => $request->module,
+                'percentage' => $request->percentage,
+            ]);
             $user->teacher()->save($teacher);
         } elseif ($user->role == 'student') {
             $level = Level::find($request->level_id);

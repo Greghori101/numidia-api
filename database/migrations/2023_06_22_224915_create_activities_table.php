@@ -17,7 +17,6 @@ return new class extends Migration {
                 ->unique();
             $table->string('title');
             $table->string('details');
-            $table->string('mode');
             $table->string('device')->nullable();
             $table->point('coordinates')->nullable();
             $table->string('location')->nullable();

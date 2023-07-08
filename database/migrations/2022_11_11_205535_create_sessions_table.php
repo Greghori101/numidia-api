@@ -22,17 +22,14 @@ return new class extends Migration {
             $table->timestamp('ends_at')->nullable();
             $table->string('status')->default('pending');
             $table->string('repeating')->default('week');
+            $table->string('type')->default('normal');
+            $table->bigInteger('price');
+
             $table->uuid('group_id')->nullable();
             $table
                 ->foreign('group_id')
                 ->references('id')
                 ->on('groups')
-                ->onDelete('cascade');
-            $table->uuid('teacher_id')->nullable();
-            $table
-                ->foreign('teacher_id')
-                ->references('id')
-                ->on('teachers')
                 ->onDelete('cascade');
 
             $table->timestamps();
