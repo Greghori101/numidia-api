@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ExceptionSession;
 use App\Models\Group;
 use App\Models\Session;
 use App\Models\Teacher;
@@ -25,33 +26,18 @@ class SessionController extends Controller
 
     public function show($id)
     {
-        $session = Session::find($id);
-        $session['teacher'] = $session->teacher->user;
-        $session['group'] = $session->group;
+        $session = Session::with(['group', 'exceptions'])->find($id);
         return response()->json($session, 200);
     }
 
-    public function create(Request $request)
+    public function except(Request $request, $id)
     {
-        $session = Session::create([
-            'classroom' => $request->classroom,
-            'starts_at' => $request->starts_at,
-            'ends_at' => $request->ends_at,
-        ]);
-
-        $group = Group::find($request->group_id);
-        $teacher = Teacher::find($request->teacher_id);
-        $session
-            ->group()
-            ->associate($group)
-            ->save();
-        $session
-            ->teacher()
-            ->associate($teacher)
-            ->save();
-
-        return response()->json(200);
+        $session = Session::find($id);
+        $session->exceptions()->save(new ExceptionSession(['date' => $request->date]));
+        return response()->json($session, 200);
     }
+
+
 
     public function delete($id)
     {
@@ -70,11 +56,8 @@ class SessionController extends Controller
             'classroom' => $request->classroom,
             'starts_at' => $request->starts_at,
             'ends_at' => $request->ends_at,
+            "repeating" => $request->repeating,
         ]);
-
-        $session->group()->associate(Group::find($request->group_id));
-        $session->teacher()->associate(Teacher::find($request->teacher_id));
-
         $session->save();
 
         return response()->json(200);

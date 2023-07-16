@@ -15,11 +15,12 @@ return new class extends Migration
             $table->uuid('id')->primary()->unique();
             $table->string('name');
             $table->string('status')->default('present');
+            $table->string('starts_at')->nullable();
+            $table->string('ends_at')->nullable();
 
+            
             $table->uuid('student_id')->nullable();
             $table->foreign('student_id')->references('id')->on('students'); 
-            $table->uuid('session_id')->nullable();
-            $table->foreign('session_id')->references('id')->on('sessions'); 
             
             $table->timestamps();
             $table->softDeletes($column = 'deleted_at', $precision = 0);

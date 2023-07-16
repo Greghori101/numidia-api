@@ -18,12 +18,10 @@ return new class extends Migration {
                 ->primary()
                 ->unique();
             $table->string('classroom');
-            $table->timestamp('starts_at')->nullable();
-            $table->timestamp('ends_at')->nullable();
-            $table->string('status')->default('pending');
-            $table->string('repeating')->default('week');
+            $table->string('starts_at')->nullable();
+            $table->string('ends_at')->nullable();
+            $table->string('repeating')->default('weekly');
             $table->string('type')->default('normal');
-            $table->bigInteger('price');
 
             $table->uuid('group_id')->nullable();
             $table
@@ -33,7 +31,6 @@ return new class extends Migration {
                 ->onDelete('cascade');
 
             $table->timestamps();
-            $table->softDeletes($column = 'deleted_at', $precision = 0);
         });
     }
 

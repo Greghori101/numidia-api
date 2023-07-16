@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Checkout;
 use App\Models\Group;
 use App\Models\Level;
+use App\Models\Session;
 use App\Models\Student;
 use App\Models\Teacher;
 use Carbon\Carbon;
@@ -29,7 +30,7 @@ class GroupController extends Controller
     {
         $group = Group::with(['teacher.user', 'level', 'students.user'])->find($id);
         $group->students->each(function ($student) {
-            $student->pivot->active = $student->pivot->active ;
+            $student->pivot->active = $student->pivot->active;
         });
         return response()->json($group, 200);
     }
@@ -41,6 +42,7 @@ class GroupController extends Controller
             'level_id' => ['required'],
             'name' => ['required', 'string'],
             'capacity' => ['required', 'integer'],
+            'nb_session' => ['required', 'integer'],
         ]);
 
         $teacher = Teacher::find($request->teacher_id);
@@ -49,11 +51,12 @@ class GroupController extends Controller
             'name' => $request->name,
             'capacity' => $request->capacity,
             'price_per_month' => $request->price_per_month,
+            'nb_session' => $request->nb_session,
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
 
-        return response()->json(200);
+        return response()->json($group, 200);
     }
 
     public function delete($id)
@@ -71,7 +74,10 @@ class GroupController extends Controller
             'teacher_id' => ['required'],
             'level_id' => ['required'],
             'name' => ['required', 'string'],
+            'price_per_month' => $request->price_per_month,
+
             'capacity' => ['required', 'integer'],
+            'nb_session' => ['required', 'integer'],
         ]);
         $group = Group::find($id);
         $group->delete();
@@ -79,7 +85,10 @@ class GroupController extends Controller
         $level = Level::find($request->level_id);
         $group = Group::create([
             'name' => $request->name,
+            'price_per_month' => $request->price_per_month,
+
             'capacity' => $request->capacity,
+            'nb_session' => $request->capacity,
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
@@ -89,7 +98,7 @@ class GroupController extends Controller
         return response()->json(200);
     }
 
-    public function group_student_add(Request $request, $id)
+    public function students_create(Request $request, $id)
     {
         $group = Group::find($id);
         if ($request->students) {
@@ -99,7 +108,7 @@ class GroupController extends Controller
         }
         return response()->json(200);
     }
-    public function group_student_remove(Request $request, $id, $student_id)
+    public function students_delete(Request $request, $id, $student_id)
     {
         $group = Group::find($id);
         $group->students()->detach($student_id);
@@ -120,10 +129,30 @@ class GroupController extends Controller
         }
         return response()->json($students, 200);
     }
-    public function student_group($id)
+    public function students($id)
     {
         $group = Group::with(['students.user'])->find($id);
         $students = $group->students;
         return response()->json($students, 200);
+    }
+
+    public function sessions($id)
+    {
+        $group = Group::with(['sessions.exceptions'])->find($id);
+        $sessions = $group->sessions;
+        return response()->json($sessions, 200);
+    }
+    public function sessions_create(Request $request, $id)
+    {
+        $group = Group::find($id);
+        $session = Session::create([
+            "classroom" => $request->classroom,
+            "starts_at" => $request->starts_at,
+            "ends_at" => $request->ends_at,
+            "repeating" => $request->repeating,
+        ]);
+        $group->sessions()->save($session);
+
+        return response()->json($session, 200);
     }
 }

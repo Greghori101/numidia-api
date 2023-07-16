@@ -26,7 +26,7 @@ class Teacher extends Model
         return $this->belongsTo(User::class);
     }
     function sessions(){
-        return $this->hasMany(Session::class);
+        return $this->hasManyThrough(Session::class,Group::class);
     }
     function groups(){
         return $this->hasMany(Group::class);

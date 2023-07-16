@@ -37,14 +37,12 @@ class DatabaseSeeder extends Seeder
         $content = Storage::get('default-profile-picture.jpeg');
         $extension = 'jpeg';
         $name = 'profile picture';
-        $code = Str::upper(Str::random(6));
         $user = User::create([
             'name' => 'Numidia Admin',
             'email' => env('APP_MAIL_ADMIN'),
             'role' => 'admin',
             'gender' => 'Male',
             'password' => Hash::make('admin'),
-            'code' => $code,
         ]);
         $user->admin()->save(new Admin());
 
@@ -56,23 +54,6 @@ class DatabaseSeeder extends Seeder
             ])
         );
 
-        try {
-            //code...
-            $data = [
-                'url' =>
-                    env('APP_URL') .
-                    '/api/email/verify?id=' .
-                    $user->id .
-                    '&code=' .
-                    $user->code,
-                'name' => $user->name,
-                'email' => $user->email,
-                'code' => $user->code,
-            ];
-            Mail::to($user)->send(new VerifyEmail($data));
-        } catch (\Throwable $th) {
-            //throw $th;
-            abort(400);
-        }
+        $user->markEmailAsVerified();
     }
 }

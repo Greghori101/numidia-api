@@ -6,28 +6,19 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Session extends Model
+class ExceptionSession extends Model
 {
-    use HasFactory, HasUuids;
-
+    use HasFactory,HasUuids;
+    
     protected $fillable = [
-        'classroom',
-        'starts_at',
-        'ends_at',
-        'repeating',
+        'date',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
 
-
-
-    function group()
-    {
+    function session(){
         return $this->belongsTo(Group::class);
     }
-    function exceptions()
-    {
-        return $this->hasMany(ExceptionSession::class);
-    }
+    
 }

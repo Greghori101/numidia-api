@@ -19,6 +19,7 @@ return new class extends Migration {
                 ->unique();
             $table->string('name');
             $table->integer('capacity');
+            $table->integer('nb_session');
             $table->bigInteger('price_per_month');
 
             $table->uuid('teacher_id')->nullable();

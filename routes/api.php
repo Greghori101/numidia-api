@@ -177,15 +177,25 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::post('/', 'create');
             Route::put('/{id}', 'update');
             Route::delete('/{id}', 'delete');
-            Route::get('/{id}/students', 'student_group');
+            Route::get('/{id}/students', 'students');
             Route::get('/{id}/students/unenrolled', 'student_notin_group');
-            Route::post('/{id}/students', 'group_student_add');
+            Route::post('/{id}/students', 'students_create');
             Route::delete(
                 '/{id}/students/{student_id}',
-                'group_student_remove'
+                'students_delete'
             );
+            Route::get('/{id}/sessions', 'sessions');
+            Route::post('/{id}/sessions', 'sessions_create');
         });
-
+    Route::prefix('sessions')
+        ->controller(SessionController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
+            Route::post('/{id}/exception', 'except');
+            Route::put('/{id}', 'update');
+            Route::delete('/{id}', 'delete');
+        });
     Route::prefix('checkouts')
         ->controller(CheckoutController::class)
         ->group(function () {
