@@ -15,12 +15,15 @@ return new class extends Migration
             $table->uuid('id')->primary()->unique();
             $table->bigInteger("amount")->default(500);
             $table->date('date')->nullable();
+            $table->date('pay_date')->nullable();
+            $table->boolean('payed')->false();
 
             $table->uuid('student_id')->nullable();
             $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-
+            
+            $table->softDeletes($column = 'deleted_at', $precision = 0);
             $table->timestamps();
         });
     }

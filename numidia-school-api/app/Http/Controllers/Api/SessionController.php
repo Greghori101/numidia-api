@@ -12,13 +12,7 @@ class SessionController extends Controller
     //
     public function index()
     {
-        $sessions = Session::all();
-        foreach ($sessions as $session) {
-            # code...
-            $session['teacher'] = $session->teacher->user;
-            $session['group'] = $session->group;
-        }
-
+        $sessions = Session::with(["exceptions", "group.teacher.user"])->get();
         return response()->json($sessions, 200);
     }
 

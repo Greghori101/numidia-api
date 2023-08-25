@@ -77,6 +77,7 @@ class GroupController extends Controller
             'name' => $request->name,
             'capacity' => $request->capacity,
             'price_per_month' => $request->price_per_month,
+            'type' => $request->type,
             'nb_session' => $request->nb_session,
         ]);
         $teacher->groups()->save($group);
@@ -100,8 +101,6 @@ class GroupController extends Controller
             'teacher_id' => ['required'],
             'level_id' => ['required'],
             'name' => ['required', 'string'],
-            'price_per_month' => $request->price_per_month,
-
             'capacity' => ['required', 'integer'],
             'nb_session' => ['required', 'integer'],
         ]);
@@ -112,7 +111,7 @@ class GroupController extends Controller
         $group = Group::create([
             'name' => $request->name,
             'price_per_month' => $request->price_per_month,
-
+            'type' => $request->type,
             'capacity' => $request->capacity,
             'nb_session' => $request->capacity,
         ]);

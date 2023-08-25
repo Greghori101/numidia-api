@@ -14,6 +14,8 @@ class FeeInscription extends Model
     protected $fillable = [
         'amount',
         'date',
+        'pay_date',
+        "payed",
     ];
 
     protected $keyType = 'string';
