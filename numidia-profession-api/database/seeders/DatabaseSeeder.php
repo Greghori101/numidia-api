@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Models\Admin;
 use App\Models\File;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -21,7 +22,6 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
 
-
         $content = Storage::get('default-profile-picture.jpeg');
         $extension = 'jpeg';
         $name = 'profile picture';
@@ -32,7 +32,6 @@ class DatabaseSeeder extends Seeder
             'gender' => 'Male',
             'password' => Hash::make('admin'),
         ]);
-        $user->admin()->save(new Admin());
 
         $user->profile_picture()->save(
             new File([
@@ -41,6 +40,7 @@ class DatabaseSeeder extends Seeder
                 'extension' => $extension,
             ])
         );
+        $user->wallet()->save(new Wallet());
 
         $user->markEmailAsVerified();
     }

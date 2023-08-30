@@ -31,8 +31,5 @@ class Teacher extends Model
     function groups(){
         return $this->hasMany(Group::class);
     }
-    function module(){
-        return $this->belognsTo(Module::class);
-    }
     
 }

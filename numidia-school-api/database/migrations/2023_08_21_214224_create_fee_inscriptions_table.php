@@ -16,7 +16,7 @@ return new class extends Migration
             $table->bigInteger("amount")->default(500);
             $table->date('date')->nullable();
             $table->date('pay_date')->nullable();
-            $table->boolean('payed')->false();
+            $table->boolean('payed')->default(false);
 
             $table->uuid('student_id')->nullable();
             $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');

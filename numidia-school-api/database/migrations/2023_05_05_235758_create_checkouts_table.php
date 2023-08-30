@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('checkouts', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->bigInteger('price');
+            $table->bigInteger('nb_session');
             $table->date('date');
             $table->date('pay_date')->nullable();
             $table->boolean('payed')->default(false);

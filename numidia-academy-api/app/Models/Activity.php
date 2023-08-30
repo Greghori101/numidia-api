@@ -14,8 +14,6 @@ class Activity extends Model
     protected $fillable = [
         'title',
         'details',
-        'status',
-        'mode',
         'ip_address',
         'location',
         'coordinates',

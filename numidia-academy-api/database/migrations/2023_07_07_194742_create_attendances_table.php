@@ -14,11 +14,9 @@ return new class extends Migration
         Schema::create('attendances', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->date('date');
-            $table->string('name');
-            $table->string('time_in')->nullable();
 
-            $table->uuid('student_id')->nullable();
-            $table->foreign('student_id')->references('id')->on('students'); 
+            $table->uuid('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users'); 
             
             $table->timestamps();
             $table->softDeletes($column = 'deleted_at', $precision = 0);

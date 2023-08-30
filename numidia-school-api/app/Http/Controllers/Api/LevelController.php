@@ -23,11 +23,11 @@ class LevelController extends Controller
 
         $levelsQuery = Level::when($search, function ($query) use ($search) {
             return $query->where(function ($subQuery) use ($search) {
-                $subQuery->where('name', 'like', "%$search%")
-                    ->orWhere('email', 'like', "%$search%");
+                $subQuery->where('education', 'like', "%$search%")
+                    ->orWhere('speciality', 'like', "%$search%")
+                    ->orWhere('year', 'like', "%$search%");
             });
         });
-
 
         $levels = $levelsQuery->orderBy($sortBy, $sortDirection)
             ->paginate($perPage);

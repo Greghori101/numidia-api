@@ -44,6 +44,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'remember_token',
         'code',
+        'active',
         'google_id',
         'facebook_id',
         'created_at',
@@ -59,19 +60,16 @@ class User extends Authenticatable implements MustVerifyEmail
         'id' => 'string',
     ];
 
-    function admin()
+    function checkouts()
     {
-        return $this->hasOne(Admin::class);
+        return $this->hasMany(Checkout::class);
     }
     function reciepts()
     {
         return $this->hasMany(Reciept::class);
     }
 
-    public function employee()
-    {
-        return $this->hasOne(Employee::class);
-    }
+    
     function student()
     {
         return $this->hasOne(Student::class);
@@ -102,7 +100,20 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(Wallet::class);
     }
-    public function transactions(){
-        return $this->hasMany(Transaction::class);
+    function activities()
+    {
+        return $this->hasMany(Activity::class);
+    }
+    function Attendance()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+    function expenses()
+    {
+        return $this->hasMany(Expense::class);
+    }
+    function inscription_fees()
+    {
+        return $this->hasMany(FeeInscription::class,"user_id");
     }
 }

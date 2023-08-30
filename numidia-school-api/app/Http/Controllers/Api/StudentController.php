@@ -44,7 +44,7 @@ class StudentController extends Controller
                     });
             })
             ->orderByRaw("LOWER(sorted_column) $sortDirection")
-            ->with('level')
+            ->with(['level', 'fee_inscription'])
             ->when($perPage !== 'all', function ($query) use ($perPage) {
                 return $query->paginate($perPage);
             }, function ($query) {
@@ -68,25 +68,25 @@ class StudentController extends Controller
     {
         $student = Student::find($student_id);
         $user = User::find($request->user()->id);
-        $groupIds = $request->groups; // Replace with your list of group IDs
+        $groups = $request->groups;
 
-        foreach ($groupIds as $group_id) {
-            $group = Group::find($group_id);
+        foreach ($groups as $group) {
+            $group = (object) $group;
 
-            if ($group && $student) {
-                $student->groups()->attach($group_id);
-                $student->user->wallet->balance -= $group->price_per_month;
+            $student->groups()->attach($group->id, ['rest_session' => $group->rest_session]);
+            $student->user->wallet->balance -= $group->price;
 
-                $checkout = Checkout::create([
-                    'price' => $group->price_per_month,
-                    'date' => Carbon::now(),
-                ]);
+            $checkout = Checkout::create([
+                'price' => $group->price,
+                'date' => Carbon::now(),
+                'nb_session' => $group->rest_session,
+            ]);
 
-                $user->checkouts()->save($checkout);
-                $student->checkouts()->save($checkout);
-                $group->checkouts()->save($checkout);
-                $student->user->wallet->save();
-            }
+            $user->checkouts()->save($checkout);
+            $student->checkouts()->save($checkout);
+            $group = Group::find($group->id);
+            $group->checkouts()->save($checkout);
+            $student->user->wallet->save();
         }
 
         return response()->json(200);
@@ -114,6 +114,10 @@ class StudentController extends Controller
             ->whereNotIn('id',  $student->groups->modelKeys())
             ->with("level", "teacher.user")
             ->get();
+        foreach ($groups as $group) {
+            # code...
+            $group['price'] = $group->price_per_month / $group->nb_session * $group->rest_session;
+        }
         return response()->json($groups, 200);
     }
 

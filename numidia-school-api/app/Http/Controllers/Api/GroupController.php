@@ -79,6 +79,7 @@ class GroupController extends Controller
             'price_per_month' => $request->price_per_month,
             'type' => $request->type,
             'nb_session' => $request->nb_session,
+            'rest_session' => $request->nb_session,
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Wallet extends Model
 {
-    use HasFactory, HasUuids,SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'balance',
@@ -19,8 +19,8 @@ class Wallet extends Model
     public $incrementing = false;
 
 
-    public function user(){
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
-    
 }

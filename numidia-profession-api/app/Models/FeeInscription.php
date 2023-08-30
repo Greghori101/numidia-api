@@ -7,30 +7,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Transaction extends Model
+class FeeInscription extends Model
 {
     use HasFactory, HasUuids,SoftDeletes;
 
     protected $fillable = [
-        'status',
         'amount',
-        'detail',
+        'date',
+        'pay_date',
+        "payed",
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
 
 
-    public function from(){
-        return $this->belongsTo(Wallet::class,'from');
-    }
-
-    public function to()
-    {
-        return $this->belongsTo(Wallet::class,'to');
-    }
-    public function user()
-    {
+    public function user(){
         return $this->belongsTo(User::class);
     }
+    public function student(){
+        return $this->belongsTo(Student::class);
+    }
+
 }

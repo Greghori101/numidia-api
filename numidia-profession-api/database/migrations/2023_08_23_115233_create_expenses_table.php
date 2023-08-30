@@ -11,16 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('receipts', function (Blueprint $table) {
+        Schema::create('expenses', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->integer('total');
-            $table->integer('type');
-
+            $table->bigInteger("amount")->default(0);
+            $table->date('date')->nullable();
+            $table->string("type");
+            $table->string("description");
             $table->uuid('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users'); 
-            
-            $table->timestamps();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+
             $table->softDeletes($column = 'deleted_at', $precision = 0);
+            $table->timestamps();
         });
     }
 
@@ -29,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('receipts');
+        Schema::dropIfExists('expenses');
     }
 };

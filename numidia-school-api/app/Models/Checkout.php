@@ -16,6 +16,7 @@ class Checkout extends Model
         'pay_date',
         'price',
         'payed',
+        'nb_session',
     ];
 
     protected $keyType = 'string';

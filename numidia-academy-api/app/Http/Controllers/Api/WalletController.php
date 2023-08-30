@@ -28,22 +28,4 @@ class WalletController extends Controller
             'type' => "withdraw",
         ]));
     }
-    public function transactions($user_id)
-    {
-        $transactions = User::with(["transactions.to", "transactions.from"])->find($user_id)->transactions;
-        return response()->json($transactions, 200);
-    }
-    public function transfer(Request $request, $from, $to)
-    {
-
-        $user_from = User::find($from);
-        $user_to = User::find($to);
-
-        $transaction = new Transaction([
-            "amount" => $request->amount,
-            "status" => $request->status,
-        ]);
-        $transaction->from()->save($user_from->wallet);
-        $transaction->to()->save($user_to->wallet);
-    }
 }

@@ -23,6 +23,7 @@ return new class extends Migration {
             $table->enum('gender', ['male', 'female'])->default('male');
             $table->string('phone_number')->nullable();
             $table->string('code')->nullable();
+            $table->boolean('active')->default(true);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('google_id')->nullable();

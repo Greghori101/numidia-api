@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->string('type');
             $table->integer('capacity');
             $table->integer('nb_session');
+            $table->integer('rest_session');
             $table->bigInteger('price_per_month');
 
             $table->uuid('teacher_id')->nullable();

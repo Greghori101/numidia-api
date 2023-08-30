@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\ExpensesController;
+use App\Http\Controllers\Api\FeeInscriptionController;
+use App\Http\Controllers\Api\FinancialController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\LevelController;
 use App\Http\Controllers\Api\ParentController;
@@ -74,6 +76,17 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         Route::get('/', 'index');
         Route::get('/stats', 'stats');
     });
+
+    Route::controller(FinancialController::class)
+        ->group(function () {
+            Route::get('/checkouts/stats', 'checkouts_stats');
+            Route::get('/students/stats', 'students_stats');
+            Route::get('/employees/register', 'register_per_employee');
+            Route::get('/employees/stats', 'employee_stats');
+            Route::get('/expenses/stats', 'expense_stats');
+            Route::get('/inscription_fees/stats', 'fees_stats');
+            Route::get("employees/financials",'all_per_employee');
+        });
 
     Route::prefix('posts')
         ->controller(PostController::class)
@@ -205,12 +218,12 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         ->group(function () {
             Route::get('/all', 'all');
             Route::get('', 'index');
-            Route::get('stats', 'get_stats');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
             Route::post('/pay', 'pay');
             Route::delete('/{id}', 'delete');
         });
+
 
     Route::prefix('receipts')
         ->controller(ReceiptController::class)
@@ -243,7 +256,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::delete('/{id}', 'delete');
         });
     Route::prefix('inscription_fees')
-        ->controller(FeeInscription::class)
+        ->controller(FeeInscriptionController::class)
         ->group(function () {
             Route::get('/all', 'all');
             Route::get('/', 'index');

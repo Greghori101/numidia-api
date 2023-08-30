@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Receipt;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ReceiptController extends Controller
@@ -15,7 +17,7 @@ class ReceiptController extends Controller
         return response()->json($receipts);
     }
 
-    public function store(Request $request)
+    public function create(Request $request)
     {
         $request->validate([
             'total' => 'required|numeric',
@@ -23,6 +25,19 @@ class ReceiptController extends Controller
             'user_id' => 'required|exists:users,id',
         ]);
 
+        $user = User::find($request->user_id);
+        if ($request->type == "inscription fee") {
+            $admin = User::where("role", "admin")->first();
+            $admin->wallet->balance += $request->total;
+            $user->wallet->balance += $request->total;
+            $user->student->fee_inscription()->update([
+                'payed' => true,
+                'pay_date' => Carbon::now(),
+            ]);
+            $user->wallet->save();
+            $admin->wallet->save();
+
+        }
         $receipt = Receipt::create($request->all());
 
         return response()->json($receipt, 201);

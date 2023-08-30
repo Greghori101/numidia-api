@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('presences', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->string('name');
             $table->string('status')->default('present');
             $table->string('starts_at')->nullable();
             $table->string('ends_at')->nullable();
@@ -21,7 +20,8 @@ return new class extends Migration
             
             $table->uuid('student_id')->nullable();
             $table->foreign('student_id')->references('id')->on('students'); 
-            
+            $table->uuid('group_id')->nullable();
+            $table->foreign('group_id')->references('id')->on('groups'); 
             $table->timestamps();
             $table->softDeletes($column = 'deleted_at', $precision = 0);
         });

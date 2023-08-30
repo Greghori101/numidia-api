@@ -11,12 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('employees', function (Blueprint $table) {
+        Schema::create('fee_inscriptions', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
+            $table->bigInteger("amount")->default(500);
+            $table->date('date')->nullable();
+            $table->date('pay_date')->nullable();
+            $table->boolean('payed')->default(false);
+
+            $table->uuid('student_id')->nullable();
+            $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->timestamps();
+            
             $table->softDeletes($column = 'deleted_at', $precision = 0);
+            $table->timestamps();
         });
     }
 
@@ -25,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('employees');
+        Schema::dropIfExists('fee_inscriptions');
     }
 };

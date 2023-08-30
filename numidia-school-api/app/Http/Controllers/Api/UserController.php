@@ -47,7 +47,7 @@ class UserController extends Controller
         });
 
         $users = $usersQuery->orderBy($sortBy, $sortDirection)
-            
+
             ->paginate($perPage);
 
         return $users;
@@ -99,7 +99,7 @@ class UserController extends Controller
         ]);
 
         $user->wallet()->save(new  Wallet());
-
+        
         if ($user->role == 'teacher') {
             $teacher = new Teacher([
                 'module' => $request->module,
@@ -111,7 +111,10 @@ class UserController extends Controller
             $student = new Student();
             $user->student()->save($student);
             $level->students()->save($student);
-            
+
+            $student['user'] = $student->user;
+            $student['level'] = $student->level;
+            return response()->json($student, 200);
         } elseif ($user->role == 'admin') {
             $user->admin()->save(new Admin());
         } elseif ($user->role == 'supervisor') {
@@ -124,9 +127,6 @@ class UserController extends Controller
                 'extension' => $extension,
             ])
         );
-
-        // $user->refresh();
-
         try {
             //code...
             $data = [
@@ -139,8 +139,11 @@ class UserController extends Controller
             //throw $th;
             // abort(400);
         }
+        $user->refresh();
 
-        return response()->json($student,200);
+
+
+        return response()->json(200);
     }
 
     public function update(Request $request, $id)

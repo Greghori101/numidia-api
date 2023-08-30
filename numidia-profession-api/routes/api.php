@@ -3,6 +3,9 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DepartmentController;
+use App\Http\Controllers\Api\ExpensesController;
+use App\Http\Controllers\Api\FeeInscriptionController;
+use App\Http\Controllers\Api\FinancialController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\LevelController;
 use App\Http\Controllers\Api\ParentController;
@@ -11,8 +14,10 @@ use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\TeacherController;
+use App\Http\Controllers\Api\UserActivityController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\DashboardController;
+use App\Models\FeeInscription;
 use BeyondCode\LaravelWebSockets\Facades\WebSocketsRouter;
 use Illuminate\Support\Facades\Route;
 
@@ -69,7 +74,19 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
 
     Route::controller(DashboardController::class)->group(function () {
         Route::get('/', 'index');
+        Route::get('/stats', 'stats');
     });
+
+    Route::controller(FinancialController::class)
+        ->group(function () {
+            Route::get('/checkouts/stats', 'checkouts_stats');
+            Route::get('/students/stats', 'students_stats');
+            Route::get('/employees/register', 'register_per_employee');
+            Route::get('/employees/stats', 'employee_stats');
+            Route::get('/expenses/stats', 'expense_stats');
+            Route::get('/inscription_fees/stats', 'fees_stats');
+            Route::get("employees/financials",'all_per_employee');
+        });
 
     Route::prefix('posts')
         ->controller(PostController::class)
@@ -104,6 +121,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
     Route::prefix('levels')
         ->controller(LevelController::class)
         ->group(function () {
+            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
@@ -114,6 +132,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
     Route::prefix('groups')
         ->controller(GroupController::class)
         ->group(function () {
+            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
@@ -132,14 +151,17 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
     Route::prefix('students')
         ->controller(StudentController::class)
         ->group(function () {
+            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
             Route::delete('/{id}', 'delete');
             Route::put('/{id}', 'update');
+            Route::get('/{id}/checkouts', 'student_checkouts');
+
             Route::get('/{id}/groups', 'student_group');
             Route::get('/{id}/groups/unenrolled', 'group_notin_student');
-            Route::post('/{student_id}/groups/{group_id}', 'student_group_add');
+            Route::post('/{student_id}/groups', 'student_group_add');
             Route::delete(
                 '/{student_id}/groups/{group_id}',
                 'student_group_remove'
@@ -149,6 +171,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
     Route::prefix('teachers')
         ->controller(TeacherController::class)
         ->group(function () {
+            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
@@ -193,13 +216,14 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
     Route::prefix('checkouts')
         ->controller(CheckoutController::class)
         ->group(function () {
+            Route::get('/all', 'all');
             Route::get('', 'index');
-            Route::get('stats', 'get_stats');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
+            Route::post('/pay', 'pay');
             Route::delete('/{id}', 'delete');
-
         });
+
 
     Route::prefix('receipts')
         ->controller(ReceiptController::class)
@@ -209,5 +233,36 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::post('/', 'create');
             Route::delete('/{id}', 'delete');
             Route::put('/{id}', 'update');
+        });
+
+    Route::prefix('activities')
+        ->controller(UserActivityController::class)
+        ->group(function () {
+            Route::get('/all', 'all');
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
+            Route::post('/', 'create');
+            Route::put('/{id}', 'update');
+            Route::delete('/{id}', 'delete');
+        });
+    Route::prefix('expenses')
+        ->controller(ExpensesController::class)
+        ->group(function () {
+            Route::get('/all', 'all');
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
+            Route::post('/', 'create');
+            Route::put('/{id}', 'update');
+            Route::delete('/{id}', 'delete');
+        });
+    Route::prefix('inscription_fees')
+        ->controller(FeeInscriptionController::class)
+        ->group(function () {
+            Route::get('/all', 'all');
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
+            Route::post('/', 'create');
+            Route::put('/{id}', 'update');
+            Route::delete('/{id}', 'delete');
         });
 });

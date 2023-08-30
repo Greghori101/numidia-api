@@ -18,20 +18,31 @@ use Illuminate\Support\Str;
 
 class ParentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $parents = Supervisor::all();
-        foreach ($parents as $key => $value) {
-            # code...
-            $temp = [];
-            foreach ($value->students as $student) {
-                $temp[] = $student->user;
-                # code...
-            }
-            $parents[$key] = $value->user;
+        $sortBy = $request->query('sortBy', 'created_at');
+        $sortDirection = $request->query('sortDirection', 'desc');
+        $perPage = $request->query('perPage', 10);
+        $search = $request->query('search', '');
+        $gender = $request->query('gender', '');
 
-            $parents[$key]['students'] = $temp;
-        }
+        $parentsQuery = Supervisor::join('users', 'supervisors.user_id', '=', 'users.id')
+            ->select('supervisors.*', "users.$sortBy as sorted_column")
+            ->when($search, function ($query) use ($search) {
+                return $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('name', 'like', "%$search%")
+                        ->orWhere('email', 'like', "%$search%");
+                });
+            });
+
+        $parentsQuery->when($gender, function ($query) use ($gender) {
+            return $query->where('gender', $gender);
+        });
+
+        $parents = $parentsQuery->orderByRaw("LOWER(sorted_column) $sortDirection")
+            ->with(['user'])
+            ->paginate($perPage);
+
         return $parents;
     }
     public function show($id)

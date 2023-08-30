@@ -10,6 +10,11 @@ use Illuminate\Http\Request;
 class TeacherController extends Controller
 {
     //
+    public function all()
+    {
+        $teachers = Teacher::with(['user'])->get();
+        return $teachers;
+    }
 
     public function index(Request $request)
     {
@@ -20,6 +25,7 @@ class TeacherController extends Controller
         $gender = $request->query('gender', '');
 
         $teachersQuery = Teacher::join('users', 'teachers.user_id', '=', 'users.id')
+            ->select('teachers.*', "users.$sortBy as sorted_column")
             ->when($search, function ($query) use ($search) {
                 return $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('name', 'like', "%$search%")
@@ -31,7 +37,7 @@ class TeacherController extends Controller
             return $query->where('gender', $gender);
         });
 
-        $teachers = $teachersQuery->orderBy($sortBy, $sortDirection)
+        $teachers = $teachersQuery->orderByRaw("LOWER(sorted_column) $sortDirection")
             ->with(['user'])
             ->paginate($perPage);
 

@@ -101,29 +101,7 @@ class CheckoutController extends Controller
         return response()->json($checkouts, 200);
     }
 
-    public function get_stats(Request $request)
-    {
-        $stats = Checkout::selectRaw('date, SUM(price) as total_price')
-            ->groupBy('date')
-            ->orderBy('date', 'asc')
-            ->get();
-        $payed = Checkout::where('payed', true)->selectRaw('date, SUM(price) as total_price')
-            ->groupBy('date',)
-            ->orderBy('date', 'asc')
-            ->get();
-        $not_payed = Checkout::where('payed', false)->selectRaw('date, SUM(price) as total_price')
-            ->groupBy('date',)
-            ->orderBy('date', 'asc')
-            ->get();
-
-        $data = [
-            "stats" => $stats,
-            "payed" => $payed,
-            "not_payed" => $not_payed,
-        ];
-
-        return response()->json($data, 200);
-    }
+    
 
     public function show($id)
     {
@@ -146,7 +124,7 @@ class CheckoutController extends Controller
                 $admin = User::where("role", "admin")->first();
 
                 $checkout->payed = true;
-                // $checkout->pay_date = Carbon::now();
+                $checkout->pay_date = Carbon::now();
                 $teacher->user->wallet->balance += ($teacher->percentage * $checkout->price) / 100;
                 $admin->wallet->balance += ((100 - $teacher->percentage) * $checkout->price) / 100;
                 $student->user->wallet->balance += $checkout->price;

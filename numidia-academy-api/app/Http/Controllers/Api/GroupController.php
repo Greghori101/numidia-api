@@ -14,15 +14,41 @@ use Illuminate\Http\Request;
 
 class GroupController extends Controller
 {
-    public function index()
+
+    public function all()
     {
-        $groups = Group::all();
-        foreach ($groups as $group) {
-            # code...
-            $group['teacher'] = $group->teacher->user;
-            $group['level'] = $group->level;
+        $groups  = Group::with(['level', 'teacher.user'])->get();
+        return response()->json($groups, 200);
+    }
+    public function index(Request $request)
+    {
+        $perPage = $request->query('perPage', 10);
+        $sortBy = $request->query('sortBy', 'created_at');
+        $sortDirection = $request->query('sortDirection', 'desc');
+        $search = $request->query('search', "");
+        $levelId = $request->query('level_id');
+        $teacherId = $request->query('teacher_id');
+
+        $query = Group::query();
+        $level = Level::find($levelId);
+        $teacher = Teacher::find($teacherId);
+
+        if ($level) {
+            $query = $level->groups();
+        }
+        if ($teacher) {
+            $query = $query->where('teacher_id', $teacherId);
         }
 
+        $groups = $query
+            ->whereRaw('LOWER(name) LIKE ?', ["%$search%"])
+            ->orderBy($sortBy, $sortDirection)
+            ->with(['level', 'teacher.user'])
+            ->when($perPage !== 'all', function ($query) use ($perPage) {
+                return $query->paginate($perPage);
+            }, function ($query) {
+                return $query->get();
+            });
         return response()->json($groups, 200);
     }
 
@@ -51,7 +77,9 @@ class GroupController extends Controller
             'name' => $request->name,
             'capacity' => $request->capacity,
             'price_per_month' => $request->price_per_month,
+            'type' => $request->type,
             'nb_session' => $request->nb_session,
+            'rest_session' => $request->nb_session,
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
@@ -74,8 +102,6 @@ class GroupController extends Controller
             'teacher_id' => ['required'],
             'level_id' => ['required'],
             'name' => ['required', 'string'],
-            'price_per_month' => $request->price_per_month,
-
             'capacity' => ['required', 'integer'],
             'nb_session' => ['required', 'integer'],
         ]);
@@ -86,7 +112,7 @@ class GroupController extends Controller
         $group = Group::create([
             'name' => $request->name,
             'price_per_month' => $request->price_per_month,
-
+            'type' => $request->type,
             'capacity' => $request->capacity,
             'nb_session' => $request->capacity,
         ]);

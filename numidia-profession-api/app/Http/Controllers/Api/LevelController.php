@@ -9,21 +9,34 @@ use Illuminate\Http\Request;
 class LevelController extends Controller
 {
     //
-    public function index(Request $request, $id = null)
+    public function all()
     {
-        
-            $levels = Level::all();
-            return response()->json($levels, 200);
-        
+        $levels = Level::all();
+        return $levels;
+    }
+    public function index(Request $request)
+    {
+        $sortBy = $request->query('sortBy', 'created_at');
+        $sortDirection = $request->query('sortDirection', 'desc');
+        $perPage = $request->query('perPage', 10);
+        $search = $request->query('search', '');
+
+        $levelsQuery = Level::when($search, function ($query) use ($search) {
+            return $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('education', 'like', "%$search%")
+                    ->orWhere('speciality', 'like', "%$search%")
+                    ->orWhere('year', 'like', "%$search%");
+            });
+        });
+
+        $levels = $levelsQuery->orderBy($sortBy, $sortDirection)
+            ->paginate($perPage);
+
+        return $levels;
     }
     public function show($id)
     {
-        $level = Level::find($id);
-        $level['groups'] = [];
-        foreach ($level->groups as $group) {
-            # code...
-            array_push($level['groups'], $group);
-        }
+        $level = Level::with(['groups'])->find($id);
 
         return response()->json($level, 200);
     }

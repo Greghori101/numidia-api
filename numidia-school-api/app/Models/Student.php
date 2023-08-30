@@ -9,11 +9,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Student extends Model
 {
-    use HasFactory, HasUuids,SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
-    protected $fillable = [
-        
-    ];
+    protected $fillable = [];
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -22,14 +20,14 @@ class Student extends Model
     {
         return $this->belongsTo(User::class);
     }
-    
+
     function supervisor()
     {
         return $this->belongsTo(Supervisor::class);
     }
     function groups()
     {
-        return $this->belongsToMany(Group::class, 'group_student', 'student_id', 'group_id')->withPivot("nb_sessions_rest");
+        return $this->belongsToMany(Group::class, 'group_student', 'student_id', 'group_id')->withPivot("rest_session");
     }
 
     public function level()
@@ -38,7 +36,7 @@ class Student extends Model
     }
     function wallet()
     {
-        return $this->hasOneThrough(Wallet::class,User::class);
+        return $this->hasOneThrough(Wallet::class, User::class);
     }
     public function checkouts()
     {

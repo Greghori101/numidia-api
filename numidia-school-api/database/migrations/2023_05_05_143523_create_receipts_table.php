@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('receipts', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->integer('total');
-            $table->integer('type');
+            $table->string('type');
 
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users'); 

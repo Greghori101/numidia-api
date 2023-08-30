@@ -13,13 +13,17 @@ class Checkout extends Model
 
     protected $fillable = [
         'date',
+        'pay_date',
         'price',
         'payed',
+        'nb_session',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
-
+    public function user(){
+        return $this->belongsTo(User::class);
+    }
 
     public function group(){
         return $this->belongsTo(Group::class);
@@ -29,4 +33,9 @@ class Checkout extends Model
     {
         return $this->belongsTo(Student::class);
     }
+    public function receipt()
+    {
+        return $this->belongsTo(Receipt::class);
+    }
+    
 }

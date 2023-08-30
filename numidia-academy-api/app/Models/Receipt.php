@@ -24,4 +24,8 @@ class Receipt extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function checkouts(){
+        return $this->hasMany(Checkout::class);
+    }
+
 }

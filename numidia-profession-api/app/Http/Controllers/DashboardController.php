@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Plan;
+use App\Models\Group;
+use App\Models\Level;
+use App\Models\Post;
+use App\Models\Session;
 use App\Models\Student;
+use App\Models\Supervisor;
 use App\Models\Teacher;
 use App\Models\User;
 use Carbon\Carbon;
@@ -18,24 +22,28 @@ class DashboardController extends Controller
     public function stats(Request $request)
     {
 
-        $clients = Student::where('active', true);
+        $parents = Supervisor::all()->count();
+        $students = Student::all()->count();
         $teachers = Teacher::all()->count();
         $users = User::all()->count();
-
-        $budget = 0;
-        foreach ($clients as $client) {
-            # code...
-            $budget +=  $client->plan->price;
-        }
-
-
-
+        $news = Post::all()->count();
+        $groups = Group::all()->count();
+        $sessions = Session::all()->count();
+        $finicials = User::where("role", 'admin')->first()->wallet->balance;
+        $departments = 3;
+        $levels = Level::all()->count();
         $data = [
-            "clients" => $clients->count(),
-            "teachers" => $teachers,
-            "users"=>$users,
-            "budget" => $budget,
+            'finicials' => $finicials,
+            'departments' => $departments,
+            'levels' => $levels,
+            'users' => $users,
+            'students' => $students,
+            'parents' => $parents,
+            'teachers' => $teachers,
+            'groups' => $groups,
+            'sessions' => $sessions,
+            'news' => $news,
         ];
-        return response()->json( $data,200);
+        return response()->json($data, 200);
     }
 }
