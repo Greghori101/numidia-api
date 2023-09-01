@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Mail\ForgotPasswordEmail;
 use App\Mail\VerifyEmail;
-use App\Models\Admin;
 use App\Models\File;
 use App\Models\Student;
 use App\Models\Supervisor;
@@ -84,8 +83,6 @@ class AuthController extends Controller
             $user->teacher()->save(new Teacher());
         } elseif ($user->role == 'student') {
             $user->student()->save(new Student());
-        } elseif ($user->role == 'admin') {
-            $user->admin()->save(new Admin());
         } elseif ($user->role == 'supervisor') {
             $user->supervisor()->save(new Supervisor());
         }

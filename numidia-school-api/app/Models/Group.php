@@ -11,7 +11,7 @@ class Group extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    protected $fillable = ['name', 'capacity', 'price_per_month', 'nb_session','type','rest_session'];
+    protected $fillable = ['name', 'capacity', 'price_per_month', 'nb_session', 'type', 'rest_session'];
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -23,7 +23,7 @@ class Group extends Model
             'group_student',
             'group_id',
             'student_id'
-        )->withPivot("rest_session");
+        );
     }
 
     function level()
@@ -49,5 +49,4 @@ class Group extends Model
     {
         return $this->hasMany(Presence::class);
     }
-
 }

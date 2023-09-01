@@ -73,7 +73,7 @@ class StudentController extends Controller
         foreach ($groups as $group) {
             $group = (object) $group;
 
-            $student->groups()->attach($group->id, ['rest_session' => $group->rest_session]);
+            $student->groups()->attach($group->id);
             $student->user->wallet->balance -= $group->price;
 
             $checkout = Checkout::create([

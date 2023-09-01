@@ -69,7 +69,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Reciept::class);
     }
 
-    
+
     function student()
     {
         return $this->hasOne(Student::class);
@@ -84,13 +84,12 @@ class User extends Authenticatable implements MustVerifyEmail
     }
     function received_notifications()
     {
-        return $this->hasMany(Notification::class,'user_id');
+        return $this->hasMany(Notification::class, 'user_id');
     }
-    
+
     public function profile_picture()
     {
-            return $this->morphOne(File::class,"fileable");
-        
+        return $this->morphOne(File::class, "fileable");
     }
     function posts()
     {
@@ -114,6 +113,6 @@ class User extends Authenticatable implements MustVerifyEmail
     }
     function inscription_fees()
     {
-        return $this->hasMany(FeeInscription::class,"user_id");
+        return $this->hasMany(FeeInscription::class, "user_id");
     }
 }

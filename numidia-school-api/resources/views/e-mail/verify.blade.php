@@ -16,12 +16,9 @@
         }
 
         img {
-            width: 60px;
-            height: 60px;
-            margin-right: 20px;
+            width: 150px;
+            height: 150px;
             border-radius: 100%;
-            margin-bottom: 20px;
-            box-shadow: 0px 2px 5px 2px #999999;
         }
 
         a {
@@ -54,7 +51,7 @@
     <div class="container">
         <div class="header">
             <div class="logo">
-                <img src="{{asset('img/png/primary.png') }}">Numidia
+                <img src="{{asset('img/png/primary.png') }}">
             </div>
             <h2>Welcome to Numidia The Place to Learn</h2>
         </div>

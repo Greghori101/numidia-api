@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Teacher extends Model
 {
-    use HasFactory,HasUuids,SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
 
     protected $fillable = [
@@ -21,15 +21,17 @@ class Teacher extends Model
     public $incrementing = false;
 
 
-    
-    function user(){
+
+    function user()
+    {
         return $this->belongsTo(User::class);
     }
-    function sessions(){
-        return $this->hasManyThrough(Session::class,Group::class);
+    function sessions()
+    {
+        return $this->hasManyThrough(Session::class, Group::class);
     }
-    function groups(){
+    function groups()
+    {
         return $this->hasMany(Group::class);
     }
-    
 }

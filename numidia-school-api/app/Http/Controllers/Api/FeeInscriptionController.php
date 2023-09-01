@@ -45,19 +45,30 @@ class FeeInscriptionController extends Controller
 
     public function create(Request $request)
     {
+        $student = Student::find($request->student_id);
+        if ($student->fee_inscription) {
+            $student->user->wallet->balance += $student->fee_inscription->amount -  $request->amount;
+            $student->fee_inscription->update([
+                'amount' => $request->amount,
+                'date' => $request->date,
+            ]);
+            $student->user->wallet->save();
+        } else {
+            $feeInscription = FeeInscription::create([
+                'amount' => $request->amount,
+                'date' => $request->date,
+            ]);
+            $student->fee_inscription()->save($feeInscription);
+            $student->user->wallet->balance -= $request->amount;
+            $student->user->wallet->save();
+        }
 
 
-        $feeInscription = FeeInscription::create([
-            'amount' => $request->amount,
-            'date' => $request->date,
-        ]);
         $user = User::find($request->user()->id);
         $user->inscription_fees()->save($feeInscription);
-        $student = Student::find($request->student_id);
-        $student->fee_inscription()->save($feeInscription);
 
-        $student->user->wallet->balance -= $request->amount;
-        $student->user->wallet->save();
+
+
         return response()->json($feeInscription, 201);
     }
 

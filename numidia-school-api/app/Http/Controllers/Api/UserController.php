@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Mail\VerifyEmail;
-use App\Models\Admin;
 use App\Models\Level;
 use App\Models\File;
 use App\Models\Student;
@@ -99,7 +98,7 @@ class UserController extends Controller
         ]);
 
         $user->wallet()->save(new  Wallet());
-        
+        $student = [];
         if ($user->role == 'teacher') {
             $teacher = new Teacher([
                 'module' => $request->module,
@@ -114,9 +113,6 @@ class UserController extends Controller
 
             $student['user'] = $student->user;
             $student['level'] = $student->level;
-            return response()->json($student, 200);
-        } elseif ($user->role == 'admin') {
-            $user->admin()->save(new Admin());
         } elseif ($user->role == 'supervisor') {
             $user->supervisor()->save(new Supervisor());
         }
@@ -143,7 +139,7 @@ class UserController extends Controller
 
 
 
-        return response()->json(200);
+        return response()->json($student, 200);
     }
 
     public function update(Request $request, $id)

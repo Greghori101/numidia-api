@@ -27,7 +27,7 @@ class Student extends Model
     }
     function groups()
     {
-        return $this->belongsToMany(Group::class, 'group_student', 'student_id', 'group_id')->withPivot("rest_session");
+        return $this->belongsToMany(Group::class, 'group_student', 'student_id', 'group_id');
     }
 
     public function level()

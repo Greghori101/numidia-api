@@ -16,13 +16,11 @@
         }
 
         img {
-            width: 60px;
-            height: 60px;
-            margin-right: 20px;
+            width: 150px;
+            height: 150px;
             border-radius: 100%;
-            margin-bottom: 20px;
-            box-shadow: 0px 2px 5px 2px #999999;
         }
+
 
         a {
             color: #007bff;

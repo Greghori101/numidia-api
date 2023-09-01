@@ -15,7 +15,6 @@ return new class extends Migration
     {
         Schema::create('group_student', function (Blueprint $table) {
             $table->id();
-            $table->integer("rest_session");
             $table->uuid('group_id')->nullable();
             $table->foreign('group_id')->references('id')->on('groups')->onDelete('cascade');
             $table->uuid('student_id')->nullable();

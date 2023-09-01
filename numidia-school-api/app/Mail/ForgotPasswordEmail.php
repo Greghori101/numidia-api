@@ -2,17 +2,15 @@
 
 namespace App\Mail;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ForgotPasswordEmail extends Mailable  implements ShouldQueue
+class ForgotPasswordEmail extends Mailable
 {
     public $data;
-    use Queueable, SerializesModels;
+    use  SerializesModels;
 
     /**
      * Create a new message instance.

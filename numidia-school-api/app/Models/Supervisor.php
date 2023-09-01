@@ -9,16 +9,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supervisor extends Model
 {
-    use HasFactory,HasUuids,SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
-    
-    function user(){
+
+    function user()
+    {
         return $this->belongsTo(User::class);
     }
-    function students(){
+    function students()
+    {
         return $this->hasMany(Student::class);
     }
-    
 }
