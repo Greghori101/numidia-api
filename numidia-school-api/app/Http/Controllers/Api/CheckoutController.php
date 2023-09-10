@@ -4,10 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Checkout;
-use App\Models\Group;
-use App\Models\Level;
-use App\Models\Student;
-use App\Models\Teacher;
+use App\Models\Receipt;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -70,7 +67,7 @@ class CheckoutController extends Controller
                         $q->where('name', 'like', "%$search%");
                     })
                     ->orWhereHas('group', function ($q) use ($search) {
-                        $q->where('name', 'like', "%$search%");
+                        $q->where('module', 'like', "%$search%");
                     });
             });
 
@@ -101,7 +98,7 @@ class CheckoutController extends Controller
         return response()->json($checkouts, 200);
     }
 
-    
+
 
     public function show($id)
     {
@@ -115,6 +112,12 @@ class CheckoutController extends Controller
         $ids  = $request->checkouts;
         $user = User::find($request->user()->id);
 
+        $total = 0;
+        $receipt = Receipt::create([
+            "total" => $total,
+            "type" => "checkouts",
+        ]);
+
         foreach ($ids as $id) {
             $checkout = Checkout::find($id);
             if (!$checkout->payed) {
@@ -122,7 +125,6 @@ class CheckoutController extends Controller
                 $group = $checkout->group;
                 $teacher = $group->teacher;
                 $admin = User::where("role", "admin")->first();
-
                 $checkout->payed = true;
                 $checkout->pay_date = Carbon::now();
                 $teacher->user->wallet->balance += ($teacher->percentage * $checkout->price) / 100;
@@ -133,11 +135,19 @@ class CheckoutController extends Controller
                 $teacher->user->wallet->save();
                 $student->user->wallet->save();
                 $admin->wallet->save();
+                $total += $checkout->price;
 
                 $user->checkouts()->save($checkout);
+                $student->user->receipts()->save($receipt);
+                $receipt->checkouts()->save($checkout);
             }
         }
-        return response()->json(200);
+
+        $receipt->total = $total;
+        $receipt->save();
+        $receipt->load('user', 'checkouts.group.teacher.user');
+
+        return response()->json($receipt, 200);
     }
 
     public function create(Request $request)

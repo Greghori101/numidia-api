@@ -41,7 +41,7 @@ class GroupController extends Controller
         }
 
         $groups = $query
-            ->whereRaw('LOWER(name) LIKE ?', ["%$search%"])
+            ->whereRaw('LOWER(module) LIKE ?', ["%$search%"])
             ->orderBy($sortBy, $sortDirection)
             ->with(['level', 'teacher.user'])
             ->when($perPage !== 'all', function ($query) use ($perPage) {
@@ -66,7 +66,7 @@ class GroupController extends Controller
         $request->validate([
             'teacher_id' => ['required'],
             'level_id' => ['required'],
-            'name' => ['required', 'string'],
+            'module' => ['required', 'string'],
             'capacity' => ['required', 'integer'],
             'nb_session' => ['required', 'integer'],
         ]);
@@ -74,7 +74,7 @@ class GroupController extends Controller
         $teacher = Teacher::find($request->teacher_id);
         $level = Level::find($request->level_id);
         $group = Group::create([
-            'name' => $request->name,
+            'module' => $request->module,
             'capacity' => $request->capacity,
             'price_per_month' => $request->price_per_month,
             'type' => $request->type,
@@ -101,7 +101,7 @@ class GroupController extends Controller
         $request->validate([
             'teacher_id' => ['required'],
             'level_id' => ['required'],
-            'name' => ['required', 'string'],
+            'module' => ['required', 'string'],
             'capacity' => ['required', 'integer'],
             'nb_session' => ['required', 'integer'],
         ]);
@@ -110,7 +110,7 @@ class GroupController extends Controller
         $teacher = Teacher::find($request->teacher_id);
         $level = Level::find($request->level_id);
         $group = Group::create([
-            'name' => $request->name,
+            'module' => $request->module,
             'price_per_month' => $request->price_per_month,
             'type' => $request->type,
             'capacity' => $request->capacity,
@@ -187,8 +187,8 @@ class GroupController extends Controller
         $group = Group::find($id);
         $session = Session::create([
             "classroom" => $request->classroom,
-            "starts_at" => $request->starts_at,
-            "ends_at" => $request->ends_at,
+            "starts_at" => Carbon::parse($request->starts_at),
+            "ends_at" => Carbon::parse($request->ends_at),
             "repeating" => $request->repeating,
         ]);
         $group->sessions()->save($session);

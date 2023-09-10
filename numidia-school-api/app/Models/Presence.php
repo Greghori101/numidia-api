@@ -9,23 +9,29 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Presence extends Model
 {
-    use HasFactory, HasUuids,SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'status',
         'starts_at',
         'ends_at',
+        'group_id',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
 
 
-    public function student(){
-        return $this->belongsTo(Student::class);
+    public function students()
+    {
+        return $this->belongsToMany(
+            Student::class,
+            'presence_student',
+            'presence_id',
+            'student_id'
+        )->withPivot('status');
     }
-    public function group(){
+    public function group()
+    {
         return $this->belongsTo(Group::class);
     }
-
 }

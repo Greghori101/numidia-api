@@ -13,13 +13,9 @@ return new class extends Migration
     {
         Schema::create('presences', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->string('status')->default('present');
-            $table->string('starts_at')->nullable();
-            $table->string('ends_at')->nullable();
+            $table->datetime('starts_at')->nullable();
+            $table->datetime('ends_at')->nullable();
 
-            
-            $table->uuid('student_id')->nullable();
-            $table->foreign('student_id')->references('id')->on('students'); 
             $table->uuid('group_id')->nullable();
             $table->foreign('group_id')->references('id')->on('groups'); 
             $table->timestamps();

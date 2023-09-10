@@ -46,8 +46,14 @@ class Student extends Model
     {
         return $this->hasOne(FeeInscription::class);
     }
-    function presence()
+    public function presences()
     {
-        return $this->hasMany(Presence::class);
+        return $this->belongsToMany(
+            Presence::class,
+            'presence_student',
+            'student_id',
+            'presence_id',
+
+        )->withPivot('status');
     }
 }

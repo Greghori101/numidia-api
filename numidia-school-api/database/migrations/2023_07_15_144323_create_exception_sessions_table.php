@@ -16,7 +16,7 @@ return new class extends Migration
                 ->uuid('id')
                 ->primary()
                 ->unique();
-            $table->string('date')->nullable();
+            $table->datetime('date')->nullable();
             $table->uuid('session_id')->nullable();
             $table
                 ->foreign('session_id')

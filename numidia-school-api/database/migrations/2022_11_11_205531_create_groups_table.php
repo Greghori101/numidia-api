@@ -17,7 +17,7 @@ return new class extends Migration {
                 ->uuid('id')
                 ->primary()
                 ->unique();
-            $table->string('name');
+            $table->string('module');
             $table->string('type');
             $table->integer('capacity');
             $table->integer('nb_session');

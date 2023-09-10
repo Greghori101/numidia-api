@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ExceptionSession;
 use App\Models\Session;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class SessionController extends Controller
@@ -25,7 +26,7 @@ class SessionController extends Controller
     public function except(Request $request, $id)
     {
         $session = Session::find($id);
-        $session->exceptions()->save(new ExceptionSession(['date' => $request->date]));
+        $session->exceptions()->save(new ExceptionSession(['date' => Carbon::parse($request->date)]));
         return response()->json($session, 200);
     }
 

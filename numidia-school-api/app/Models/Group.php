@@ -11,7 +11,7 @@ class Group extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    protected $fillable = ['name', 'capacity', 'price_per_month', 'nb_session', 'type', 'rest_session'];
+    protected $fillable = ['module', 'capacity', 'price_per_month', 'nb_session', 'type', 'rest_session'];
 
     protected $keyType = 'string';
     public $incrementing = false;

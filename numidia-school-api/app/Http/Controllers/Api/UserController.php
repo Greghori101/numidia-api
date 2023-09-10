@@ -61,7 +61,7 @@ class UserController extends Controller
 
     public function users_list(Request $request)
     {
-        $users = User::with(["profile_picture"])->find($request->ids);
+        $users = User::with(["profile_picture"])->whereIn('id', $request->ids)->get();
 
         return response()->json(200, $users);
     }

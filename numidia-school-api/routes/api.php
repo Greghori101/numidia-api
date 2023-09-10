@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DepartmentController;
@@ -85,7 +86,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::get('/employees/stats', 'employee_stats');
             Route::get('/expenses/stats', 'expense_stats');
             Route::get('/inscription_fees/stats', 'fees_stats');
-            Route::get("employees/financials",'all_per_employee');
+            Route::get("employees/financials", 'all_per_employee');
         });
 
     Route::prefix('posts')
@@ -264,5 +265,15 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::post('/', 'create');
             Route::put('/{id}', 'update');
             Route::delete('/{id}', 'delete');
+        });
+    Route::prefix('attendance')
+        ->controller(AttendanceController::class)
+        ->group(function () {
+            Route::get('/students', 'students');
+            Route::get('/sessions', 'sessions');
+            Route::get('/presence/sheets', 'presence_sheets');
+            Route::post('/presence', 'create_presence');
+            Route::post('/mark/presence', 'mark_presence');
+            Route::post('/remove/presence', 'remove_presence');
         });
 });
