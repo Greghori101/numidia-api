@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Group;
+use App\Models\Notification;
 use App\Models\Presence;
 use App\Models\Session;
 use App\Models\Student;
@@ -16,37 +17,12 @@ class AttendanceController extends Controller
     {
 
         $search = $request->search;
-        $query = Presence::query()
-            ->where('group_id', $request->input('group_id'))
-            ->where('starts_at', $request->input('starts_at'))
-            ->where('ends_at', $request->input('ends_at'));
+        $starts_at = Carbon::parse($request->starts_at);
+        $ends_at = Carbon::parse($request->ends_at);
+        $group_id = $request->group_id;
 
-        $students = $query->with(["group", "students.user"])->get();
 
-        if ($students->isEmpty()) {
-            $group = Group::find($request->input('group_id'));
-            $students = [];
-            foreach ($group->students as $student) {
-                $students[] = [
-                    'starts_at' => $request->input('starts_at'),
-                    'ends_at' => $request->input('ends_at'),
-                    'status' => 'pending',
-                    'student.user' => $student->user,
-                ];
-                Presence::create([
-                    'group_id' => $group->id,
-                    'student_id' => $student->id,
-                    'starts_at' => Carbon::parse($request->input('starts_at')),
-                    'ends_at' => Carbon::parse($request->input('ends_at')),
-                    'status' => 'present',
-                ]);
-            }
-        }
-        $students = collect($students)->filter(function ($studentData) use ($search) {
-            return empty($search) || stripos($studentData['student']['user']['name'], $search) !== false;
-        })->values()->all();
-
-        return response()->json($students, 200);
+        return response()->json(200);
     }
     public function sessions(Request $request)
     {
@@ -103,22 +79,24 @@ class AttendanceController extends Controller
     public function mark_presence(Request $request)
     {
         $presence = Presence::find($request->presence);
-        $studentId = $request->student;
+        $student = Student::find($request->student);
 
         if ($presence) {
-            $presence->students()->syncWithoutDetaching([$studentId => ['status' => 'present']]);
+            $presence->students()->syncWithoutDetaching([$request->student => ['status' => 'present']]);
         }
+
 
         return response()->json([], 200);
     }
     public function remove_presence(Request $request)
     {
         $presence = Presence::find($request->presence);
-        $studentId = $request->student;
+        $student = Student::find($request->student);
 
         if ($presence) {
-            $presence->students()->syncWithoutDetaching([$studentId => ['status' => 'absent']]);
+            $presence->students()->syncWithoutDetaching([$request->student => ['status' => 'absent']]);
         }
+
 
         return response()->json([], 200);
     }
@@ -145,7 +123,7 @@ class AttendanceController extends Controller
         $group_id = $request->group_id;
         $starts_at = Carbon::parse($request->starts_at);
         $ends_at = Carbon::parse($request->ends_at);
-
+        $group = Group::find($group_id);
         $presence = Presence::where([
             'group_id' => $group_id,
             'starts_at' => $starts_at,
@@ -158,11 +136,8 @@ class AttendanceController extends Controller
                 'starts_at' => $starts_at,
                 'ends_at' => $ends_at,
             ]);
-
-            $students = Group::find($group_id)->students;
-
-            $presence->students()->attach($students, ['status' => 'absent']);
         }
+        $presence->students()->sync($group->students, ['status' => 'absent']);
 
         $presence->load('group.teacher.user', 'students.user');
 

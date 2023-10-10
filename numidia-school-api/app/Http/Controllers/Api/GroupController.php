@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Checkout;
 use App\Models\Group;
 use App\Models\Level;
+use App\Models\Notification;
 use App\Models\Session;
 use App\Models\Student;
 use App\Models\Teacher;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class GroupController extends Controller
 {
@@ -83,6 +85,20 @@ class GroupController extends Controller
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+        ])
+            ->post(env('AUTH_API') . '/api/notifications', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'type' => "info",
+                'title' => "New Group",
+                'content' => "new group has been created",
+                'displayed' => false,
+                'id' => $teacher->user->id,
+                'department' => env('DEPARTEMENT'),
+            ]);
+
 
         return response()->json($group, 200);
     }
@@ -133,8 +149,9 @@ class GroupController extends Controller
                 $student->user->wallet->balance = $student->user->wallet->balance - $group->price_per_month;
 
                 $checkout = Checkout::create([
-                    'price' => $group->price_per_month,
+                    'price' => $group->price_per_month / $group->nb_session * $group->rest_session,
                     'date' => Carbon::now(),
+                    'nb_session' => $group->rest_session,
                 ]);
                 $student->checkouts()->save($checkout);
                 $group->checkouts()->save($checkout);
@@ -146,6 +163,20 @@ class GroupController extends Controller
         } else {
             $group->students()->detach();
         }
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+        ])
+            ->post(env('AUTH_API') . '/api/notifications', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'type' => "info",
+                'title' => "Group members",
+                'content' => "the group memebers has been updated",
+                'displayed' => false,
+                'id' => $group->teacher->user->id,
+                'department' => env('DEPARTEMENT'),
+            ]);
+
         return response()->json(200);
     }
     public function students_delete(Request $request, $id, $student_id)
@@ -192,6 +223,24 @@ class GroupController extends Controller
             "repeating" => $request->repeating,
         ]);
         $group->sessions()->save($session);
+
+
+
+        foreach ($group->students as $student) {
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+            ])
+                ->post(env('AUTH_API') . '/api/notifications', [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'type' => "info",
+                    'title' => "New Session",
+                    'content' => "new session has been created at " . Carbon::parse($request->starts_at),
+                    'displayed' => false,
+                    'id' => $student->user->id,
+                    'department' => env('DEPARTEMENT'),
+                ]);
+        }
 
         return response()->json($session, 200);
     }

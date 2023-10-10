@@ -34,4 +34,8 @@ class Teacher extends Model
     {
         return $this->hasMany(Group::class);
     }
+    function Exams()
+    {
+        return $this->hasMany(Exam::class);
+    }
 }

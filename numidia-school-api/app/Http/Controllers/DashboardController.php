@@ -26,7 +26,7 @@ class DashboardController extends Controller
         $students = Student::all()->count();
         $teachers = Teacher::all()->count();
         $users = User::all()->count();
-        $news = Post::all()->count();
+        $news = 0;
         $groups = Group::all()->count();
         $sessions = Session::all()->count();
         $finicials = User::where("role", 'admin')->first()->wallet->balance;

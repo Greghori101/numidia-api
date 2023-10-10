@@ -12,6 +12,7 @@ use App\Models\Student;
 use App\Models\Supervisor;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -59,49 +60,35 @@ class ParentController extends Controller
 
     public function add_student(Request $request)
     {
-        $user = User::find(Auth::user()->id);
-        $supervisor = $user->supervisor();
-        $password = Str::random(10);
-
-        $content = Storage::get('default-profile-picture.jpeg');
-        $extension = 'jpeg';
-        $name = 'profile picture';
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone_number' => ['required', 'string', 'max:10'],
+            'gender' => 'required|in:male,female',
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users',],
+        ]);
 
         $user = User::create([
             'name' => $request->name,
-            'email' => $request->email,
-            'role' => 'student',
+            'phone_number' => $request->phone_number,
+            'role' => "student",
             'gender' => $request->gender,
-            'code' => Str::random(10),
-            'password' => Hash::make($password),
         ]);
+        $user->student()->save(new Student());
 
-        $student = new Student();
-        $user->student()->save($student);
-        $supervisor->students()->save($student);
+        
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+        ])
+            ->post(env('AUTH_API') . '/api/users/create', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'id' => $user->id,
+                'name' => $request->name,
+                'email' => $request->email,
+            ]);
 
-        $user->profile_picture()->save(
-            new File([
-                'name' => $name,
-                'content' => base64_encode($content),
-                'extension' => $extension,
-            ])
-        );
-
-        // $user->refresh();
-
-        try {
-            //code...
-            $data = [
-                'name' => $user->name,
-                'email' => $user->email,
-                'code' => $user->code,
-            ];
-            Mail::to($user)->send(new VerifyEmail($data));
-        } catch (\Throwable $th) {
-            //throw $th;
-            abort(400);
-        }
 
         return response()->json(200);
     }

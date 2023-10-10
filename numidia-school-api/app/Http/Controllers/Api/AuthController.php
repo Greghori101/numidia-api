@@ -3,47 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Mail\ForgotPasswordEmail;
-use App\Mail\VerifyEmail;
-use App\Models\File;
+use Carbon\Carbon;
+use App\Models\Level;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
-    {
-        if (
-            Auth::attempt([
-                'email' => $request->email,
-                'password' => $request->password,
-            ])
-        ) {
-            $user = User::where('email', $request->email)->first();
-
-            $remember = $request->remember_me;
-            Auth::login($user, $remember);
-            $data = [
-                'id' => $user->id,
-                'role' => $user->role,
-                'profile_picture' => $user->profile_picture,
-                'verified' => $user->hasVerifiedEmail(),
-                'token' => $user->createToken('API Token')->accessToken,
-            ];
-
-            return response()->json($data, 200);
-        } else {
-            return abort(403);
-        }
-    }
 
     public function store(Request $request)
     {
@@ -52,330 +23,325 @@ class AuthController extends Controller
             'role' => ['required', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:10'],
             'gender' => 'required|in:male,female',
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                'unique:users',
-            ],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users',],
             'password' => ['required', 'confirmed'],
         ]);
         $request->merge([
             'role' => strtolower($request->role),
         ]);
 
-        $content = Storage::get('default-profile-picture.jpeg');
-        $extension = 'jpeg';
-        $name = 'profile picture';
 
         $user = User::create([
-            'name' => $request->name,
             'email' => $request->email,
+            'name' => $request->name,
             'phone_number' => $request->phone_number,
             'role' => $request->role,
             'gender' => $request->gender,
-            'password' => Hash::make($request->password),
-            'code' => Str::upper(Str::random(6)),
         ]);
 
         if ($user->role == 'teacher') {
-            $user->teacher()->save(new Teacher());
+            $user->teacher()->save(new Teacher([
+                'module' => $request->module,
+                'percentage' => $request->percentage,
+            ]));
         } elseif ($user->role == 'student') {
-            $user->student()->save(new Student());
+            $level = Level::find($request->level_id);
+            $student = new Student();
+            $user->student()->save($student);
+            $level->students()->save($student);
         } elseif ($user->role == 'supervisor') {
             $user->supervisor()->save(new Supervisor());
         }
 
-        $user->profile_picture()->save(
-            new File([
-                'name' => $name,
-                'content' => base64_encode($content),
-                'extension' => $extension,
+
+        $user->wallet()->save(new Wallet());
+
+
+
+
+
+
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+
+        ])
+            ->post(env('AUTH_API') . '/api/register', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'id' => $user->id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => $request->password,
+            ]);
+        $users = User::where('role', '<>', "student")
+            ->where('role', '<>', "teacher")
+            ->where('role', '<>', "supervisor")
+            ->get();
+        foreach ($users as $reciever) {
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
             ])
-        );
-
-        // $user->refresh();
-
-        try {
-            //code...
-            $data = [
-                'url' =>
-                env('APP_URL') .
-                    '/api/email/verify?id=' .
-                    $user->id .
-                    '&code=' .
-                    $user->code,
-                'name' => $user->name,
-                'email' => $user->email,
-                'code' => $user->code,
-            ];
-            Mail::to($user)->send(new VerifyEmail($data));
-        } catch (\Throwable $th) {
-            //throw $th;
-            abort(400);
+                ->post(env('AUTH_API') . '/api/notifications', [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'type' => "success",
+                    'title' => "New Registration",
+                    'content' => $user->name . " have been registred to numidia platform",
+                    'displayed' => false,
+                    'id' => $reciever->id,
+                    'department' => env('DEPARTEMENT'),
+                ]);
         }
-        Auth::login($user);
-        $data = [
-            'id' => $user->id,
-            'role' => $user->role,
-            'profile_picture' => $user->profile_picture,
-            'verified' => $user->hasVerifiedEmail(),
-            'token' => $user->createToken('API Token')->accessToken,
-        ];
-        return response()->json($data, 200);
+        return response()->json($response->body(), 200);
     }
-
-    public function logout()
-    {
-        $user = Auth::user();
-        $user = User::find($user->id);
-        if (Auth::check($user)) {
-            $user->tokens()->delete();
-            return response(200);
-        } else {
-            abort(403);
-        }
-    }
-
-    public function restpassword(Request $request)
-    {
-        $request->validate([
-            'code' => 'required|string',
-            'email' => 'required|string',
-            'password' => ['required', 'confirmed'],
-        ]);
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            abort(404);
-        }
-        if ($request->code != $user->code) {
-            $message = 'wrong code';
-            abort(401, $message);
-        } else {
-            $user->password = Hash::make($request->password);
-            $user->markEmailAsVerified();
-            $user->code = null;
-            $user->save();
-        }
-
-        return response(200);
-    }
-    public function forgotpassword(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|string',
-        ]);
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            abort(404);
-        }
-        $url = '';
-        $user->code = Str::random(6);
-
-        $user->save();
-        try {
-            //code...
-            // Email the user new password
-            $data = [
-                'name' => $user->name,
-                'email' => $user->email,
-                'code' => $user->code,
-                'url' => $url,
-            ];
-            Mail::to($user)->send(new ForgotPasswordEmail($data));
-        } catch (\Throwable $th) {
-            //throw $th;
-            abort(400);
-        }
-
-        return response(200);
-    }
-
-    public function verify(Request $request)
-    {
-        $request->validate([
-            'email' => ['required', 'string', 'email', 'max:255'],
-            'code' => ['required', 'string'],
-        ]);
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            abort(404);
-        } else {
-            if ($user->hasVerifiedEmail()) {
-                return response()->json('Email Already Verified', 200);
-            } elseif ($request->code == $user->code) {
-                $user->markEmailAsVerified();
-                $user->code = null;
-                $user->save();
-                // Auth::login($user);
-                $data = [
-                    // 'id' => $user->id,
-                    // 'role' => $user->role,
-                    // 'token' => $user->createToken('API Token')->accessToken,
-                    'message' => 'verified',
-                ];
-                return response()->json($data, 200);
-            } else {
-                return response()->json(
-                    'the code you have entered is wrong',
-                    403
-                );
-            }
-        }
-    }
-
-    public function resent_verification(Request $request)
-    {
-        $request->validate([
-            'email' => ['required', 'string', 'email', 'max:255'],
-        ]);
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            abort(404);
-        }
-        if ($user->hasVerifiedEmail()) {
-            return response()->json('Email Already Verified', 200);
-        } else {
-            try {
-                //code...
-                $user->code = Str::upper(Str::random(6));
-                $user->save();
-                $data = [
-                    'url' =>
-                    env('APP_URL') .
-                        '/api/email/verify?id=' .
-                        $user->id .
-                        '&code=' .
-                        $user->code,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'code' => $user->code,
-                ];
-                Mail::to($user)->send(new VerifyEmail($data));
-            } catch (\Throwable $th) {
-                //throw $th;
-                abort(400);
-            }
-            return response()->json('Code sent', 200);
-        }
-    }
-    public function email_verified(Request $request)
-    {
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            $user = User::where('id', $request->id)->first();
-        }
-        if (!$user) {
-            abort(404);
-        }
-
-        return response()->json(['verified' => $user->hasVerifiedEmail()], 200);
-    }
-    public function update(Request $request, $id)
+    public function user_create(Request $request)
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'gender' => ['required', 'string', 'max:255'],
+            'role' => ['required', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:10'],
+            'gender' => 'required|in:male,female',
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users',],
         ]);
-        $user = User::find($id);
-        if (!$user) {
-            abort(404);
-        }
-        $data = [
+        $request->merge([
+            'role' => strtolower($request->role),
+        ]);
+
+
+
+        $user = User::create([
+            'id' => $request->id,
+            'email' => $request->email,
             'name' => $request->name,
+            'phone_number' => $request->phone_number,
+            'role' => $request->role,
             'gender' => $request->gender,
-        ];
-        if ($request->file('profile_picture')) {
-            $file = $request->file('profile_picture');
-            $content = $file->get();
-            $extension = $file->extension();
-            $user->profile_picture()->update([
-                'name' => 'profile picture',
-                'content' => base64_encode($content),
-                'extension' => $extension,
-            ]);
-        }
+        ]);
 
-        $message = null;
-        if ($request->password) {
-            $request->validate([
-                'old_password' => ['required'],
-                'password' => ['required', 'confirmed'],
-            ]);
-            if (Hash::check($request->old_password, $user->password)) {
-                $data['password'] = Hash::make($request->password);
-                $message = 'password changed successfuly';
-            } else {
-                $message = 'the old password you had entered is wrong';
-            }
-        } else {
-            $message = 'you did not change the password';
-        }
 
-        $user->refresh();
 
-        User::where('id', $id)->update($data);
+        $user->wallet()->save(new Wallet());
 
-        $file = $user->profile_picture;
+        // $username = env('AFRICASTALKING_USERNAME');
+        // $apiKey = env('AFRICASTALKING_API_KEY');
 
-        $data = [
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone_number' => $user->phone_number,
-            'gender' => $user->gender,
-            'profile_picture' => $file,
-            'role' => $user->role,
-            'message' => $message,
-        ];
+        // $AT = new SDKAfricasTalking($username, $apiKey);
 
-        return response()->json($file, 200);
+        // // Create an instance of the SMS class
+        // $sms = $AT->sms();
+
+        // // Define the message and recipients
+        // $message = "Hello, this is a test SMS from Laravel!";
+
+
+        // // Send the SMS
+        // try {
+        //     $result = $sms->send([
+        //         'to' => "+213674680780",
+        //         'message' => $message,
+        //     ]);
+        //     return $result;
+        // } catch (\Exception $e) {
+        //     return "Error: " . $e->getMessage();
+        // }
+        // $twilio_sid = env('TWILIO_SID');
+        // $twilio_token = env('TWILIO_AUTH_TOKEN');
+        // $twilio_phone_number = env('TWILIO_PHONE_NUMBER');
+
+        // $client = new Client($twilio_sid, $twilio_token);
+
+        // try {
+        //     $client->messages->create(
+        //         '+213674680780', // Recipient's phone number
+        //         [
+        //             'from' => $twilio_phone_number,
+        //             'body' => 'Hello, this is a test SMS from Laravel!'
+        //         ]
+        //     );
+
+        // } catch (\Exception $e) {
+        //     return $e;
+        // }
+
+        return response()->json(200);
     }
-
-    public function show($id)
+    public function login(Request $request)
     {
-        $user = User::with(['profile_picture', 'wallet'])->find($id);
-        if (!$user) {
-            abort(404);
-        }
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
 
-        return response()->json($user, 200);
-    }
+        $response = Http::withHeaders($request->header())
+            ->post(env('AUTH_API') . '/api/login', $data);
 
-    public function provider_login(Request $request, $provider)
-    {
-        $user = User::where('email', $request->email)->first();
-        $remember = $request->remember_me;
-        Auth::login($user, $remember);
-        if ($user->role === 'student') {
-            $active = $user->student->active;
-        } else {
-            $active = false;
-        }
-        if (!$user->hasVerifiedEmail()) {
-            $user->markEmailAsVerified();
-        }
-
-        if ($provider == 'google') {
-            if (!$user->google_id) {
-                $user->google = $request->id;
-            }
-        } elseif ($provider == 'facebook') {
-            if (!$user->facebook_id) {
-                $user->facebook_id = $request->id;
-            }
-        }
-
-        $data = [
-            'id' => $user->id,
-            'role' => $user->role,
-            'profile_picture' => $user->profile_picture,
-            'verified' => $user->hasVerifiedEmail(),
-            'active' => $active,
-            'token' => $user->createToken('API Token')->accessToken,
-        ];
+        $data = json_decode($response->body(), true);
+        $user = User::find($data['id']);
+        $data['user'] = $user;
 
         return response()->json($data, 200);
+    }
+    public function revoke(Request $request, $id)
+    {
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
+
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+
+        ])
+            ->delete(env('AUTH_API') . '/api/activities/revoke/' . $id, $data);
+
+
+        return response()->json($response->body(), 200);
+    }
+    public function clear_activities(Request $request)
+    {
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+
+        ])
+            ->delete(env('AUTH_API') . '/api/activities/clear', $data);
+
+        return response()->json($response->body(), 200);
+    }
+    public function logout(Request $request)
+    {
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+        ])
+            ->get(env('AUTH_API') . '/api/logout', $data);
+
+        return response()->json($response->body(), 200);
+    }
+    public function restpassword(Request $request)
+    {
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+
+        ])
+            ->post(env('AUTH_API') . '/api/password/reset', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                $request->all(),
+            ]);
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+        ])
+            ->post(env('AUTH_API') . '/api/notifications', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'type' => "info",
+                'title' => "Password Changed",
+                'content' => "Your password has been changed at " . Carbon::now(),
+                'displayed' => false,
+                'id' => $request->user_id,
+                'department' => env('DEPARTEMENT'),
+            ]);
+
+        return response()->json($response->body(), 200);
+    }
+    public function forgotpassword(Request $request)
+    {
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+
+        ])
+            ->post(env('AUTH_API') . '/api/password/forgot', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                $request->all(),
+            ]);
+
+        return response()->json($response->body(), 200);
+    }
+    public function verify(Request $request)
+    {
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+
+        ])
+            ->post(env('AUTH_API') . '/api/email/verify', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                $request->all(),
+            ]);
+
+        return response()->json($response->body(), 200);
+    }
+    public function resent_verification(Request $request)
+    {
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+
+        ])
+            ->post(env('AUTH_API') . '/api/email/resent/code', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                $request->all(),
+            ]);
+
+        return response()->json($response->body(), 200);
+    }
+    public function email_verified(Request $request)
+    {
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+
+        ])
+            ->get(env('AUTH_API') . '/api/email/isverified', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                $request->all(),
+            ]);
+
+        return response()->json($response->body(), 200);
+    }
+    public function provider_login(Request $request, $provider)
+    {
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+
+        ])
+            ->post(env('AUTH_API') . '/auth/' . $provider . '/login', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                $request->all(),
+            ]);
+
+        return response()->json($response->body(), 200);
+    }
+    public function change_password(Request $request)
+    {
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+
+        ])
+            ->post(env('AUTH_API') . '/api/password/change', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                $request->all(),
+            ]);
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+        ])
+            ->post(env('AUTH_API') . '/api/notifications', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'type' => "info",
+                'title' => "Password Changed",
+                'content' => "Your password has been changed at " . Carbon::now(),
+                'displayed' => false,
+                'id' => $request->user_id,
+                'department' => env('DEPARTEMENT'),
+            ]);
+
+        return response()->json($response->body(), 200);
     }
 }

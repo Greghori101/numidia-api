@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Checkout;
 use App\Models\Group;
 use App\Models\Level;
+use App\Models\Notification;
 use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class StudentController extends Controller
 {
@@ -67,7 +69,7 @@ class StudentController extends Controller
     public function student_group_add(Request $request, $student_id)
     {
         $student = Student::find($student_id);
-        $user = User::find($request->user()->id);
+        $user = User::find($request->user_id);
         $groups = $request->groups;
 
         foreach ($groups as $group) {
@@ -87,6 +89,19 @@ class StudentController extends Controller
             $group = Group::find($group->id);
             $group->checkouts()->save($checkout);
             $student->user->wallet->save();
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+            ])
+                ->post(env('AUTH_API') . '/api/notifications', [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'type' => "info",
+                    'title' => "new group members",
+                    'content' => "new student has been added",
+                    'displayed' => false,
+                    'id' => $group->teacher->user->id,
+                    'department' => env('DEPARTEMENT'),
+                ]);
         }
 
         return response()->json(200);
@@ -97,12 +112,30 @@ class StudentController extends Controller
         $student = Student::find($id);
         $groups = $student->groups()->with(["teacher.user", "level"])->get();
 
+
+
         return response()->json($groups, 200);
     }
     public function student_group_remove($student_id, $group_id)
     {
         $student = Student::find($student_id);
         $student->groups()->detach($group_id);
+
+        $group = Group::find($group_id);
+
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+        ])
+            ->post(env('AUTH_API') . '/api/notifications', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'type' => "warning",
+                'title' => "group members",
+                'content' => "a student has been removed",
+                'displayed' => false,
+                'id' => $group->teacher->user->id,
+                'department' => env('DEPARTEMENT'),
+            ]);
         return response()->json(200);
     }
     public function group_notin_student($id)
@@ -119,33 +152,6 @@ class StudentController extends Controller
             $group['price'] = $group->price_per_month / $group->nb_session * $group->rest_session;
         }
         return response()->json($groups, 200);
-    }
-
-
-    public function student_group_activate(Request $request, $student_id, $group_id)
-    {
-        $group =  Student::find($student_id)->groups()->find($group_id);
-
-        if (!$group) {
-            $student = Student::find($student_id);
-            $student->groups()->attach($group_id);
-            $group = Student::find($student_id)->groups()->find($group_id);
-        }
-        $checkout = Checkout::create([
-            'price' => $request->price,
-            'nb_session' => $request->nb_session,
-            'total' => $request->nb_session * $request->price,
-            'end_date' => $request->end_date,
-        ]);
-        $student = Student::find($student_id);
-        $user = User::find($request->user()->id);
-
-        $user->checkouts()->save($checkout);
-        $student->checkouts()->save($checkout);
-        $group->checkouts()->save($checkout);
-
-
-        return response()->json(200);
     }
 
     public  function student_checkouts($id)

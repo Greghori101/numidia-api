@@ -21,15 +21,12 @@ class User extends Authenticatable implements MustVerifyEmail
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'id',
         'email',
+        'name',
         'phone_number',
-        'password',
         'role',
         'gender',
-        'google_id',
-        'facebook_id',
-        'code',
     ];
 
     protected $keyType = 'string';
@@ -41,12 +38,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * @var array<int, string>
      */
     protected $hidden = [
-        'password',
-        'remember_token',
-        'code',
-        'active',
-        'google_id',
-        'facebook_id',
+        
         'created_at',
     ];
 
@@ -55,10 +47,6 @@ class User extends Authenticatable implements MustVerifyEmail
      *
      * @var array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'id' => 'string',
-    ];
 
     function checkouts()
     {
@@ -82,28 +70,13 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(Supervisor::class);
     }
-    function received_notifications()
-    {
-        return $this->hasMany(Notification::class, 'user_id');
-    }
+    
 
-    public function profile_picture()
-    {
-        return $this->morphOne(File::class, "fileable");
-    }
-    function posts()
-    {
-        return $this->hasMany(Post::class);
-    }
     function wallet()
     {
         return $this->hasOne(Wallet::class);
     }
-    function activities()
-    {
-        return $this->hasMany(Activity::class);
-    }
-    function Attendance()
+    function attendance()
     {
         return $this->hasMany(Attendance::class);
     }

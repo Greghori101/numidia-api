@@ -22,7 +22,7 @@ class ReceiptController extends Controller
         $request->validate([
             'total' => 'required|numeric',
             'type' => 'required|string',
-            'user_id' => 'required|exists:users,id',
+            'id' => 'required|exists:users,id',
         ]);
 
         $user = User::find($request->user_id);
@@ -36,7 +36,6 @@ class ReceiptController extends Controller
             ]);
             $user->wallet->save();
             $admin->wallet->save();
-
         }
         $receipt = Receipt::create($request->all());
 
@@ -53,7 +52,7 @@ class ReceiptController extends Controller
         $request->validate([
             'total' => 'required|numeric',
             'type' => 'required|string',
-            'user_id' => 'required|exists:users,id',
+            'id' => 'required|exists:users,id',
         ]);
 
         $receipt = Receipt::find($id);

@@ -3,80 +3,58 @@
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CheckoutController;
-use App\Http\Controllers\Api\DepartmentController;
+use App\Http\Controllers\Api\ExamController;
 use App\Http\Controllers\Api\ExpensesController;
 use App\Http\Controllers\Api\FeeInscriptionController;
 use App\Http\Controllers\Api\FinancialController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\LevelController;
 use App\Http\Controllers\Api\ParentController;
-use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\TeacherController;
-use App\Http\Controllers\Api\UserActivityController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\DashboardController;
-use App\Models\FeeInscription;
-use BeyondCode\LaravelWebSockets\Facades\WebSocketsRouter;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
-*/
 
-//headers :
-//'Content-type' : 'application/json',
-// Accept:application/json
-// Authorization:'Bearer '+ Token for protected routes
-//body:
-// each route with method post
-//params:
-// each route with methods put or get 
-
-//Public Routes
-Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'store']);
-Route::post('/auth/{provider}/login', [
-    AuthController::class,
-    'provider_login',
-]);
+Route::post('/create-user', [AuthController::class, 'user_create']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login',]);
 Route::post('/password/forgot', [AuthController::class, 'forgotpassword']);
 Route::post('/password/reset', [AuthController::class, 'restpassword']);
+Route::get('levels/all', [LevelController::class, 'all']);
 
-//Protected Routes
-Route::middleware(['auth:api'])->group(function () {
-    Route::get('logout', [AuthController::class, 'logout']);
+Route::middleware(['auth-api-token',])->group(function () {
+    Route::get('/logout', [AuthController::class, 'logout']);
     Route::post('/email/verify', [AuthController::class, 'verify']);
-    Route::post('/email/resent/code', [
-        AuthController::class,
-        'resent_verification',
-    ]);
+    Route::post('/email/resent/code', [AuthController::class, 'resent_verification',]);
     Route::get('/email/isverified', [AuthController::class, 'email_verified']);
+    Route::post('/password/change', [UserController::class, 'change_password']);
+    Route::delete('/activities/revoke/{id}', [AuthController::class, 'revoke']);
+    Route::delete('/activities/clear', [AuthController::class, 'clear_activities']);
 });
 
-
 // Verfied routes (require email verification)
-Route::middleware(['auth:api', 'verified'])->group(function () {
-    WebSocketsRouter::webSocket(
-        '/my-websocket',
-        \App\CustomWebSocketHandler::class
-    );
-    Route::get('profile/{id}', [AuthController::class, 'show']);
-    Route::put('profile/{id}', [AuthController::class, 'update']);
+Route::middleware(['auth-api-token'])->group(function () {
+    Route::get('/profile/{id?}', [UserController::class, 'show']);
+    Route::put('/profile', [UserController::class, 'profile_update']);
+    Route::post('/picture/change/{id?}', [UserController::class, 'change_profile_picture']);
 
-    Route::controller(DashboardController::class)->group(function () {
-        Route::get('/', 'index');
-        Route::get('/stats', 'stats');
-    });
+    Route::controller(DashboardController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::get('/stats', 'stats');
+        });
+    Route::controller(WalletController::class)
+        ->group(function () {
+            Route::post('/deposit', 'deposit');
+            Route::post('/withdraw', 'withdraw');
+        });
+
 
     Route::controller(FinancialController::class)
         ->group(function () {
@@ -86,18 +64,10 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::get('/employees/stats', 'employee_stats');
             Route::get('/expenses/stats', 'expense_stats');
             Route::get('/inscription_fees/stats', 'fees_stats');
-            Route::get("employees/financials", 'all_per_employee');
+            Route::get("/employees/financials", 'all_per_employee');
         });
 
-    Route::prefix('posts')
-        ->controller(PostController::class)
-        ->group(function () {
-            Route::get('/', 'index');
-            Route::get('/{id}', 'show');
-            Route::post('/', 'create');
-            Route::delete('/{id}', 'delete');
-            Route::put('/{id}', 'update');
-        });
+
 
     Route::prefix('users')
         ->controller(UserController::class)
@@ -122,7 +92,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
     Route::prefix('levels')
         ->controller(LevelController::class)
         ->group(function () {
-            Route::get('/all', 'all');
+
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
@@ -142,10 +112,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::get('/{id}/students', 'students');
             Route::get('/{id}/students/unenrolled', 'student_notin_group');
             Route::post('/{id}/students', 'students_create');
-            Route::delete(
-                '/{id}/students/{student_id}',
-                'students_delete'
-            );
+            Route::delete('/{id}/students/{student_id}', 'students_delete');
             Route::get('/{id}/sessions', 'sessions');
             Route::post('/{id}/sessions', 'sessions_create');
         });
@@ -155,7 +122,6 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
-            Route::post('/', 'create');
             Route::delete('/{id}', 'delete');
             Route::put('/{id}', 'update');
             Route::get('/{id}/checkouts', 'student_checkouts');
@@ -163,10 +129,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::get('/{id}/groups', 'student_group');
             Route::get('/{id}/groups/unenrolled', 'group_notin_student');
             Route::post('/{student_id}/groups', 'student_group_add');
-            Route::delete(
-                '/{student_id}/groups/{group_id}',
-                'student_group_remove'
-            );
+            Route::delete('/{student_id}/groups/{group_id}', 'student_group_remove');
         });
 
     Route::prefix('teachers')
@@ -175,11 +138,9 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
-            Route::post('/', 'create');
             Route::delete('/{id}', 'delete');
             Route::put('/{id}', 'update');
-            Route::post('/sessions/{id}/reject', 'reject_session');
-            Route::post('/sessions/{id}/approve', 'approve_session');
+            Route::post('/sessions/reject', 'reject_session');
         });
 
     Route::prefix('parents')
@@ -187,32 +148,13 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
         ->group(function () {
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
-            Route::post('/', 'create');
             Route::delete('/{id}', 'delete');
             Route::put('/{id}', 'update');
             Route::post('/{id}/students', 'add_student');
             Route::get('/{id}/students', 'students');
         });
 
-    Route::prefix('notifications')
-        ->controller(NotificationController::class)
-        ->group(function () {
-            Route::post('/send', 'send');
-            Route::get('/', 'index');
-            Route::get('/{id}', 'show');
-            Route::get('/all', 'all');
-            Route::put('/seen/{id}', 'seen');
-            Route::put('/seen/all', 'seen_all');
-            Route::delete('/delete/{id}', 'delete');
-            Route::delete('/clear', 'delete_all');
-        });
 
-    Route::prefix('departments')
-        ->controller(DepartmentController::class)
-        ->group(function () {
-            Route::get('/', 'index');
-            Route::get('/{id}', 'show');
-        });
 
     Route::prefix('checkouts')
         ->controller(CheckoutController::class)
@@ -236,16 +178,6 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::put('/{id}', 'update');
         });
 
-    Route::prefix('activities')
-        ->controller(UserActivityController::class)
-        ->group(function () {
-            Route::get('/all', 'all');
-            Route::get('/', 'index');
-            Route::get('/{id}', 'show');
-            Route::post('/', 'create');
-            Route::put('/{id}', 'update');
-            Route::delete('/{id}', 'delete');
-        });
     Route::prefix('expenses')
         ->controller(ExpensesController::class)
         ->group(function () {
@@ -263,6 +195,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
+            Route::post('/pay', 'pay');
             Route::put('/{id}', 'update');
             Route::delete('/{id}', 'delete');
         });
@@ -275,5 +208,22 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
             Route::post('/presence', 'create_presence');
             Route::post('/mark/presence', 'mark_presence');
             Route::post('/remove/presence', 'remove_presence');
+        });
+    Route::prefix('exams')
+        ->controller(ExamController::class)
+        ->group(function () {
+            Route::post('/', 'store');
+            Route::post('/{exam}/student-answers', 'create_answers');
+            Route::get('/', 'index');
+            Route::delete('/{exam}/close', 'close_exam');
+            Route::put('/{exam}/open', 'open_exam');
+            Route::delete('/{exam}', 'delete');
+            Route::get('/all', 'all');
+            Route::get('/{exam}', 'show');
+            Route::get('/{exam}/student/{id}', 'student_exam');
+            Route::get('/student/{id}', 'student_exams');
+            Route::get('/teacher/{id}', 'teacher_exams');
+            Route::delete('/{exam}', 'delete');
+            Route::put('/{exam}', 'update');
         });
 });

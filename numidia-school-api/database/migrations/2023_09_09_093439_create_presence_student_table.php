@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('presence_student', function (Blueprint $table) {
             $table->id();
             
-            $table->string('status')->default('present');
+            $table->string('status')->default('absent');
 
             $table->uuid('presence_id')->nullable();
             $table->foreign('presence_id')->references('id')->on('presences')->onDelete('cascade');

@@ -42,6 +42,10 @@ class Student extends Model
     {
         return $this->hasMany(Checkout::class);
     }
+    public function answers()
+    {
+        return $this->hasMany(Answer::class);
+    }
     function fee_inscription()
     {
         return $this->hasOne(FeeInscription::class);
@@ -55,5 +59,10 @@ class Student extends Model
             'presence_id',
 
         )->withPivot('status');
+    }
+
+    public function exams()
+    {
+        return $this->belongsToMany(Exam::class, 'answers')->distinct('id');
     }
 }

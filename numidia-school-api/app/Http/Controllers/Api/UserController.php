@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+// use Twilio\Rest\Client;
+use AfricasTalking\SDK\AfricasTalking as SDKAfricasTalking;
 use App\Http\Controllers\Controller;
-use App\Mail\VerifyEmail;
-use App\Models\Level;
+use App\Http\Controllers\WebSocketController;
 use App\Models\File;
+use App\Models\Level;
+use App\Models\Notification;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\Teacher;
@@ -13,10 +16,8 @@ use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -52,113 +53,190 @@ class UserController extends Controller
         return $users;
     }
 
-
-    public function show($id)
+    public function show(Request $request, $id = null)
     {
-        $user = User::with(["profile_picture", "posts", "wallet", "transactions", "received_notifications", "reciepts"])->find($id);
-        return response()->json(200, $user);
+        if (!$id) {
+            $user = User::with(["profile_picture", "wallet", "checkouts", "received_notifications", "receipts",])->find($request->user_id);
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+            ])
+                ->get(env('AUTH_API') . '/api/profile/' . $user->id, [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                ]);
+            $user['activities'] = $response->json()['activities'];
+            return response()->json($user, 200);
+        } else {
+            $user = User::find($id);
+            if ($user->role == "student") {
+                $user->load('receipts', 'profile_picture', 'wallet', 'student.presences.group.teacher.user', 'student.groups.teacher.user', 'student.level', 'student.checkouts', 'student.fee_inscription', 'student.supervisor.user', 'student.user');
+            } elseif ($user->role == "teacher") {
+                $user->load('receipts', 'profile_picture', 'wallet', 'teacher.groups.level', 'teacher.groups.students.user.wallet', 'teacher.groups.presence.students.user');
+            } else if ($user->role == "supervisor") {
+                $user->load('receipts', 'profile_picture', 'wallet', 'supervisor.students.user.profile_picture', 'supervisor.students.presences.group.teacher.user', 'supervisor.students.groups.teacher.user', 'supervisor.students.level', 'supervisor.students.checkouts', 'supervisor.students.fee_inscription',);
+            } else {
+                $user->load('receipts', 'profile_picture', 'wallet',);
+            }
+            return response()->json($user, 200);
+        }
     }
 
     public function users_list(Request $request)
     {
         $users = User::with(["profile_picture"])->whereIn('id', $request->ids)->get();
 
-        return response()->json(200, $users);
+        return response()->json($users, 200);
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'user_role' => ['required', 'string', 'max:255'],
-            'gender' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                'unique:' . User::class,
-            ],
+            'role' => ['required', 'string', 'max:255'],
+            'phone_number' => ['required', 'string', 'max:10'],
+            'gender' => 'required|in:male,female',
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users',],
+        ]);
+        $request->merge([
+            'role' => strtolower($request->role),
         ]);
 
-        $content = Storage::get('default-profile-picture.jpeg');
-        $extension = 'jpeg';
-        $name = 'profile picture';
 
-        $code = Str::upper(Str::random(6));
 
         $user = User::create([
-            'name' => $request->name,
             'email' => $request->email,
-            'role' => $request->user_role,
-            'gender' => $request->gender,
+            'name' => $request->name,
             'phone_number' => $request->phone_number,
-            'password' => Hash::make($code),
-            'code' => $code,
+            'role' => $request->role,
+            'gender' => $request->gender,
         ]);
 
-        $user->wallet()->save(new  Wallet());
-        $student = [];
+
+
+        $user->wallet()->save(new Wallet());
+        // $username = env('AFRICASTALKING_USERNAME');
+        // $apiKey = env('AFRICASTALKING_API_KEY');
+
+        // $AT = new SDKAfricasTalking($username, $apiKey);
+
+        // // Create an instance of the SMS class
+        // $sms = $AT->sms();
+
+        // // Define the message and recipients
+        // $message = "Hello, this is a test SMS from Laravel!";
+
+
+        // // Send the SMS
+        // try {
+        //     $result = $sms->send([
+        //         'to' => "+213674680780",
+        //         'message' => $message,
+        //     ]);
+        //     return $result;
+        // } catch (\Exception $e) {
+        //     return "Error: " . $e->getMessage();
+        // }
+        // $twilio_sid = env('TWILIO_SID');
+        // $twilio_token = env('TWILIO_AUTH_TOKEN');
+        // $twilio_phone_number = env('TWILIO_PHONE_NUMBER');
+
+        // $client = new Client($twilio_sid, $twilio_token);
+
+        // try {
+        //     $client->messages->create(
+        //         '+213674680780', // Recipient's phone number
+        //         [
+        //             'from' => $twilio_phone_number,
+        //             'body' => 'Hello, this is a test SMS from Laravel!'
+        //         ]
+        //     );
+
+        // } catch (\Exception $e) {
+        //     return $e;
+        // }
+
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+        ])
+            ->post(env('AUTH_API') . '/api/users/create', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'id' => $user->id,
+                'name' => $request->name,
+                'email' => $request->email,
+            ]);
         if ($user->role == 'teacher') {
-            $teacher = new Teacher([
+            $user->teacher()->save(new Teacher([
                 'module' => $request->module,
                 'percentage' => $request->percentage,
-            ]);
-            $user->teacher()->save($teacher);
+            ]));
         } elseif ($user->role == 'student') {
             $level = Level::find($request->level_id);
             $student = new Student();
             $user->student()->save($student);
             $level->students()->save($student);
-
-            $student['user'] = $student->user;
-            $student['level'] = $student->level;
+            return Student::with(['user', 'level'])->find($student->id);
         } elseif ($user->role == 'supervisor') {
             $user->supervisor()->save(new Supervisor());
         }
-        $user->profile_picture()->save(
-            new File([
-                'name' => $name,
-                'content' => base64_encode($content),
-                'extension' => $extension,
+
+
+        $users = User::where('role', '<>', "student")
+            ->where('role', '<>', "teacher")
+            ->where('role', '<>', "supervisor")
+            ->get();
+        foreach ($users as $reciever) {
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
             ])
-        );
-        try {
-            //code...
-            $data = [
-                'name' => $user->name,
-                'email' => $user->email,
-                'code' => $user->code,
-            ];
-            Mail::to($user)->send(new VerifyEmail($data));
-        } catch (\Throwable $th) {
-            //throw $th;
-            // abort(400);
+                ->post(env('AUTH_API') . '/api/notifications', [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'type' => "success",
+                    'title' => "New Registration",
+                    'content' => $user->name . " have been registred to numidia platform",
+                    'displayed' => false,
+                    'id' => $reciever->id,
+                    'department' => env('DEPARTEMENT'),
+                ]);
         }
-        $user->refresh();
+        return response()->json(200);
+    }
 
-
-
-        return response()->json($student, 200);
+    public function change_profile_picture(Request $request, $id = null)
+    {
+        if (!$id) {
+            $user = User::find($request->user_id);
+        } else {
+            $user = User::find($id);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'gender' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string'],
-        ]);
-
         $user = User::find($id);
 
-        $user->name = $request->name;
-        $user->gender = $request->gender;
-        $user->phone_number = $request->phone_number;
+        $user->update([
+            'name' => $request->name,
+            'phone_number' => $request->phone_number,
+            'gender' => $request->gender,
 
-        $user->save();
+        ]);
 
-        return response()->json(200);
+        return response()->json(['message' => 'User data updated successfully'], 200);
+    }
+    public function profile_update(Request $request)
+    {
+        $user = User::find($request->user_id);
+
+        $user->update([
+            'name' => $request->name,
+            'phone_number' => $request->phone_number,
+            'gender' => $request->gender,
+
+        ]);
+
+        return response()->json(['message' => 'User data updated successfully'], 200);
     }
 
     public function delete($id)

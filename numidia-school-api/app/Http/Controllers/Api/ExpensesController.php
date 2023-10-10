@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
+use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class ExpensesController extends Controller
 {
@@ -55,12 +57,32 @@ class ExpensesController extends Controller
             'description' => $request->description,
 
         ]);
-        $user = User::find($request->user()->id);
+        $user = User::find($request->user_id);
         $user->expenses()->save($expense);
 
-        $admin = User::where("role","admin")->first();
+        $admin = User::where("role", "admin")->first();
         $admin->wallet->balance -= $request->amount;
         $admin->wallet->save();
+
+
+
+        $users = User::where('role', "admin")
+            ->get();
+        foreach ($users as $reciever) {
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+            ])
+                ->post(env('AUTH_API') . '/api/notifications', [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'type' => "info",
+                    'title' => "New Chargers",
+                    'content' => "The user:" . $user->name . " has charged: " . $request->amount . ".00 DA",
+                    'displayed' => false,
+                    'id' => $reciever->id,
+                    'department' => env('DEPARTEMENT'),
+                ]);
+        }
 
         return response()->json($expense, 201);
     }

@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Checkout;
+use App\Models\Notification;
 use App\Models\Receipt;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class CheckoutController extends Controller
 {
@@ -110,7 +112,7 @@ class CheckoutController extends Controller
     {
 
         $ids  = $request->checkouts;
-        $user = User::find($request->user()->id);
+        $user = User::find($request->user_id);
 
         $total = 0;
         $receipt = Receipt::create([
@@ -147,15 +149,36 @@ class CheckoutController extends Controller
         $receipt->save();
         $receipt->load('user', 'checkouts.group.teacher.user');
 
+
+
+        $users = User::where('role', "admin")
+            ->get();
+        foreach ($users as $reciever) {
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+            ])
+                ->post(env('AUTH_API') . '/api/notifications', [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'type' => "success",
+                    'title' => "New Payment",
+                    'content' => "The student:" . $student->user->name . " has payed the amount: " . $total . ".00 DA",
+                    'displayed' => false,
+                    'id' => $reciever->id,
+                    'department' => env('DEPARTEMENT'),
+                ]);
+        }
+
         return response()->json($receipt, 200);
     }
 
     public function create(Request $request)
     {
-        $checkout = Checkout::create([
+        Checkout::create([
             'price' => $request->price,
             'date' => Carbon::now(),
         ]);
+
         return response()->json(200);
     }
 
