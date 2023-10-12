@@ -48,7 +48,7 @@ class NotificationController extends Controller
         $user = User::find($request->user()->id);
         $notifications = $user->received_notifications->all();
 
-        return $notifications;
+        return response()->json($notifications,200);
     }
     public function seen($id)
     {

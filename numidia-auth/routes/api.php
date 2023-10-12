@@ -28,25 +28,20 @@ Route::post('/email/verify', [AuthController::class, 'verify']);
 Route::post('/email/resent/code', [AuthController::class, 'resent_verification',]);
 Route::get('/email/isverified', [AuthController::class, 'email_verified']);
 Route::get('/profile/{id}', [AuthController::class, 'show']);
-Route::post('/password/change', [AuthController::class, 'change_password']);
 Route::delete('/activities/revoke/{id}', [AuthController::class, 'revoke']);
-Route::post('/picture/change/{id?}', [UserController::class, 'change_profile_picture']);
 Route::delete('/activities/clear', [AuthController::class, 'clear_activities']);
+Route::delete('/users', [AuthController::class, 'users']);
 
-Route::prefix('notifications')
-    ->controller(NotificationController::class)
-    ->group(function () {
-        Route::post('/', 'send');
-        Route::get('/{id}', 'show');
-        Route::put('/seen/{id}', 'seen');
-        Route::delete('/delete/{id}', 'delete');
-    });
+
 Route::middleware(['auth:api'])->group(function () {
+    Route::post('/picture/change/{id?}', [AuthController::class, 'change_profile_picture']);
+    Route::post('/password/change', [AuthController::class, 'change_password']);
+
     Route::get('/verify-token', [AuthController::class, 'verify_token']);
     Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::put('/seen/all', [NotificationController::class, 'seen_all']);
-    Route::delete('/clear', [NotificationController::class, 'delete_all']);
-    Route::get('/all', [NotificationController::class, 'all']);
+    Route::put('/notifications/seen/all', [NotificationController::class, 'seen_all']);
+    Route::delete('/notifications/clear', [NotificationController::class, 'delete_all']);
+    Route::get('/notifications/all', [NotificationController::class, 'all']);
     Route::prefix('posts')
         ->controller(PostController::class)
         ->group(function () {
@@ -57,3 +52,12 @@ Route::middleware(['auth:api'])->group(function () {
             Route::put('/{id}', 'update');
         });
 });
+
+Route::prefix('notifications')
+    ->controller(NotificationController::class)
+    ->group(function () {
+        Route::post('/', 'send');
+        Route::get('/{id}', 'show');
+        Route::put('/seen/{id}', 'seen');
+        Route::delete('/delete/{id}', 'delete');
+    });

@@ -63,6 +63,10 @@ class Student extends Model
 
     public function exams()
     {
-        return $this->belongsToMany(Exam::class, 'answers')->distinct('id');
+        return $this->belongsToMany(Exam::class, 'answers', 'student_id', 'exam_id')
+            ->distinct('exams.id')
+            ->with(['answers' => function ($query) {
+                $query->where('student_id', $this->id)->select('*')->with(['question.choices']);
+            }]);
     }
 }

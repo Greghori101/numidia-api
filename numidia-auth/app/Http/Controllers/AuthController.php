@@ -356,7 +356,7 @@ class AuthController extends Controller
     public function change_profile_picture(Request $request, $id = null)
     {
         if (!$id) {
-            $user = User::find($request->user_id);
+            $user = User::find($request->user()->id);
         } else {
             $user = User::find($id);
         }
@@ -369,5 +369,11 @@ class AuthController extends Controller
             'extension' => $extension,
         ]);
         return response()->json(['message' => 'Profile picture changed successfully'], 200);
+    }
+
+    public function users(Request $request)
+    {
+        $users = User::with(['profile_picture'])->whereIn('id', $request->ids)->get();
+        return response()->json($users, 200);
     }
 }

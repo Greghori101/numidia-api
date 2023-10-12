@@ -3,12 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 // use Twilio\Rest\Client;
-use AfricasTalking\SDK\AfricasTalking as SDKAfricasTalking;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\WebSocketController;
-use App\Models\File;
 use App\Models\Level;
-use App\Models\Notification;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\Teacher;
@@ -17,7 +13,6 @@ use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -56,7 +51,7 @@ class UserController extends Controller
     public function show(Request $request, $id = null)
     {
         if (!$id) {
-            $user = User::with(["profile_picture", "wallet", "checkouts", "received_notifications", "receipts",])->find($request->user_id);
+            $user = User::with(["wallet", "checkouts", "receipts",])->find($request->user_id);
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
             ])
@@ -65,25 +60,35 @@ class UserController extends Controller
                     'client_secret' => env('CLIENT_SECRET'),
                 ]);
             $user['activities'] = $response->json()['activities'];
+            $user['profile_picture'] = $response->json()['profile_picture'];
             return response()->json($user, 200);
         } else {
             $user = User::find($id);
             if ($user->role == "student") {
-                $user->load('receipts', 'profile_picture', 'wallet', 'student.presences.group.teacher.user', 'student.groups.teacher.user', 'student.level', 'student.checkouts', 'student.fee_inscription', 'student.supervisor.user', 'student.user');
+                $user->load('receipts', 'wallet', 'student.presences.group.teacher.user', 'student.groups.teacher.user', 'student.level', 'student.checkouts', 'student.fee_inscription', 'student.supervisor.user', 'student.user');
             } elseif ($user->role == "teacher") {
-                $user->load('receipts', 'profile_picture', 'wallet', 'teacher.groups.level', 'teacher.groups.students.user.wallet', 'teacher.groups.presence.students.user');
+                $user->load('receipts', 'wallet', 'teacher.groups.level', 'teacher.groups.students.user.wallet', 'teacher.groups.presence.students.user');
             } else if ($user->role == "supervisor") {
-                $user->load('receipts', 'profile_picture', 'wallet', 'supervisor.students.user.profile_picture', 'supervisor.students.presences.group.teacher.user', 'supervisor.students.groups.teacher.user', 'supervisor.students.level', 'supervisor.students.checkouts', 'supervisor.students.fee_inscription',);
+                $user->load('receipts', 'wallet', 'supervisor.students.user.profile_picture', 'supervisor.students.presences.group.teacher.user', 'supervisor.students.groups.teacher.user', 'supervisor.students.level', 'supervisor.students.checkouts', 'supervisor.students.fee_inscription',);
             } else {
-                $user->load('receipts', 'profile_picture', 'wallet',);
+                $user->load('receipts', 'wallet',);
             }
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+            ])
+                ->get(env('AUTH_API') . '/api/profile/' . $user->id, [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                ]);
+            $user['profile_picture'] = $response->json()['profile_picture'];
+
             return response()->json($user, 200);
         }
     }
 
     public function users_list(Request $request)
     {
-        $users = User::with(["profile_picture"])->whereIn('id', $request->ids)->get();
+        $users = User::whereIn('id', $request->ids)->get();
 
         return response()->json($users, 200);
     }
@@ -114,46 +119,6 @@ class UserController extends Controller
 
 
         $user->wallet()->save(new Wallet());
-        // $username = env('AFRICASTALKING_USERNAME');
-        // $apiKey = env('AFRICASTALKING_API_KEY');
-
-        // $AT = new SDKAfricasTalking($username, $apiKey);
-
-        // // Create an instance of the SMS class
-        // $sms = $AT->sms();
-
-        // // Define the message and recipients
-        // $message = "Hello, this is a test SMS from Laravel!";
-
-
-        // // Send the SMS
-        // try {
-        //     $result = $sms->send([
-        //         'to' => "+213674680780",
-        //         'message' => $message,
-        //     ]);
-        //     return $result;
-        // } catch (\Exception $e) {
-        //     return "Error: " . $e->getMessage();
-        // }
-        // $twilio_sid = env('TWILIO_SID');
-        // $twilio_token = env('TWILIO_AUTH_TOKEN');
-        // $twilio_phone_number = env('TWILIO_PHONE_NUMBER');
-
-        // $client = new Client($twilio_sid, $twilio_token);
-
-        // try {
-        //     $client->messages->create(
-        //         '+213674680780', // Recipient's phone number
-        //         [
-        //             'from' => $twilio_phone_number,
-        //             'body' => 'Hello, this is a test SMS from Laravel!'
-        //         ]
-        //     );
-
-        // } catch (\Exception $e) {
-        //     return $e;
-        // }
 
         $response = Http::withHeaders([
             'Accept' => 'application/json',
@@ -203,15 +168,6 @@ class UserController extends Controller
         return response()->json(200);
     }
 
-    public function change_profile_picture(Request $request, $id = null)
-    {
-        if (!$id) {
-            $user = User::find($request->user_id);
-        } else {
-            $user = User::find($id);
-        }
-    }
-
     public function update(Request $request, $id)
     {
         $user = User::find($id);
@@ -244,5 +200,69 @@ class UserController extends Controller
         $user = User::where('id', $id)->first();
         $user->forceDelete();
         return response()->json(200);
+    }
+
+    public function student(Request $request)
+    {
+
+        $user = User::find($request->user_id);
+        if ($user->role == "teacher") {
+            $teacher = $user->teacher->load(["groups.students.user", "groups.students.level"]);
+            $students = $teacher->groups->pluck('students')->flatten();
+        } elseif ($user->role == "supervisor") {
+            $students = $user->supervisor->students->load(["user", "level"]);
+        }
+        return response()->json($students, 200);
+    }
+    public function checkouts(Request $request)
+    {
+        $user = User::find($request->user_id);
+        if ($user->role == "student") {
+            $checkouts = $user->student->checkouts;
+        }
+        $checkouts->load(["group.level", "group.teacher.user"]);
+        return response()->json($checkouts, 200);
+    }
+    public function exams(Request $request)
+    {
+        $user = User::find($request->user_id);
+        if ($user->role == "student") {
+            $exams = $user->student->exams;
+        } elseif ($user->role == "teacher") {
+            $exams = $user->teacher->exams;
+        }
+        $exams->load(["teacher", "questions.choices"]);
+
+
+        return response()->json($exams, 200);
+    }
+    public function groups(Request $request)
+    {
+        $user = User::find($request->user_id);
+        if ($user->role == "student") {
+            $groups = $user->student->groups;
+        } elseif ($user->role == "teacher") {
+            $groups = $user->teacher->groups;
+        }
+        $groups->load(["level", "teacher.user"]);
+        return response()->json($groups, 200);
+    }
+    public function receipts(Request $request)
+    {
+        $user = User::find($request->user_id);
+        $receipts = $user->receipts;
+        $receipts->load(["checkouts"]);
+        return response()->json($receipts, 200);
+    }
+    public function sessions(Request $request)
+    {
+        $user = User::find($request->user_id);
+        if ($user->role == "student") {
+            $student = $user->student->load(['groups.sessions.exceptions',"groups.sessions.group.teacher.user"]);
+            $sessions = $student->groups->pluck('sessions')->flatten();
+        } elseif ($user->role == "teacher") {
+            $sessions = $user->teacher->sessions->load(["exceptions","group.teacher.user"]);
+        }
+        return response()->json($sessions, 200);
     }
 }

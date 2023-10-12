@@ -27,6 +27,9 @@ Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login',]
 Route::post('/password/forgot', [AuthController::class, 'forgotpassword']);
 Route::post('/password/reset', [AuthController::class, 'restpassword']);
 Route::get('levels/all', [LevelController::class, 'all']);
+Route::get('program', [SessionController::class, 'all']);
+Route::get('teachers/all-details', [LevelController::class, 'all_details']);
+
 
 Route::middleware(['auth-api-token',])->group(function () {
     Route::get('/logout', [AuthController::class, 'logout']);
@@ -78,6 +81,17 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::post('/', 'store');
             Route::put('/{id}', 'update');
             Route::delete('/{id}', 'delete');
+        });
+
+    Route::prefix('user')
+        ->controller(UserController::class)
+        ->group(function () {
+            Route::get('/students', 'students');
+            Route::get('/checkouts', 'checkouts');
+            Route::get('/exams', 'exams');
+            Route::get('/groups', 'groups');
+            Route::get('/receipts', 'receipts');
+            Route::get('/sessions', 'sessions');
         });
 
     Route::prefix('sessions')

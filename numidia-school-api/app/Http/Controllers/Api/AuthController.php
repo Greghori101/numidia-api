@@ -122,46 +122,6 @@ class AuthController extends Controller
 
         $user->wallet()->save(new Wallet());
 
-        // $username = env('AFRICASTALKING_USERNAME');
-        // $apiKey = env('AFRICASTALKING_API_KEY');
-
-        // $AT = new SDKAfricasTalking($username, $apiKey);
-
-        // // Create an instance of the SMS class
-        // $sms = $AT->sms();
-
-        // // Define the message and recipients
-        // $message = "Hello, this is a test SMS from Laravel!";
-
-
-        // // Send the SMS
-        // try {
-        //     $result = $sms->send([
-        //         'to' => "+213674680780",
-        //         'message' => $message,
-        //     ]);
-        //     return $result;
-        // } catch (\Exception $e) {
-        //     return "Error: " . $e->getMessage();
-        // }
-        // $twilio_sid = env('TWILIO_SID');
-        // $twilio_token = env('TWILIO_AUTH_TOKEN');
-        // $twilio_phone_number = env('TWILIO_PHONE_NUMBER');
-
-        // $client = new Client($twilio_sid, $twilio_token);
-
-        // try {
-        //     $client->messages->create(
-        //         '+213674680780', // Recipient's phone number
-        //         [
-        //             'from' => $twilio_phone_number,
-        //             'body' => 'Hello, this is a test SMS from Laravel!'
-        //         ]
-        //     );
-
-        // } catch (\Exception $e) {
-        //     return $e;
-        // }
 
         return response()->json(200);
     }

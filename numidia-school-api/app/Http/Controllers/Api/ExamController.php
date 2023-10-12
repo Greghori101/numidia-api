@@ -112,8 +112,9 @@ class ExamController extends Controller
 
     public function student_exams($studentId)
     {
-        $student_exams = Student::with(['exams.answers.question.choices','user'])->find($studentId);
-        return response()->json($student_exams, 200);
+        $student = Student::with(['user'])->find($studentId);
+        $student['exams'] = $student->exams;
+        return response()->json($student, 200);
     }
     public function Teacher_exams($teacherId)
     {

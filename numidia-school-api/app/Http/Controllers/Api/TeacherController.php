@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Session;
 use App\Models\Teacher;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class TeacherController extends Controller
 {
@@ -62,5 +64,24 @@ class TeacherController extends Controller
     {
         $session = Session::find($id);
         $session->state = 'approved';
+    }
+
+
+    public function all_details()
+    {
+        $users = User::with(['teacher', "groups.level"])->get();
+        $response = Http::withHeaders([
+            'Accept' => 'application/json',
+        ])
+            ->get(env('AUTH_API') . '/api/users', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'ids' => $users->pluck('id'),
+            ]);
+
+        $users = $users->concat($response->json());
+        $users = $users->groupBy('id');
+
+        return $users;
     }
 }
