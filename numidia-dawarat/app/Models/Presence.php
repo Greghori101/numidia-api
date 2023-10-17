@@ -19,11 +19,7 @@ class Presence extends Model
      */
     protected $fillable = [
         'id',
-        'email',
-        'name',
-        'phone_number',
-        'role',
-        'gender',
+        'status',
     ];
 
     protected $keyType = 'string';
@@ -45,44 +41,16 @@ class Presence extends Model
      * @var array<string, string>
      */
 
-    function checkouts()
+    function ticket()
     {
-        return $this->hasMany(Checkout::class);
+        return $this->hasOne(Ticket::class);
     }
-    function receipts()
+    function dawarat()
     {
-        return $this->hasMany(Receipt::class);
+        return $this->belongsTo(Dawarat::class);
     }
-
-
     function student()
     {
-        return $this->hasOne(Student::class);
-    }
-    function teacher()
-    {
-        return $this->hasOne(Teacher::class);
-    }
-    function supervisor()
-    {
-        return $this->hasOne(Supervisor::class);
-    }
-
-
-    function wallet()
-    {
-        return $this->hasOne(Wallet::class);
-    }
-    function attendance()
-    {
-        return $this->hasMany(Attendance::class);
-    }
-    function expenses()
-    {
-        return $this->hasMany(Expense::class);
-    }
-    function inscription_fees()
-    {
-        return $this->hasMany(FeeInscription::class, "user_id");
+        return $this->belongsTo(Student::class);
     }
 }

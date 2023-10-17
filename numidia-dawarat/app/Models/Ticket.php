@@ -19,11 +19,15 @@ class Ticket extends Model
      */
     protected $fillable = [
         'id',
-        'email',
-        'name',
-        'phone_number',
-        'role',
-        'gender',
+        'row',
+        'seat',
+        'section',
+        'title',
+        'date',
+        'price',
+        'payed',
+        'location',
+        'discount',
     ];
 
     protected $keyType = 'string';
@@ -45,5 +49,12 @@ class Ticket extends Model
      * @var array<string, string>
      */
 
-    
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+    public function presence()
+    {
+        return $this->belongsTo(Presence::class);
+    }
 }

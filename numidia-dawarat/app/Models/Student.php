@@ -19,11 +19,6 @@ class Student extends Model
      */
     protected $fillable = [
         'id',
-        'email',
-        'name',
-        'phone_number',
-        'role',
-        'gender',
     ];
 
     protected $keyType = 'string';
@@ -45,44 +40,21 @@ class Student extends Model
      * @var array<string, string>
      */
 
-    function checkouts()
+    public function dawarat()
     {
-        return $this->hasMany(Checkout::class);
+        return $this->belongsToMany(
+            Dawarat::class,
+            'presence',
+            'student_id',
+            'dawarat_id',
+        )->withPivot('status');
     }
-    function receipts()
+    public function presences()
     {
-        return $this->hasMany(Receipt::class);
+        return $this->hasMany(Presence::class);
     }
-
-
-    function student()
+    public function user()
     {
-        return $this->hasOne(Student::class);
-    }
-    function teacher()
-    {
-        return $this->hasOne(Teacher::class);
-    }
-    function supervisor()
-    {
-        return $this->hasOne(Supervisor::class);
-    }
-
-
-    function wallet()
-    {
-        return $this->hasOne(Wallet::class);
-    }
-    function attendance()
-    {
-        return $this->hasMany(Attendance::class);
-    }
-    function expenses()
-    {
-        return $this->hasMany(Expense::class);
-    }
-    function inscription_fees()
-    {
-        return $this->hasMany(FeeInscription::class, "user_id");
+        return $this->belongsTo(User::class);
     }
 }

@@ -19,11 +19,7 @@ class Teacher extends Model
      */
     protected $fillable = [
         'id',
-        'email',
-        'name',
-        'phone_number',
-        'role',
-        'gender',
+        'module',
     ];
 
     protected $keyType = 'string';
@@ -45,5 +41,12 @@ class Teacher extends Model
      * @var array<string, string>
      */
 
-   
+    public function dawarat()
+    {
+        return $this->hasMany(Dawarat::class);
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

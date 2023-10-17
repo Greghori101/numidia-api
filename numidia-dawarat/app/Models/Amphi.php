@@ -19,11 +19,9 @@ class Amphi extends Model
      */
     protected $fillable = [
         'id',
-        'email',
+        'capacity',
+        'location',
         'name',
-        'phone_number',
-        'role',
-        'gender',
     ];
 
     protected $keyType = 'string';
@@ -45,44 +43,12 @@ class Amphi extends Model
      * @var array<string, string>
      */
 
-    function checkouts()
+    function dawarat()
     {
-        return $this->hasMany(Checkout::class);
+        return $this->hasMany(Dawarat::class);
     }
-    function receipts()
+    function sections()
     {
-        return $this->hasMany(Receipt::class);
-    }
-
-
-    function student()
-    {
-        return $this->hasOne(Student::class);
-    }
-    function teacher()
-    {
-        return $this->hasOne(Teacher::class);
-    }
-    function supervisor()
-    {
-        return $this->hasOne(Supervisor::class);
-    }
-
-
-    function wallet()
-    {
-        return $this->hasOne(Wallet::class);
-    }
-    function attendance()
-    {
-        return $this->hasMany(Attendance::class);
-    }
-    function expenses()
-    {
-        return $this->hasMany(Expense::class);
-    }
-    function inscription_fees()
-    {
-        return $this->hasMany(FeeInscription::class, "user_id");
+        return $this->hasMany(Section::class);
     }
 }

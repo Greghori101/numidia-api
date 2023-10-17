@@ -19,11 +19,9 @@ class Section extends Model
      */
     protected $fillable = [
         'id',
-        'email',
-        'name',
-        'phone_number',
-        'role',
-        'gender',
+        'nb_rows',
+        'nb_seats',
+        'nb',
     ];
 
     protected $keyType = 'string';
@@ -45,44 +43,8 @@ class Section extends Model
      * @var array<string, string>
      */
 
-    function checkouts()
+    public function amphi()
     {
-        return $this->hasMany(Checkout::class);
-    }
-    function receipts()
-    {
-        return $this->hasMany(Receipt::class);
-    }
-
-
-    function student()
-    {
-        return $this->hasOne(Student::class);
-    }
-    function teacher()
-    {
-        return $this->hasOne(Teacher::class);
-    }
-    function supervisor()
-    {
-        return $this->hasOne(Supervisor::class);
-    }
-
-
-    function wallet()
-    {
-        return $this->hasOne(Wallet::class);
-    }
-    function attendance()
-    {
-        return $this->hasMany(Attendance::class);
-    }
-    function expenses()
-    {
-        return $this->hasMany(Expense::class);
-    }
-    function inscription_fees()
-    {
-        return $this->hasMany(FeeInscription::class, "user_id");
+        return $this->belongsTo(Amphi::class);
     }
 }
