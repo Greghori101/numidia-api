@@ -35,9 +35,7 @@ class DatabaseSeeder extends Seeder
             ])
         );
 
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('SCHOOL_API') . '/api/create-user', [
                 'id' => $user->id,
                 'email' => 'admin@numidia.com',
@@ -46,9 +44,7 @@ class DatabaseSeeder extends Seeder
                 'role' => 'admin',
                 'gender' => 'male',
             ]);
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('LIBRARY_API') . '/api/create-user', [
                 'id' => $user->id,
                 'email' => 'admin@numidia.com',

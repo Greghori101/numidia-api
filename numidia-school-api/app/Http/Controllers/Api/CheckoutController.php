@@ -16,7 +16,7 @@ class CheckoutController extends Controller
     //
 
 
-    public function all(Request $request)
+    public function all()
     {
         $checkouts = Checkout::with(['user.profile_picture', 'student.user', 'group.teacher.user'])
             ->get()
@@ -43,6 +43,17 @@ class CheckoutController extends Controller
     public function index(Request $request)
     {
 
+        $request->validate([
+            'group_id' => ['string'],
+            'student_id' => ['string'],
+            'perPage' => ['string'],
+            'sortBy' => ['string'],
+            'sortDirection' => ['string'],
+            'search' => ['string'],
+            'start_date' => ['string'],
+            'end_date' => ['string'],
+            'type' => ['string'],
+        ]);
         $perPage = $request->query('perPage', 10);
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
@@ -111,6 +122,9 @@ class CheckoutController extends Controller
     public function pay(Request $request)
     {
 
+        $request->validate([
+            'checkouts.*' => ['string'],
+        ]);
         $ids  = $request->checkouts;
         $user = User::find($request->user_id);
 
@@ -154,9 +168,7 @@ class CheckoutController extends Controller
         $users = User::where('role', "admin")
             ->get();
         foreach ($users as $reciever) {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
@@ -174,6 +186,11 @@ class CheckoutController extends Controller
 
     public function create(Request $request)
     {
+        $request->validate([
+            'price' => ['integer'],
+            'date' => ['string'],
+        ]);
+
         Checkout::create([
             'price' => $request->price,
             'date' => Carbon::now(),

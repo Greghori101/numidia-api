@@ -21,6 +21,13 @@ class ParentController extends Controller
 {
     public function index(Request $request)
     {
+        $request->validate([
+            'sortBy' => ['nullable', 'string'],
+            'sortDirection' => ['nullable', 'string'],
+            'perPage' => ['nullable', 'integer'],
+            'search' => ['nullable', 'string'],
+            'gender' => ['nullable', 'in:male,female'],
+        ]);
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
         $perPage = $request->query('perPage', 10);
@@ -63,8 +70,8 @@ class ParentController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:10'],
-            'gender' => 'required|in:male,female',
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users',],
+            'gender' => ['required', 'in:male,female'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
         ]);
 
         $user = User::create([
@@ -75,10 +82,8 @@ class ParentController extends Controller
         ]);
         $user->student()->save(new Student());
 
-        
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/users/create', [
                 'client_id' => env('CLIENT_ID'),
                 'client_secret' => env('CLIENT_SECRET'),

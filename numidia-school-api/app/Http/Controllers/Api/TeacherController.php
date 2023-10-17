@@ -20,6 +20,13 @@ class TeacherController extends Controller
 
     public function index(Request $request)
     {
+        $request->validate([
+            'sortBy' => ['string'],
+            'sortDirection' => ['string', 'in:asc,desc'],
+            'perPage' => ['integer', 'min:1'],
+            'search' => ['string'],
+            'gender' => ['string'],
+        ]);
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
         $perPage = $request->query('perPage', 10);
@@ -56,6 +63,9 @@ class TeacherController extends Controller
 
     public function  reject_session(Request $request, $id)
     {
+        $request->validate([
+            'explanation' => ['required', 'string'],
+        ]);
         $explanation = $request->explanation;
         $session = Session::find($id);
         $session->state = 'rejected';
@@ -70,9 +80,7 @@ class TeacherController extends Controller
     public function all_details()
     {
         $users = User::with(['teacher', "groups.level"])->get();
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->get(env('AUTH_API') . '/api/users', [
                 'client_id' => env('CLIENT_ID'),
                 'client_secret' => env('CLIENT_SECRET'),

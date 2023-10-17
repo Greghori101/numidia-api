@@ -6,14 +6,13 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Passport\HasApiTokens;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Model
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasUuids;
+    use  HasFactory, Notifiable, SoftDeletes, HasUuids;
 
     /**
      * The attributes that are mass assignable.
@@ -38,7 +37,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * @var array<int, string>
      */
     protected $hidden = [
-        
+
         'created_at',
     ];
 
@@ -70,7 +69,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(Supervisor::class);
     }
-    
+
 
     function wallet()
     {

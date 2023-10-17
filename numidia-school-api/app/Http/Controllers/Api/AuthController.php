@@ -30,7 +30,6 @@ class AuthController extends Controller
             'role' => strtolower($request->role),
         ]);
 
-
         $user = User::create([
             'email' => $request->email,
             'name' => $request->name,
@@ -53,18 +52,9 @@ class AuthController extends Controller
             $user->supervisor()->save(new Supervisor());
         }
 
-
         $user->wallet()->save(new Wallet());
 
-
-
-
-
-
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/register', [
                 'client_id' => env('CLIENT_ID'),
                 'client_secret' => env('CLIENT_SECRET'),
@@ -78,9 +68,7 @@ class AuthController extends Controller
             ->where('role', '<>', "supervisor")
             ->get();
         foreach ($users as $reciever) {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
@@ -94,44 +82,19 @@ class AuthController extends Controller
         }
         return response()->json($response->body(), 200);
     }
-    public function user_create(Request $request)
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'role' => ['required', 'string', 'max:255'],
-            'phone_number' => ['required', 'string', 'max:10'],
-            'gender' => 'required|in:male,female',
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users',],
-        ]);
-        $request->merge([
-            'role' => strtolower($request->role),
-        ]);
-
-
-
-        $user = User::create([
-            'id' => $request->id,
-            'email' => $request->email,
-            'name' => $request->name,
-            'phone_number' => $request->phone_number,
-            'role' => $request->role,
-            'gender' => $request->gender,
-        ]);
-
-
-
-        $user->wallet()->save(new Wallet());
-
-
-        return response()->json(200);
-    }
     public function login(Request $request)
     {
+        $request->validate([
+            'email' => ['required',],
+            'password' => ['required',],
+            'coordinates' => ['required',],
+            'location' => ['required'],
+        ]);
         $data = $request->all();
         $data['client_id'] = env('CLIENT_ID');
         $data['client_secret'] = env('CLIENT_SECRET');
 
-        $response = Http::withHeaders($request->header())
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/login', $data);
 
         $data = json_decode($response->body(), true);
@@ -146,10 +109,7 @@ class AuthController extends Controller
         $data['client_id'] = env('CLIENT_ID');
         $data['client_secret'] = env('CLIENT_SECRET');
 
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->delete(env('AUTH_API') . '/api/activities/revoke/' . $id, $data);
 
 
@@ -160,10 +120,7 @@ class AuthController extends Controller
         $data = $request->all();
         $data['client_id'] = env('CLIENT_ID');
         $data['client_secret'] = env('CLIENT_SECRET');
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->delete(env('AUTH_API') . '/api/activities/clear', $data);
 
         return response()->json($response->body(), 200);
@@ -173,27 +130,27 @@ class AuthController extends Controller
         $data = $request->all();
         $data['client_id'] = env('CLIENT_ID');
         $data['client_secret'] = env('CLIENT_SECRET');
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->get(env('AUTH_API') . '/api/logout', $data);
 
         return response()->json($response->body(), 200);
     }
     public function restpassword(Request $request)
     {
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
+        $request->validate([
+            'email' => ['required',],
+            'password' => ['required', 'confirmed'],
+            'code' => ['required',],
+        ]);
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
 
-        ])
-            ->post(env('AUTH_API') . '/api/password/reset', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                $request->all(),
-            ]);
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('AUTH_API') . '/api/password/reset', $data);
+
+
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/notifications', [
                 'client_id' => env('CLIENT_ID'),
                 'client_secret' => env('CLIENT_SECRET'),
@@ -204,93 +161,96 @@ class AuthController extends Controller
                 'id' => $request->user_id,
                 'department' => env('DEPARTEMENT'),
             ]);
-
         return response()->json($response->body(), 200);
     }
     public function forgotpassword(Request $request)
     {
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
+        $request->validate([
+            'email' => ['required',],
+        ]);
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
 
-        ])
-            ->post(env('AUTH_API') . '/api/password/forgot', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                $request->all(),
-            ]);
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('AUTH_API') . '/api/password/forgot', $data);
 
         return response()->json($response->body(), 200);
     }
     public function verify(Request $request)
     {
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
+        $request->validate([
+            'email' => ['required',],
+            'code' => ['required',],
+        ]);
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
 
-        ])
-            ->post(env('AUTH_API') . '/api/email/verify', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                $request->all(),
-            ]);
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('AUTH_API') . '/api/email/verify', $data);
 
         return response()->json($response->body(), 200);
     }
     public function resent_verification(Request $request)
     {
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
+        $request->validate([
+            'email' => ['required',],
+        ]);
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
 
-        ])
-            ->post(env('AUTH_API') . '/api/email/resent/code', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                $request->all(),
-            ]);
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('AUTH_API') . '/api/email/resent/code', $data);
 
         return response()->json($response->body(), 200);
     }
     public function email_verified(Request $request)
     {
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
+        $request->validate([
+            'email' => ['required',],
+        ]);
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
 
-        ])
-            ->get(env('AUTH_API') . '/api/email/isverified', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                $request->all(),
-            ]);
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->get(env('AUTH_API') . '/api/email/isverified', $data);
 
         return response()->json($response->body(), 200);
     }
     public function provider_login(Request $request, $provider)
     {
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
 
-        ])
-            ->post(env('AUTH_API') . '/auth/' . $provider . '/login', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                $request->all(),
-            ]);
+        $request->validate([
+            'email' => ['required',],
+            'token' => ['required',],
+            'id' => ['required',],
+        ]);
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
+
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('AUTH_API') . '/auth/' . $provider . '/login', $data);
 
         return response()->json($response->body(), 200);
     }
     public function change_password(Request $request)
     {
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
+        $request->validate([
+            'old_password' => ['required',],
+            'password' => ['required', 'confirmed'],
+        ]);
+        $data = $request->all();
+        $data['client_id'] = env('CLIENT_ID');
+        $data['client_secret'] = env('CLIENT_SECRET');
 
-        ])
-            ->post(env('AUTH_API') . '/api/password/change', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                $request->all(),
-            ]);
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('AUTH_API') . '/api/password/change', $data);
+
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/notifications', [
                 'client_id' => env('CLIENT_ID'),
                 'client_secret' => env('CLIENT_SECRET'),

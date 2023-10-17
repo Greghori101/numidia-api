@@ -190,9 +190,9 @@ class AuthController extends Controller
             $message = 'wrong code';
             abort(401, $message);
         } else {
-            $user->password = Hash::make($request->password);
             $user->markEmailAsVerified();
             $user->code = null;
+            $user->password = Hash::make($request->input('password'));
             $user->save();
         }
 
@@ -356,10 +356,9 @@ class AuthController extends Controller
     public function change_profile_picture(Request $request, $id = null)
     {
         if (!$id) {
-            $user = User::find($request->user()->id);
-        } else {
-            $user = User::find($id);
+            $id = $request->user->id();
         }
+        $user = User::find($id);
         $file = $request->file('profile_picture');
         $content = $file->get();
         $extension = $file->extension();

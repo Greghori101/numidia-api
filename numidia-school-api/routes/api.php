@@ -21,14 +21,13 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::post('/register', [AuthController::class, 'store']);
-Route::post('/create-user', [AuthController::class, 'user_create']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login',]);
 Route::post('/password/forgot', [AuthController::class, 'forgotpassword']);
 Route::post('/password/reset', [AuthController::class, 'restpassword']);
-Route::get('levels/all', [LevelController::class, 'all']);
-Route::get('program', [SessionController::class, 'all']);
-Route::get('teachers/all-details', [LevelController::class, 'all_details']);
+Route::get('/levels/all', [LevelController::class, 'all']);
+Route::get('/program', [SessionController::class, 'index']);
+Route::get('/teachers/all-details', [TeacherController::class, 'all_details']);
 
 
 Route::middleware(['auth-api-token',])->group(function () {
@@ -36,40 +35,16 @@ Route::middleware(['auth-api-token',])->group(function () {
     Route::post('/email/verify', [AuthController::class, 'verify']);
     Route::post('/email/resent/code', [AuthController::class, 'resent_verification',]);
     Route::get('/email/isverified', [AuthController::class, 'email_verified']);
-    Route::post('/password/change', [UserController::class, 'change_password']);
+    Route::post('/password/change', [AuthController::class, 'change_password']);
     Route::delete('/activities/revoke/{id}', [AuthController::class, 'revoke']);
     Route::delete('/activities/clear', [AuthController::class, 'clear_activities']);
 });
 
 // Verfied routes (require email verification)
 Route::middleware(['auth-api-token'])->group(function () {
+
     Route::get('/profile/{id?}', [UserController::class, 'show']);
-    Route::put('/profile', [UserController::class, 'profile_update']);
-    Route::post('/picture/change/{id?}', [UserController::class, 'change_profile_picture']);
-
-    Route::controller(DashboardController::class)
-        ->group(function () {
-            Route::get('/', 'index');
-            Route::get('/stats', 'stats');
-        });
-    Route::controller(WalletController::class)
-        ->group(function () {
-            Route::post('/deposit', 'deposit');
-            Route::post('/withdraw', 'withdraw');
-        });
-
-
-    Route::controller(FinancialController::class)
-        ->group(function () {
-            Route::get('/checkouts/stats', 'checkouts_stats');
-            Route::get('/students/stats', 'students_stats');
-            Route::get('/employees/register', 'register_per_employee');
-            Route::get('/employees/stats', 'employee_stats');
-            Route::get('/expenses/stats', 'expense_stats');
-            Route::get('/inscription_fees/stats', 'fees_stats');
-            Route::get("/employees/financials", 'all_per_employee');
-        });
-
+    Route::put('/profile', [UserController::class, 'updade']);
 
 
     Route::prefix('users')
@@ -82,18 +57,6 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::put('/{id}', 'update');
             Route::delete('/{id}', 'delete');
         });
-
-    Route::prefix('user')
-        ->controller(UserController::class)
-        ->group(function () {
-            Route::get('/students', 'students');
-            Route::get('/checkouts', 'checkouts');
-            Route::get('/exams', 'exams');
-            Route::get('/groups', 'groups');
-            Route::get('/receipts', 'receipts');
-            Route::get('/sessions', 'sessions');
-        });
-
     Route::prefix('sessions')
         ->controller(SessionController::class)
         ->group(function () {
@@ -106,14 +69,13 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('levels')
         ->controller(LevelController::class)
         ->group(function () {
-
+            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
             Route::put('/{id}', 'update');
             Route::delete('/{id}', 'delete');
         });
-
     Route::prefix('groups')
         ->controller(GroupController::class)
         ->group(function () {
@@ -136,40 +98,30 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
-            Route::delete('/{id}', 'delete');
-            Route::put('/{id}', 'update');
             Route::get('/{id}/checkouts', 'student_checkouts');
-
             Route::get('/{id}/groups', 'student_group');
             Route::get('/{id}/groups/unenrolled', 'group_notin_student');
             Route::post('/{student_id}/groups', 'student_group_add');
             Route::delete('/{student_id}/groups/{group_id}', 'student_group_remove');
         });
-
     Route::prefix('teachers')
         ->controller(TeacherController::class)
         ->group(function () {
             Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
-            Route::delete('/{id}', 'delete');
-            Route::put('/{id}', 'update');
             Route::post('/sessions/reject', 'reject_session');
+            Route::post('/sessions/approve', 'approve_session');
         });
-
     Route::prefix('parents')
         ->controller(ParentController::class)
         ->group(function () {
+            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
-            Route::delete('/{id}', 'delete');
-            Route::put('/{id}', 'update');
             Route::post('/{id}/students', 'add_student');
             Route::get('/{id}/students', 'students');
         });
-
-
-
     Route::prefix('checkouts')
         ->controller(CheckoutController::class)
         ->group(function () {
@@ -182,6 +134,16 @@ Route::middleware(['auth-api-token'])->group(function () {
         });
 
 
+    Route::prefix('user')
+        ->controller(UserController::class)
+        ->group(function () {
+            Route::get('/students', 'students');
+            Route::get('/checkouts', 'checkouts');
+            Route::get('/exams', 'exams');
+            Route::get('/groups', 'groups');
+            Route::get('/receipts', 'receipts');
+            Route::get('/sessions', 'sessions');
+        });
     Route::prefix('receipts')
         ->controller(ReceiptController::class)
         ->group(function () {
@@ -191,7 +153,6 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::delete('/{id}', 'delete');
             Route::put('/{id}', 'update');
         });
-
     Route::prefix('expenses')
         ->controller(ExpensesController::class)
         ->group(function () {
@@ -216,12 +177,30 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('attendance')
         ->controller(AttendanceController::class)
         ->group(function () {
-            Route::get('/students', 'students');
             Route::get('/sessions', 'sessions');
             Route::get('/presence/sheets', 'presence_sheets');
             Route::post('/presence', 'create_presence');
             Route::post('/mark/presence', 'mark_presence');
             Route::post('/remove/presence', 'remove_presence');
+        });
+    Route::controller(WalletController::class)
+        ->group(function () {
+            Route::post('/deposit', 'deposit');
+            Route::post('/withdraw', 'withdraw');
+        });
+    Route::controller(DashboardController::class)
+        ->group(function () {
+            Route::get('/dashboard-stats', 'stats');
+        });
+    Route::controller(FinancialController::class)
+        ->group(function () {
+            Route::get('/checkouts/stats', 'checkouts_stats');
+            Route::get('/students/stats', 'students_stats');
+            Route::get("/employees/financials", 'all_per_employee');
+            Route::get('/employees/register', 'register_per_employee');
+            Route::get('/employees/stats', 'employee_stats');
+            Route::get('/expenses/stats', 'expense_stats');
+            Route::get('/inscription_fees/stats', 'fees_stats');
         });
     Route::prefix('exams')
         ->controller(ExamController::class)
@@ -237,7 +216,6 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/{exam}/student/{id}', 'student_exam');
             Route::get('/student/{id}', 'student_exams');
             Route::get('/teacher/{id}', 'teacher_exams');
-            Route::delete('/{exam}', 'delete');
             Route::put('/{exam}', 'update');
         });
 });

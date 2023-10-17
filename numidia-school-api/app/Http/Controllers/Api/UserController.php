@@ -16,8 +16,21 @@ use Illuminate\Support\Facades\Http;
 
 class UserController extends Controller
 {
+    public function all()
+    {
+        $users = User::all();
+        return response()->json($users, 200);
+    }
     public function index(Request $request)
     {
+        $request->validate([
+            'role' => ['string'],
+            'sortBy' => ['string'],
+            'sortDirection' => ['string', 'in:asc,desc'],
+            'perPage' => ['integer', 'min:1'],
+            'search' => ['string'],
+            'gender' => ['string'],
+        ]);
         $role = $request->query('role', "");
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
@@ -47,14 +60,11 @@ class UserController extends Controller
 
         return $users;
     }
-
     public function show(Request $request, $id = null)
     {
         if (!$id) {
             $user = User::with(["wallet", "checkouts", "receipts",])->find($request->user_id);
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->get(env('AUTH_API') . '/api/profile/' . $user->id, [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
@@ -73,9 +83,7 @@ class UserController extends Controller
             } else {
                 $user->load('receipts', 'wallet',);
             }
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->get(env('AUTH_API') . '/api/profile/' . $user->id, [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
@@ -85,14 +93,16 @@ class UserController extends Controller
             return response()->json($user, 200);
         }
     }
-
     public function users_list(Request $request)
     {
+        $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['string'],
+        ]);
         $users = User::whereIn('id', $request->ids)->get();
 
         return response()->json($users, 200);
     }
-
     public function store(Request $request)
     {
         $request->validate([
@@ -120,9 +130,7 @@ class UserController extends Controller
 
         $user->wallet()->save(new Wallet());
 
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/users/create', [
                 'client_id' => env('CLIENT_ID'),
                 'client_secret' => env('CLIENT_SECRET'),
@@ -151,9 +159,7 @@ class UserController extends Controller
             ->where('role', '<>', "supervisor")
             ->get();
         foreach ($users as $reciever) {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
@@ -167,9 +173,13 @@ class UserController extends Controller
         }
         return response()->json(200);
     }
-
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone_number' => ['required', 'string', 'max:10'],
+            'gender' => ['required', 'in:male,female'],
+        ]);
         $user = User::find($id);
 
         $user->update([
@@ -181,27 +191,12 @@ class UserController extends Controller
 
         return response()->json(['message' => 'User data updated successfully'], 200);
     }
-    public function profile_update(Request $request)
-    {
-        $user = User::find($request->user_id);
-
-        $user->update([
-            'name' => $request->name,
-            'phone_number' => $request->phone_number,
-            'gender' => $request->gender,
-
-        ]);
-
-        return response()->json(['message' => 'User data updated successfully'], 200);
-    }
-
     public function delete($id)
     {
         $user = User::where('id', $id)->first();
         $user->forceDelete();
         return response()->json(200);
     }
-
     public function student(Request $request)
     {
 
@@ -258,10 +253,10 @@ class UserController extends Controller
     {
         $user = User::find($request->user_id);
         if ($user->role == "student") {
-            $student = $user->student->load(['groups.sessions.exceptions',"groups.sessions.group.teacher.user"]);
+            $student = $user->student->load(['groups.sessions.exceptions', "groups.sessions.group.teacher.user"]);
             $sessions = $student->groups->pluck('sessions')->flatten();
         } elseif ($user->role == "teacher") {
-            $sessions = $user->teacher->sessions->load(["exceptions","group.teacher.user"]);
+            $sessions = $user->teacher->sessions->load(["exceptions", "group.teacher.user"]);
         }
         return response()->json($sessions, 200);
     }

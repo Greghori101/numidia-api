@@ -22,6 +22,12 @@ class FeeInscriptionController extends Controller
 
     public function index(Request $request)
     {
+        $request->validate([
+            'sortBy' => 'nullable|string',
+            'sortDirection' => 'nullable|in:asc,desc',
+            'perPage' => 'nullable|integer|min:1',
+            'search' => 'nullable|string',
+        ]);
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
         $perPage = $request->query('perPage', 10);
@@ -48,6 +54,12 @@ class FeeInscriptionController extends Controller
 
     public function create(Request $request)
     {
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'amount' => 'required|numeric',
+            'date' => 'required|date',
+            'user_id' => 'required|exists:users,id',
+        ]);
         $student = Student::find($request->student_id);
         if ($student->fee_inscription) {
             $feeInscription = $student->fee_inscription;
@@ -78,6 +90,13 @@ class FeeInscriptionController extends Controller
     }
     public function pay(Request $request)
     {
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'amount' => 'required|numeric',
+            'date' => 'required|date',
+            'type' => 'required|string',
+            'total' => 'required|numeric',
+        ]);
         $student = Student::find($request->student_id);
         if ($student->fee_inscription) {
             $feeInscription = $student->fee_inscription;
@@ -124,9 +143,7 @@ class FeeInscriptionController extends Controller
         $users = User::where('role', "admin")
             ->get();
         foreach ($users as $reciever) {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
@@ -156,6 +173,12 @@ class FeeInscriptionController extends Controller
 
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'amount' => 'required|numeric',
+            'date' => 'required|date',
+            'user_id' => 'required|exists:users,id',
+            'student_id' => 'required|exists:students,id',
+        ]);
         $feeInscription = FeeInscription::find($id);
 
         if ($feeInscription) {

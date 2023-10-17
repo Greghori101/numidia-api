@@ -24,6 +24,15 @@ class GroupController extends Controller
     }
     public function index(Request $request)
     {
+        $request->validate([
+            'perPage' => ['nullable', 'integer'],
+            'sortBy' => ['nullable', 'string'],
+            'sortDirection' => ['nullable', 'string'],
+            'search' => ['nullable', 'string'],
+            'level_id' => ['nullable',],
+            'teacher_id' => ['nullable',],
+        ]);
+
         $perPage = $request->query('perPage', 10);
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
@@ -71,6 +80,8 @@ class GroupController extends Controller
             'module' => ['required', 'string'],
             'capacity' => ['required', 'integer'],
             'nb_session' => ['required', 'integer'],
+            'price_per_month' => ['required', 'integer'],
+            'type' => ['required', 'string'],
         ]);
 
         $teacher = Teacher::find($request->teacher_id);
@@ -85,9 +96,7 @@ class GroupController extends Controller
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/notifications', [
                 'client_id' => env('CLIENT_ID'),
                 'client_secret' => env('CLIENT_SECRET'),
@@ -120,6 +129,8 @@ class GroupController extends Controller
             'module' => ['required', 'string'],
             'capacity' => ['required', 'integer'],
             'nb_session' => ['required', 'integer'],
+            'price_per_month' => ['required', 'integer'],
+            'type' => ['required', 'string'],
         ]);
         $group = Group::find($id);
         $group->delete();
@@ -142,6 +153,11 @@ class GroupController extends Controller
 
     public function students_create(Request $request, $id)
     {
+
+        $request->validate([
+            'students' => ['required', 'array'],
+            'students.*' => ['string'],
+        ]);
         $group = Group::find($id);
         foreach ($request->students as $studentId) {
             if (!$group->students->contains($studentId)) {
@@ -163,9 +179,7 @@ class GroupController extends Controller
         } else {
             $group->students()->detach();
         }
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/notifications', [
                 'client_id' => env('CLIENT_ID'),
                 'client_secret' => env('CLIENT_SECRET'),
@@ -215,6 +229,14 @@ class GroupController extends Controller
     }
     public function sessions_create(Request $request, $id)
     {
+
+        $request->validate([
+            'classroom' => ['required', 'string'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date'],
+            'repeating' => ['required', 'string'],
+        ]);
+
         $group = Group::find($id);
         $session = Session::create([
             "classroom" => $request->classroom,
@@ -227,9 +249,7 @@ class GroupController extends Controller
 
 
         foreach ($group->students as $student) {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),

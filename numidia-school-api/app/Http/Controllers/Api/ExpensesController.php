@@ -20,6 +20,12 @@ class ExpensesController extends Controller
 
     public function index(Request $request)
     {
+        $request->validate([
+            'sortBy' => 'nullable|string',
+            'sortDirection' => 'nullable|in:asc,desc',
+            'perPage' => 'nullable|integer|min:1',
+            'search' => 'nullable|string',
+        ]);
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
         $perPage = $request->query('perPage', 10);
@@ -49,7 +55,12 @@ class ExpensesController extends Controller
 
     public function create(Request $request)
     {
-
+        $request->validate([
+            'amount' => 'required|numeric',
+            'type' => 'required|string',
+            'date' => 'required|date',
+            'description' => 'required|string',
+        ]);
         $expense = Expense::create([
             'amount' => $request->amount,
             'type' => $request->type,
@@ -69,9 +80,7 @@ class ExpensesController extends Controller
         $users = User::where('role', "admin")
             ->get();
         foreach ($users as $reciever) {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
@@ -102,6 +111,12 @@ class ExpensesController extends Controller
     public function update(Request $request, $id)
     {
         $expense = Expense::find($id);
+        $request->validate([
+            'amount' => 'required|numeric',
+            'type' => 'required|string',
+            'date' => 'required|date',
+            'description' => 'required|string',
+        ]);
 
         if ($expense) {
             $expense->update([

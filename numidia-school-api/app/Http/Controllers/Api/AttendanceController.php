@@ -16,6 +16,12 @@ class AttendanceController extends Controller
     public function students(Request $request)
     {
 
+        $request->validate([
+            'search' => ['required', 'string', 'max:255'],
+            'starts_at' => ['required'],
+            'ends_at' => ['required'],
+            'group_id' => ['required'],
+        ]);
         $search = $request->search;
         $starts_at = Carbon::parse($request->starts_at);
         $ends_at = Carbon::parse($request->ends_at);
@@ -26,6 +32,12 @@ class AttendanceController extends Controller
     }
     public function sessions(Request $request)
     {
+
+        $request->validate([
+            'search' => ['required', 'string', 'max:255'],
+            'starts_at' => ['required'],
+            'ends_at' => ['required'],
+        ]);
 
         $startDate = $request->input('starts_at');
         $endDate = $request->input('ends_at');
@@ -78,8 +90,11 @@ class AttendanceController extends Controller
     }
     public function mark_presence(Request $request)
     {
+        $request->validate([
+            'presence' => ['required'],
+            'student' => ['required'],
+        ]);
         $presence = Presence::find($request->presence);
-        $student = Student::find($request->student);
 
         if ($presence) {
             $presence->students()->syncWithoutDetaching([$request->student => ['status' => 'present']]);
@@ -90,8 +105,11 @@ class AttendanceController extends Controller
     }
     public function remove_presence(Request $request)
     {
+        $request->validate([
+            'presence' => ['required'],
+            'student' => ['required'],
+        ]);
         $presence = Presence::find($request->presence);
-        $student = Student::find($request->student);
 
         if ($presence) {
             $presence->students()->syncWithoutDetaching([$request->student => ['status' => 'absent']]);
@@ -103,6 +121,10 @@ class AttendanceController extends Controller
 
     public function presence_sheets(Request $request)
     {
+        $request->validate([
+            'ids' => ['required'],
+            'search' => ['required'],
+        ]);
 
         if ($request->ids) {
             $presence_sheets = Presence::with(['group.teacher.user', 'students.user'])
@@ -120,6 +142,11 @@ class AttendanceController extends Controller
 
     public function create_presence(Request $request)
     {
+        $request->validate([
+            'group_id' => ['required'],
+            'starts_at' => ['required'],
+            'ends_at' => ['required'],
+        ]);
         $group_id = $request->group_id;
         $starts_at = Carbon::parse($request->starts_at);
         $ends_at = Carbon::parse($request->ends_at);

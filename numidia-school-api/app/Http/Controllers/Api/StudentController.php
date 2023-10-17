@@ -22,6 +22,14 @@ class StudentController extends Controller
     }
     public function index(Request $request)
     {
+        $request->validate([
+            'perPage' => ['integer', 'min:1'],
+            'sortBy' => ['string'],
+            'sortDirection' => ['string', 'in:asc,desc'],
+            'search' => ['string'],
+            'level_id' => ['integer'],
+            'gender' => ['string', 'in:male,female'],
+        ]);
         $perPage = $request->query('perPage', 10);
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
@@ -68,6 +76,9 @@ class StudentController extends Controller
 
     public function student_group_add(Request $request, $student_id)
     {
+        $request->validate([
+            'groups' => ['required', 'array'],
+        ]);
         $student = Student::find($student_id);
         $user = User::find($request->user_id);
         $groups = $request->groups;
@@ -89,9 +100,7 @@ class StudentController extends Controller
             $group = Group::find($group->id);
             $group->checkouts()->save($checkout);
             $student->user->wallet->save();
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
@@ -123,9 +132,7 @@ class StudentController extends Controller
 
         $group = Group::find($group_id);
 
-        $response = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/notifications', [
                 'client_id' => env('CLIENT_ID'),
                 'client_secret' => env('CLIENT_SECRET'),

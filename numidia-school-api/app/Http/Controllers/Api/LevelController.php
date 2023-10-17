@@ -16,6 +16,12 @@ class LevelController extends Controller
     }
     public function index(Request $request)
     {
+        $request->validate([
+            'sortBy' => ['nullable', 'string'],
+            'sortDirection' => ['nullable', 'string'],
+            'perPage' => ['nullable', 'integer'],
+            'search' => ['nullable', 'string'],
+        ]);
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
         $perPage = $request->query('perPage', 10);
@@ -43,6 +49,12 @@ class LevelController extends Controller
 
     public function create(Request $request)
     {
+        $request->validate([
+            'education' => ['required', 'string'],
+            'speciality' => ['required', 'string'],
+            'year' => ['required', 'integer'],
+        ]);
+
         $level = Level::create([
             'education' => $request->education,
             'speciality' => $request->speciality,
@@ -64,6 +76,11 @@ class LevelController extends Controller
 
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'education' => ['required', 'string'],
+            'speciality' => ['required', 'string'],
+            'year' => ['required', 'integer'],
+        ]);
         $level = Level::updateOrCreate(
             ['id' => $id],
             [

@@ -14,6 +14,10 @@ class WalletController extends Controller
 {
     public function deposit(Request $request)
     {
+        $request->validate([
+            'client_id' => ['required', 'string'],
+            'total' => ['required', 'numeric', 'min:0'],
+        ]);
         $user = User::find($request->client_id);
         $user->wallet->balance += $request->total;
         $user->receipts()->save(new Receipt([
@@ -25,9 +29,7 @@ class WalletController extends Controller
         $users = User::where('role', "admin")
             ->get();
         foreach ($users as $reciever) {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
@@ -42,6 +44,10 @@ class WalletController extends Controller
     }
     public function withdraw(Request $request)
     {
+        $request->validate([
+            'client_id' => ['required', 'string'],
+            'total' => ['required', 'numeric', 'min:0'],
+        ]);
         $user = User::find($request->client_id);
         $user->wallet->balance -= $request->total;
         $user->receipts()->save(new Receipt([
@@ -54,9 +60,7 @@ class WalletController extends Controller
         $users = User::where('role', "admin")
             ->get();
         foreach ($users as $reciever) {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),

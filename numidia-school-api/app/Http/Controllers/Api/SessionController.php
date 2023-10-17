@@ -27,6 +27,10 @@ class SessionController extends Controller
 
     public function except(Request $request, $id)
     {
+        $request->validate([
+            'date' => ['required', 'date'],
+        ]);
+    
         $session = Session::find($id);
         $session->exceptions()->save(new ExceptionSession(['date' => Carbon::parse($request->date)]));
         return response()->json($session, 200);
@@ -45,7 +49,12 @@ class SessionController extends Controller
     public function update(Request $request, $id)
     {
         $session = Session::find($id);
-
+        $request->validate([
+            'classroom' => ['required'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date'],
+            'repeating' => ['required'],
+        ]);
         $session->update([
             'classroom' => $request->classroom,
             'starts_at' => $request->starts_at,
@@ -57,9 +66,7 @@ class SessionController extends Controller
 
 
         foreach ($session->group->students as $student) {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
@@ -76,7 +83,7 @@ class SessionController extends Controller
     }
     public function all()
     {
-        $sessions = Session::with(["exceptions", "group.teacher.user","group.level"])->get();
+        $sessions = Session::with(["exceptions", "group.teacher.user", "group.level"])->get();
         return response()->json($sessions, 200);
     }
 }

@@ -15,10 +15,7 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
-    {
-        return response()->json(200);
-    }
+
     public function stats(Request $request)
     {
 
