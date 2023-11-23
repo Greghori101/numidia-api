@@ -13,49 +13,76 @@ use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
 {
-    public function students(Request $request)
-    {
 
-        $request->validate([
-            'search' => ['nullable', 'string', 'max:255'],
-            'starts_at' => ['nullable',],
-            'ends_at' => ['nullable',],
-            'group_id' => ['nullable',],
-        ]);
-        $search = $request->search;
-        $starts_at = Carbon::parse($request->starts_at);
-        $ends_at = Carbon::parse($request->ends_at);
-        $group_id = $request->group_id;
-
-
-        return response()->json(200);
-    }
     public function sessions(Request $request)
     {
+        $sessions = Session::with(['exceptions', 'group.teacher.user'])->get();
 
-        $request->validate([
-            'search' => ['nullable', 'string', 'max:255'],
-        ]);
-        $search = $request->input('search');
+        $finalSessions = [];
+        $start = Carbon::parse($request->starts_at);
+        $end = Carbon::parse($request->ends_at);
+        foreach ($sessions as $session) {
+            # code...
+            $finalSessions = array_merge($finalSessions, $this->checkDate($session, $start, $end));
+        }
+        usort($finalSessions, function ($a, $b) {
+            return strtotime($a['starts_at']) - strtotime($b['starts_at']);
+        });
+        return response()->json($finalSessions, 200);
+    }
+    public function checkDate($session, $start, $end)
+    {
+        $sessionStart = Carbon::parse($session->starts_at);
 
-        $query = Session::with(['exceptions', 'group.teacher.user']);
+        $repeating = $session->repeating;
 
-        if ($search) {
-            $query->where(function ($subQuery) use ($search) {
-                $subQuery->orWhereHas('group', function ($groupQuery) use ($search) {
-                    $groupQuery->where('module', 'like', '%' . $search . '%');
-                })->orWhereHas('group.teacher.user', function ($userQuery) use ($search) {
-                    $userQuery->where('name', 'like', '%' . $search . '%');
-                });
-            });
+        if ($start->greaterThan($end) || $sessionStart->greaterThan($end)) {
+            return [];
         }
 
-        $sessions = $query->with(['group'])->get();
-        $distinctGroups = $sessions->pluck('group')->unique();
-        $groups = Group::whereIn('id', $distinctGroups->pluck('id'))->with(['teacher.user'])->get();
+        $temp = [];
+        if ($repeating == "once" && $sessionStart->betweenIncluded($start, $end)) {
+            $temp[] = $session;
+        } elseif ($repeating == "weekly" || $repeating == "monthly") {
+            $firstSessionDate = $sessionStart->copy();
 
-        return response()->json(["sessions" => $sessions, "groups" => $groups], 200);
+            while ($firstSessionDate->lessThan($start)) {
+                if ($repeating == "weekly") {
+                    $firstSessionDate->addWeek();
+                } else {
+                    $firstSessionDate->addMonth();
+                }
+            }
+
+            while ($firstSessionDate->lessThanOrEqualTo($end)) {
+                $sessionCopy = $session;
+                $duration = Carbon::parse($sessionCopy['ends_at'])->diffInMilliseconds(Carbon::parse($sessionCopy['starts_at']));
+                $sessionCopy['starts_at'] = $firstSessionDate->format("Y-m-d H:i");
+                $sessionCopy['ends_at'] = Carbon::parse($sessionCopy['starts_at'])->addMilliseconds($duration)->format("Y-m-d H:i");
+                $b = false;
+                foreach ($session->exceptions as $exception) {
+                    # code...
+                    if ($firstSessionDate->EqualTo($exception->date)) {
+                        $b = true;
+                    }
+                }
+                if (!$b) {
+                    $temp[] = $sessionCopy;
+                }
+
+                if ($repeating == "weekly") {
+                    $firstSessionDate->addWeek();
+                } else {
+                    $firstSessionDate->addMonth();
+                }
+            }
+        }
+
+
+
+        return $temp;
     }
+
     public function mark_presence(Request $request)
     {
         $request->validate([
@@ -96,8 +123,13 @@ class AttendanceController extends Controller
         if ($request->ids) {
             $presence_sheets = Presence::with(['group.teacher.user', 'students.user'])
                 ->whereIn('id', $request->ids)
-                ->whereHas('students.user', function ($query) use ($request) {
-                    $query->where('name', 'like', '%' . $request->search . '%');
+                ->where(function ($query) use ($request) {
+                    $query->whereHas('group', function ($groupQuery) use ($request) {
+                        $groupQuery->where('module', 'like', '%' . $request->search . '%');
+                    })
+                        ->orWhereHas('students.user', function ($userQuery) use ($request) {
+                            $userQuery->where('name', 'like', '%' . $request->search . '%');
+                        });
                 })
                 ->get();
         } else {

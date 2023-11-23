@@ -15,7 +15,7 @@ class Presence extends Model
         'starts_at',
         'ends_at',
         'group_id',
-        'status'
+        'status',
     ];
 
     protected $keyType = 'string';

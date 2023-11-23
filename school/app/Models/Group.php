@@ -11,7 +11,7 @@ class Group extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['module', 'capacity', 'price_per_month', 'nb_session', 'type', 'rest_session'];
+    protected $fillable = ['module', 'capacity', 'price_per_month', 'nb_session', 'type', 'rest_session','current_nb_session','unit'];
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -22,7 +22,8 @@ class Group extends Model
             Student::class,
             'group_student',
             'group_id',
-            'student_id'
+            'student_id',
+            
         );
     }
 

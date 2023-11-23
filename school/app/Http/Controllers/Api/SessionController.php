@@ -30,7 +30,7 @@ class SessionController extends Controller
         $request->validate([
             'date' => ['required', 'date'],
         ]);
-    
+
         $session = Session::find($id);
         $session->exceptions()->save(new ExceptionSession(['date' => Carbon::parse($request->date)]));
         return response()->json($session, 200);
@@ -53,13 +53,11 @@ class SessionController extends Controller
             'classroom' => ['required'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date'],
-            'repeating' => ['required'],
         ]);
         $session->update([
             'classroom' => $request->classroom,
             'starts_at' => $request->starts_at,
             'ends_at' => $request->ends_at,
-            "repeating" => $request->repeating,
         ]);
         $session->save();
 

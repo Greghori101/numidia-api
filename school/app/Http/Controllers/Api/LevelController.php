@@ -51,7 +51,7 @@ class LevelController extends Controller
     {
         $request->validate([
             'education' => ['required', 'string'],
-            'speciality' => ['required', 'string'],
+            'speciality' => ['nullable', 'string'],
             'year' => ['required', 'integer'],
         ]);
 
@@ -78,7 +78,7 @@ class LevelController extends Controller
     {
         $request->validate([
             'education' => ['required', 'string'],
-            'speciality' => ['required', 'string'],
+            'speciality' => ['nullable', 'string'],
             'year' => ['required', 'integer'],
         ]);
         $level = Level::updateOrCreate(

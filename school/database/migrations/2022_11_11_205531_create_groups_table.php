@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      *
@@ -23,6 +24,8 @@ return new class extends Migration {
             $table->integer('nb_session');
             $table->integer('rest_session');
             $table->bigInteger('price_per_month');
+            $table->integer('current_nb_session')->default(1);
+            $table->string('unit')->default("school");
 
             $table->uuid('teacher_id')->nullable();
             $table
