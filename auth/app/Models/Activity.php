@@ -9,16 +9,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Activity extends Model
 {
-    use HasFactory, HasUuids,SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'browser',
         'details',
         'ip_address',
-        'latitude',
-        'longitude',
-        'device',
         'location',
+        'device',
+        'platform',
         'access_token_id',
     ];
 
@@ -26,9 +25,8 @@ class Activity extends Model
     public $incrementing = false;
 
 
-    public function user(){
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
-
-   
 }

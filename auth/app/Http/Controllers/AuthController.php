@@ -8,15 +8,17 @@ use App\Mail\VerifyEmail;
 use App\Mail\WelcomeEmail;
 use App\Models\Activity;
 use App\Models\File;
+use App\Models\Notification;
 use Laravel\Passport\Token;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Jenssegers\Agent\Agent;
 
 class AuthController extends Controller
 {
@@ -33,6 +35,8 @@ class AuthController extends Controller
 
             $remember = $request->remember_me;
             Auth::login($user, $remember);
+            $agent = new Agent();
+            $agent->setUserAgent($request->header('User-Agent'));
             $accessToken = $user->createToken('API Token');
             $token = $accessToken->token;
             $data = [
@@ -44,12 +48,11 @@ class AuthController extends Controller
             ];
             $user->activities()->save(Activity::create([
                 'details' => "login",
-                'browser' => $request->userAgent(),
+                'browser' => $agent->browser(),
                 'ip_address' => $request->ip(),
+                'platfrom' => $agent->platform(),
                 'location' => $request->location,
-                'latitude' => $request->coordinates['latitude'],
-                'longitude' => $request->coordinates['longitude'],
-                'device' =>  strpos($request->userAgent(), 'Mobile') !== false ? 'mobile' : 'desktop',
+                'device' =>  $agent->device(),
                 'access_token_id' => $token->id,
 
             ]));
@@ -66,7 +69,7 @@ class AuthController extends Controller
     }
     public function revoke(Request $request, $id)
     {
-        $user_id = $request->user->id;
+        $user_id = $request->user()->id;
 
         Activity::where('access_token_id', $id)->where('user_id', $user_id)->update(['status' => "revoked"]);
         $token = Token::find($id);
@@ -81,7 +84,7 @@ class AuthController extends Controller
     }
     public function clear_activities(Request $request)
     {
-        $user_id = $request->user->id;
+        $user_id = $request->user()->id;
 
         Activity::where('status', '!=', 'active')->where('user_id', $user_id)->delete();
 
@@ -202,9 +205,9 @@ class AuthController extends Controller
     }
     public function logout(Request $request)
     {
-        $user = User::find($request->user->id);
-        if (Auth::check($user)) {
-            Activity::where('user_id', $user->id)->update(['status' => "logged out"]);
+        $user = User::find($request->user()->id);
+        if ($user) {
+            Activity::where('user_id', $user->id)->update(['status' => "revoked"]);
             $user->tokens()->delete();
             return response(200);
         } else {
@@ -368,7 +371,7 @@ class AuthController extends Controller
     }
     public function change_password(Request $request)
     {
-        $user = $request->user();
+        $user = User::find($request->user()->id);
 
         $request->validate([
             'old_password' => 'required',
@@ -382,6 +385,14 @@ class AuthController extends Controller
         $user->password = Hash::make($request->input('password'));
         $user->save();
 
+        Notification::create([
+            'type' => "info",
+            'title' => "Password Changed",
+            'content' => "Your password has been changed at " . Carbon::now(),
+            'displayed' => false,
+            'id' => $user->id,
+        ]);
+
         return response()->json(['message' => 'Password changed successfully'], 200);
     }
     public function verify_token(Request $request)
@@ -392,7 +403,7 @@ class AuthController extends Controller
     public function change_profile_picture(Request $request, $id = null)
     {
         if (!$id) {
-            $id = $request->user->id();
+            $id = $request->user()->id;
         }
         $user = User::find($id);
         $file = $request->file('profile_picture');

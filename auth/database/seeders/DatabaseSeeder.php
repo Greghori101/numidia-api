@@ -47,24 +47,24 @@ class DatabaseSeeder extends Seeder
                 'role' => 'admin',
                 'gender' => 'male',
             ]);
-        // $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-        //     ->post(env('PROFESSION_API') . '/api/create-user', [
-        //         'id' => $user->id,
-        //         'email' => 'admin@admin.com',
-        //         'name' => 'numidia admin',
-        //         'phone_number' => '0990990990',
-        //         'role' => 'admin',
-        //         'gender' => 'male',
-        //     ]);
-        // $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-        //     ->post(env('ACADEMY_API') . '/api/create-user', [
-        //         'id' => $user->id,
-        //         'email' => 'admin@admin.com',
-        //         'name' => 'numidia admin',
-        //         'phone_number' => '0990990990',
-        //         'role' => 'admin',
-        //         'gender' => 'male',
-        //     ]);
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('PROFESSION_API') . '/api/create-user', [
+                'id' => $user->id,
+                'email' => 'admin@admin.com',
+                'name' => 'numidia admin',
+                'phone_number' => '0990990990',
+                'role' => 'admin',
+                'gender' => 'male',
+            ]);
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('ACADEMY_API') . '/api/create-user', [
+                'id' => $user->id,
+                'email' => 'admin@admin.com',
+                'name' => 'numidia admin',
+                'phone_number' => '0990990990',
+                'role' => 'admin',
+                'gender' => 'male',
+            ]);
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('LIBRARY_API') . '/api/create-user', [
                 'id' => $user->id,

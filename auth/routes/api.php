@@ -23,16 +23,12 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login',]);
-Route::post('/password/forgot', [AuthController::class, 'forgotpassword']);
-Route::post('/password/reset', [AuthController::class, 'restpassword']);
+Route::post('/password/forgot', [AuthController::class, 'forgotpassword']); 
+Route::post('/password/reset', [AuthController::class, 'restpassword']); 
 Route::post('/users/create', [AuthController::class, 'create']);
-Route::get('/logout', [AuthController::class, 'logout']);
-Route::post('/email/verify', [AuthController::class, 'verify']);
-Route::post('/email/resent/code', [AuthController::class, 'resent_verification',]);
-Route::get('/email/isverified', [AuthController::class, 'email_verified']);
+
 Route::get('/profile/{id}', [AuthController::class, 'show']);
-Route::delete('/activities/revoke/{id}', [AuthController::class, 'revoke']);
-Route::delete('/activities/clear', [AuthController::class, 'clear_activities']);
+
 Route::delete('/users', [AuthController::class, 'users']);
 
 Route::prefix('posts')
@@ -43,7 +39,12 @@ Route::prefix('posts')
     });
 
 Route::middleware(['auth:api'])->group(function () {
-
+    Route::post('/email/verify', [AuthController::class, 'verify']); 
+    Route::post('/email/resent/code', [AuthController::class, 'resent_verification',]);
+    Route::get('/email/isverified', [AuthController::class, 'email_verified']);
+    Route::get('/logout', [AuthController::class, 'logout']);
+    Route::delete('/activities/revoke/{id}', [AuthController::class, 'revoke']);
+    Route::delete('/activities/clear', [AuthController::class, 'clear_activities']);
     Route::get('/verify-token', [AuthController::class, 'verify_token']);
     Route::post('/password/change', [AuthController::class, 'change_password']);
     Route::post('/picture/change/{id?}', [AuthController::class, 'change_profile_picture']);
