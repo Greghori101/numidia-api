@@ -27,7 +27,10 @@ class ProductController extends Controller
             'price' => $request->price,
             'qte' => $request->qte,
             'description' => $request->description,
-            'purchase_date' => $request->purchase_date
+            'purchase_date' => $request->purchase_date,
+            'purchase_price' => $request->purchase_price,
+            'tags' => $request->tags,
+            'level' => $request->level
         ]);
         $pictures = $request->file('pictures');
         foreach ($pictures as $picture) {
@@ -67,6 +70,9 @@ class ProductController extends Controller
         $product->qte = $request->qte;
         $product->description = $request->description;
         $product->purchase_date = $request->purchase_date;
+        $product->purchase_price = $request->purchase_price;
+        $product->tags = $request->tags;
+        $product->level = $request->level;
         $product->save();
 
         return response()->json(['message' => 'Product updated successfully'], 200);
