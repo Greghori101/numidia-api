@@ -31,7 +31,7 @@ class ExpensesController extends Controller
 
         $expensesQuery = Expense::when($search, function ($query) use ($search) {
             return $query->where(function ($subQuery) use ($search) {
-                $subQuery->where('amount', 'like', "%$search%")
+                $subQuery->where('total', 'like', "%$search%")
                     ->orWhere('type', 'like', "%$search%")
                     ->orWhere('date', 'like', "%$search%")
                     ->orWhere('description', 'like', "%$search%");
@@ -54,13 +54,13 @@ class ExpensesController extends Controller
     public function create(Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric',
+            'total' => 'required|numeric',
             'type' => 'required|string',
             'date' => 'required|date',
             'description' => 'required|string',
         ]);
         $expense = Expense::create([
-            'amount' => $request->amount,
+            'total' => $request->total,
             'type' => $request->type,
             'date' => $request->date,
             'description' => $request->description,
@@ -70,24 +70,26 @@ class ExpensesController extends Controller
         $user->expenses()->save($expense);
 
         $admin = User::where("role", "admin")->first();
-        $admin->wallet->balance -= $request->amount;
-        $admin->wallet->save();
+
+        $data = ["amount" => -$request->total, "user" => $admin];
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
 
 
         $users = User::where('role', "admin")
             ->get();
-        foreach ($users as $reciever) {
+        foreach ($users as $receiver) {
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                     'type' => "info",
                     'title' => "New Chargers",
-                    'content' => "The user:" . $user->name . " has charged: " . $request->amount . ".00 DA",
+                    'content' => "The user:" . $user->name . " has charged: " . $request->total . ".00 DA",
                     'displayed' => false,
-                    'id' => $reciever->id,
-                    'department' => env('DEPARTEMENT'),
+                    'id' => $receiver->id,
+                    'department' => env('DEPARTMENT'),
                 ]);
         }
 
@@ -110,7 +112,7 @@ class ExpensesController extends Controller
     {
         $expense = Expense::find($id);
         $request->validate([
-            'amount' => 'required|numeric',
+            'total' => 'required|numeric',
             'type' => 'required|string',
             'date' => 'required|date',
             'description' => 'required|string',
@@ -118,7 +120,7 @@ class ExpensesController extends Controller
 
         if ($expense) {
             $expense->update([
-                'amount' => $request->amount,
+                'total' => $request->total,
                 'type' => $request->type,
                 'date' => $request->date,
                 'description' => $request->description,

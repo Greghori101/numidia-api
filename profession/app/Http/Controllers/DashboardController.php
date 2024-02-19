@@ -4,33 +4,33 @@ namespace App\Http\Controllers;
 
 use App\Models\Group;
 use App\Models\Level;
-use App\Models\Post;
 use App\Models\Session;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\Teacher;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class DashboardController extends Controller
 {
 
     public function stats(Request $request)
     {
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->get(env('AUTH_API') . '/api/wallet/'.$request->user["id"]);
 
         $parents = Supervisor::all()->count();
         $students = Student::all()->count();
         $teachers = Teacher::all()->count();
         $users = User::all()->count();
-        $news = 0;
         $groups = Group::all()->count();
         $sessions = Session::all()->count();
-        $finicials = User::where("role", 'admin')->first()->wallet->balance;
+        $financials = $response->json();
         $departments = 3;
         $levels = Level::all()->count();
         $data = [
-            'finicials' => $finicials,
+            'financials' => $financials,
             'departments' => $departments,
             'levels' => $levels,
             'users' => $users,
@@ -39,7 +39,6 @@ class DashboardController extends Controller
             'teachers' => $teachers,
             'groups' => $groups,
             'sessions' => $sessions,
-            'news' => $news,
         ];
         return response()->json($data, 200);
     }

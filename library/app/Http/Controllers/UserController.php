@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Mail;
 class UserController extends Controller
 {
 
+    
     public function index()
     {
         $users = User::with(['profile_picture'])->all();

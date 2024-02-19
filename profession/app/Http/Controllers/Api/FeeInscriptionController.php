@@ -32,7 +32,7 @@ class FeeInscriptionController extends Controller
 
         $feeInscriptionsQuery = FeeInscription::when($search, function ($query) use ($search) {
             return $query->where(function ($subQuery) use ($search) {
-                $subQuery->where('amount', 'like', "%$search%")
+                $subQuery->where('total', 'like', "%$search%")
                     ->orWhere('date', 'like', "%$search%");
             });
         });
@@ -53,28 +53,31 @@ class FeeInscriptionController extends Controller
     {
         $request->validate([
             'student_id' => 'required|exists:students,id',
-            'amount' => 'required|numeric',
+            'total' => 'required|numeric',
             'date' => 'required|date',
-            'user_id' => 'required|exists:users,id',
         ]);
         $student = Student::find($request->student_id);
         if ($student->fee_inscription) {
             $feeInscription = $student->fee_inscription;
 
-            $student->user->wallet->balance += $student->fee_inscription->amount -  $request->amount;
+            $data = ["amount" => $student->fee_inscription->total -  $request->total, "user" => $student->user];
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
             $student->fee_inscription->update([
-                'amount' => $request->amount,
+                'total' => $request->total,
                 'date' => $request->date,
             ]);
-            $student->user->wallet->save();
         } else {
             $feeInscription = FeeInscription::create([
-                'amount' => $request->amount,
+                'total' => $request->total,
                 'date' => $request->date,
             ]);
             $student->fee_inscription()->save($feeInscription);
-            $student->user->wallet->balance -= $request->amount;
-            $student->user->wallet->save();
+
+            $data = ["amount" => -$request->total, "user" => $student->user];
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
         }
 
 
@@ -89,28 +92,33 @@ class FeeInscriptionController extends Controller
     {
         $request->validate([
             'student_id' => 'required|exists:students,id',
-            'amount' => 'required|numeric',
+            'total' => 'required|numeric',
             'date' => 'required|date',
             'type' => 'required|string',
         ]);
         $student = Student::find($request->student_id);
         if ($student->fee_inscription) {
             $feeInscription = $student->fee_inscription;
-            $student->user->wallet->balance += $student->fee_inscription->amount -  $request->amount;
+
+            $data = ["amount" => $student->fee_inscription->total -  $request->total, "user" => $student->user];
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
             $student->fee_inscription->update([
-                'amount' => $request->amount,
+                'total' => $request->total,
                 'date' => $request->date,
             ]);
-            $student->user->wallet->save();
         } else {
             $feeInscription = FeeInscription::create([
-                'amount' => $request->amount,
+                'total' => $request->total,
                 'date'
                 => $request->date,
             ]);
             $student->fee_inscription()->save($feeInscription);
-            $student->user->wallet->balance -= $request->amount;
-            $student->user->wallet->save();
+
+            $data = ["amount" => -$request->total, "user" => $student->user];
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
         }
 
 
@@ -121,17 +129,21 @@ class FeeInscriptionController extends Controller
         $user = $student->user;
         if ($request->type == "inscription fee") {
             $admin = User::where("role", "admin")->first();
-            $admin->wallet->balance += $request->amount;
-            $user->wallet->balance += $request->amount;
+
+            $data = ["amount" => $request->total, "user" => $admin];
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+            $data = ["amount" => $request->total, "user" => $user];
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
             $user->student->fee_inscription()->update([
-                'payed' => true,
+                'paid' => true,
                 'pay_date' => Carbon::now(),
             ]);
-            $user->wallet->save();
-            $admin->wallet->save();
         }
         Receipt::create([
-            'total' => $request->amount,
+            'total' => $request->total,
             'type' => $request->type,
             'user_id' => $user->id,
         ]);
@@ -139,17 +151,17 @@ class FeeInscriptionController extends Controller
 
         $users = User::where('role', "admin")
             ->get();
-        foreach ($users as $reciever) {
+        foreach ($users as $receiver) {
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                     'type' => "success",
                     'title' => "New Payment",
-                    'content' => "The student:" . $student->user->name . " has payed the amount: " . $request->amount . ".00 DA",
+                    'content' => "The student:" . $student->user->name . " has paid the total: " . $request->total . ".00 DA",
                     'displayed' => false,
-                    'id' => $reciever->id,
-                    'department' => env('DEPARTEMENT'),
+                    'id' => $receiver->id,
+                    'department' => env('DEPARTMENT'),
                 ]);
         }
 
@@ -161,6 +173,12 @@ class FeeInscriptionController extends Controller
         $feeInscription = FeeInscription::find($id);
 
         if ($feeInscription) {
+            $student = Student::find($feeInscription->student_id);
+
+            $data = ["amount" => $student->fee_inscription->total, "user" => $student->user];
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
             $feeInscription->delete();
             return response()->json(null, 204);
         } else {
@@ -171,16 +189,20 @@ class FeeInscriptionController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'amount' => 'required|numeric',
+            'total' => 'required|numeric',
             'date' => 'required|date',
-            'user_id' => 'required|exists:users,id',
-            'student_id' => 'required|exists:students,id',
         ]);
         $feeInscription = FeeInscription::find($id);
 
         if ($feeInscription) {
+            $student = Student::find($feeInscription->student_id);
+
+            $data = ["amount" => $student->fee_inscription->total -  $request->total, "user" => $student->user];
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
             $feeInscription->update([
-                'amount' => $request->amount,
+                'total' => $request->total,
                 'date' => $request->date,
                 'id' => $request->user["id"],
                 'student_id' => $request->student_id,

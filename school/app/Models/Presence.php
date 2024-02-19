@@ -16,6 +16,7 @@ class Presence extends Model
         'ends_at',
         'group_id',
         'status',
+        'session_id',
     ];
 
     protected $keyType = 'string';
@@ -34,5 +35,10 @@ class Presence extends Model
     public function group()
     {
         return $this->belongsTo(Group::class);
+    }
+
+    public function session()
+    {
+        return $this->belongsTo(Session::class);
     }
 }

@@ -36,4 +36,8 @@ class Question extends Model
     {
         return $this->answer == $studentAnswer;
     }
+    public function audio()
+    {
+        return $this->morphOne(File::class, "fileable");
+    }
 }

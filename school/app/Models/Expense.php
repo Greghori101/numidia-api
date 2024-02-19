@@ -12,7 +12,7 @@ class Expense extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'amount',
+        'total',
         'type',
         'date',
         'description',

@@ -11,14 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('wallets', function (Blueprint $table) {
-            $table->uuid('id')->primary()->unique();
-            $table->bigInteger('balance')->default(0);
-
+        Schema::table('users', function (Blueprint $table) {
+            //
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-
-            $table->timestamps();
         });
     }
 
@@ -27,6 +23,5 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('wallets');
     }
 };

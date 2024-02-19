@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('checkouts', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->bigInteger('price');
-            $table->bigInteger('nb_session');
-            $table->bigInteger('discount')->default(0);
-            $table->date('date');
-            $table->date('pay_date')->nullable();
-            $table->boolean('payed')->default(false);
+            $table->unsignedBigInteger('price');
+            $table->integer('nb_session');
+            $table->string('status')->default("pending");
+            $table->unsignedBigInteger('discount')->default(0);
+            $table->datetime('pay_date')->nullable();
+            $table->datetime('date')->nullable();
+            $table->boolean('paid')->default(false);
 
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
@@ -26,6 +27,7 @@ return new class extends Migration
             $table->foreign('student_id')->references('id')->on('students');
             $table->uuid('group_id')->nullable();
             $table->foreign('group_id')->references('id')->on('groups');
+
             $table->uuid('receipt_id')->nullable();
             $table->foreign('receipt_id')->references('id')->on('receipts')->onDelete('cascade');
             $table->timestamps();

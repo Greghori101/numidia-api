@@ -22,6 +22,7 @@ class User extends Model
     protected $fillable = [
         'id',
         'email',
+        'annex',
         'name',
         'role',
         'phone_number',
@@ -66,14 +67,6 @@ class User extends Model
     function supervisor()
     {
         return $this->hasOne(Supervisor::class);
-    }
-    function wallet()
-    {
-        return $this->hasOne(Wallet::class);
-    }
-    function attendance()
-    {
-        return $this->hasMany(Attendance::class);
     }
     function expenses()
     {

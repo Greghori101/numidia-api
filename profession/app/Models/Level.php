@@ -13,18 +13,13 @@ class Level extends Model
 
     protected $fillable = [
         'education',
-        'speciality',
+        'specialty',
         'year',
 
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
-
-    public function department()
-    {
-        return $this->belongsTo(Department::class);
-    }
 
     function students()
     {

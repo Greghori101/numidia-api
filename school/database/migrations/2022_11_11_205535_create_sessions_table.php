@@ -19,6 +19,7 @@ return new class extends Migration
                 ->primary()
                 ->unique();
             $table->string('classroom');
+            $table->string('status')->default("normal");
             $table->datetime('starts_at')->nullable();
             $table->datetime('ends_at')->nullable();
             $table->string('repeating')->default('weekly');

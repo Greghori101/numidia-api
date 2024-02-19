@@ -15,7 +15,6 @@ use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\TeacherController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,15 +25,17 @@ Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login',]
 Route::get('/levels/all', [LevelController::class, 'all']);
 Route::get('/program', [SessionController::class, 'index']);
 Route::get('/teachers/all-details', [TeacherController::class, 'all_details']);
-Route::post('/create-user', [AuthController::class, 'create_user']);
+Route::post('/create-user', [AuthController::class, 'create_user_department']);
 
 
 
-// Verfied routes (require email verification)
+// Verified routes (require email verification)
 Route::middleware(['auth-api-token'])->group(function () {
+    Route::get('/user.verify/{id}', [AuthController::class, 'verify_user_existence']);
+    Route::post('/create-user/{id}', [AuthController::class, 'create_user']);
+
 
     Route::get('/profile/{id?}', [UserController::class, 'show']);
-
 
     Route::prefix('users')
         ->controller(UserController::class)
@@ -60,7 +61,6 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('levels')
         ->controller(LevelController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
@@ -168,29 +168,27 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->controller(AttendanceController::class)
         ->group(function () {
             Route::get('/sessions', 'sessions');
+            Route::get('/presences', 'presences');
+            Route::get('/sessions/{session_id}/cancel', 'cancel_session');
             Route::get('/presence/sheets', 'presence_sheets');
             Route::post('/presence', 'create_presence');
             Route::post('/mark/presence', 'mark_presence');
             Route::post('/remove/presence', 'remove_presence');
         });
-    Route::controller(WalletController::class)
-        ->group(function () {
-            Route::post('/deposit', 'deposit');
-            Route::post('/withdraw', 'withdraw');
-        });
     Route::controller(DashboardController::class)
         ->group(function () {
             Route::get('/dashboard-stats', 'stats');
         });
-    Route::controller(FinancialController::class)
+    Route::prefix('statistics')
+        ->controller(FinancialController::class)
         ->group(function () {
-            Route::get('/checkouts/stats', 'checkouts_stats');
-            Route::get('/students/stats', 'students_stats');
+            Route::get('/checkouts', 'checkouts');
+            Route::get('/students', 'students');
             Route::get("/employees/financials", 'all_per_employee');
             Route::get('/employees/register', 'register_per_employee');
-            Route::get('/employees/stats', 'employee_stats');
-            Route::get('/expenses/stats', 'expense_stats');
-            Route::get('/inscription_fees/stats', 'fees_stats');
+            Route::get('/employees', 'employee');
+            Route::get('/expenses', 'expense');
+            Route::get('/inscription_fees', 'fees');
         });
     Route::prefix('exams')
         ->controller(ExamController::class)

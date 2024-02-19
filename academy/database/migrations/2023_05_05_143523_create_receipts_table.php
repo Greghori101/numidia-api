@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('receipts', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->integer('total');
+            $table->unsignedBigInteger('total');
             $table->string('type');
 
             $table->uuid('user_id')->nullable();

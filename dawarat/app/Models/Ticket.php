@@ -25,7 +25,7 @@ class Ticket extends Model
         'title',
         'date',
         'price',
-        'payed',
+        'paid',
         'location',
         'discount',
     ];
@@ -57,7 +57,8 @@ class Ticket extends Model
     {
         return $this->belongsTo(Presence::class);
     }
-    public function dawarat(){
+    public function dawarat()
+    {
         return $this->belongsTo(Dawarat::class);
     }
 }

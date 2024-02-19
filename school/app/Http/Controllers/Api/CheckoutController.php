@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Checkout;
-use App\Models\Notification;
 use App\Models\Receipt;
 use App\Models\User;
 use Carbon\Carbon;
@@ -13,9 +12,6 @@ use Illuminate\Support\Facades\Http;
 
 class CheckoutController extends Controller
 {
-    //
-
-
     public function all()
     {
         $checkouts = Checkout::with(['user.profile_picture', 'student.user', 'group.teacher.user'])
@@ -27,7 +23,7 @@ class CheckoutController extends Controller
         foreach ($checkouts as  $userCheckouts) {
             $user = $userCheckouts->first()->user;
 
-            $paidCheckouts = $userCheckouts->where('payed', true);
+            $paidCheckouts = $userCheckouts->where('paid', true);
             $cumulativePrice = $paidCheckouts->sum('price');
 
             $groupedCheckouts[] = [
@@ -104,8 +100,6 @@ class CheckoutController extends Controller
         return response()->json($checkouts, 200);
     }
 
-
-
     public function show($id)
     {
         $checkout = Checkout::with(["student.user", "group.teacher.user"])->find($id);
@@ -129,21 +123,27 @@ class CheckoutController extends Controller
 
         foreach ($ids as $id) {
             $checkout = Checkout::find($id);
-            if (!$checkout->payed) {
+            if (!$checkout->paid) {
                 $student = $checkout->student;
                 $group = $checkout->group;
                 $teacher = $group->teacher;
                 $admin = User::where("role", "admin")->first();
-                $checkout->payed = true;
+                $checkout->paid = true;
                 $checkout->pay_date = Carbon::now();
-                $teacher->user->wallet->balance += ($teacher->percentage * $checkout->price) / 100;
-                $admin->wallet->balance += ((100 - $teacher->percentage) * $checkout->price) / 100;
-                $student->user->wallet->balance += $checkout->price;
 
+                $data = ["amount" => ($teacher->percentage * $checkout->price) / 100, "user" => $teacher->user];
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+                $data = ["amount" => ((100 - $teacher->percentage) * $checkout->price) / 100, "user" => $admin];
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+                $data = ["amount" => $checkout->price - $checkout->discount, "user" => $student->user];
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
                 $checkout->save();
-                $teacher->user->wallet->save();
-                $student->user->wallet->save();
-                $admin->wallet->save();
+
                 $total += $checkout->price;
 
                 $user->checkouts()->save($checkout);
@@ -160,31 +160,20 @@ class CheckoutController extends Controller
 
         $users = User::where('role', "admin")
             ->get();
-        foreach ($users as $reciever) {
+        foreach ($users as $receiver) {
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                     'type' => "success",
                     'title' => "New Payment",
-                    'content' => "The student:" . $student->user->name . " has payed the amount: " . $total . ".00 DA",
+                    'content' => "The student:" . $student->user->name . " has paid the total: " . $total . ".00 DA",
                     'displayed' => false,
-                    'id' => $reciever->id,
-                    'department' => env('DEPARTEMENT'),
+                    'id' => $receiver->id,
+                    'department' => env('DEPARTMENT'),
                 ]);
         }
 
         return response()->json($receipt, 200);
-    }
-
-
-    public function delete($id)
-    {
-
-        $checkout = Checkout::find($id);
-
-        $checkout->delete();
-
-        return response()->json(200);
     }
 }

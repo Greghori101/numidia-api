@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('section');
             $table->string('title');
             $table->bigInteger('price');
-            $table->boolean('payed');
+            $table->boolean('paid');
             $table->string('location');
             $table->bigInteger('discount');
             $table->datetime('date')->nullable();

@@ -39,10 +39,10 @@ class AuthController extends Controller
         return response()->json($response->body(), 200);
     }
 
-    public function create_user(Request $request)
+    public function create_user(Request $request,$id)
     {
         $user = User::create([
-            'id' => $request->id,
+            'id' => $id,
             'email' => $request->email,
             'name' => $request->name,
             'role' => $request->role,
@@ -58,4 +58,28 @@ class AuthController extends Controller
 
         $user->address()->save($address);
     }
+
+    public function verify_user_existence(Request $request, $id)
+    {
+        $user = User::find($id);
+        if ($user) {
+            return response()->json(['message' => "found"], 200);
+        } else {
+            return response()->json(['message' => "not registered"], 200);
+        }
+    }
+
+    public function create_user_department(Request $request)
+    {
+        $user = User::create([
+            'id' => $request->id,
+            'email' => $request->email,
+            'name' => $request->name,
+            'role' => $request->role,
+            'phone_number' => $request->phone_number,
+            'gender' => $request->gender,
+        ]);
+    }
+
+    
 }

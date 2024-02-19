@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Models\File;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +23,6 @@ class DatabaseSeeder extends Seeder
             'name' => 'numidia admin',
             'password' => 'admin',
             'phone_number' => '0990990990',
-            'role' => 'admin',
             'gender' => 'male',
 
         ]);
@@ -37,7 +37,8 @@ class DatabaseSeeder extends Seeder
                 'extension' => $extension,
             ])
         );
-
+        $user->wallet()->save(new Wallet());
+        
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('SCHOOL_API') . '/api/create-user', [
                 'id' => $user->id,

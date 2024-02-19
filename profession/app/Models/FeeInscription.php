@@ -12,21 +12,22 @@ class FeeInscription extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'amount',
+        'total',
         'date',
         'pay_date',
-        "payed",
+        "paid",
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
 
 
-    public function user(){
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
-    public function student(){
+    public function student()
+    {
         return $this->belongsTo(Student::class);
     }
-
 }

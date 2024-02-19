@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/guest-order', [UserController::class, 'create']);
-Route::post('/create-user', [AuthController::class, 'create_user']);
+Route::post('/create-user', [AuthController::class, 'create_user_department']);
 
 Route::prefix('products')
     ->controller(ProductController::class)
@@ -30,6 +30,9 @@ Route::prefix('products')
     });
 
 Route::middleware(['auth-api-token'])->group(function () {
+    Route::post('/create-user/{id}', [AuthController::class, 'create_user']);
+    Route::get('/user.verify/{id}', [AuthController::class, 'verify_user_existence']);
+
     Route::get('/logout', [AuthController::class, 'logout']);
     Route::prefix('clients')
         ->controller(UserController::class)
@@ -48,6 +51,7 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->group(function () {
             Route::get('/', 'index');
             Route::get('/{id}', 'show_order_products');
+            Route::post('/{id}/pay', 'order_pay');
             Route::put('/{id}', 'order_status');
             Route::delete('/{id}', 'delete_order');
             Route::post('/clients/{id}', 'create_order_client');

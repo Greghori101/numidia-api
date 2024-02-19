@@ -12,9 +12,11 @@ class Session extends Model
 
     protected $fillable = [
         'classroom',
+        'status',
         'starts_at',
         'ends_at',
         'repeating',
+        'type',
     ];
 
     protected $keyType = 'string';
@@ -29,5 +31,10 @@ class Session extends Model
     function exceptions()
     {
         return $this->hasMany(ExceptionSession::class);
+    }
+
+    function presences()
+    {
+        return $this->hasMany(Presence::class);
     }
 }

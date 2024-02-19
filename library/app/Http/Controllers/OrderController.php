@@ -6,6 +6,7 @@ use App\Models\Address;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Receipt;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -87,6 +88,37 @@ class OrderController extends Controller
         return response()->json(['message' => 'Status updated successfully'], 200);
     }
 
+    public function order_pay(Request $request, $id)
+    {
+        $order = Order::find($id);
+
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+        $admin = User::where("role", "=", "admin")->first();
+        $data = ["amount" => $order->total, "user" => $admin];
+
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+        $data = json_decode($response->body(), true);
+
+
+        $order->status = "paid";
+        $order->save();
+
+        $receipt = new Receipt([
+            'total' => $request->total,
+            'date' => now(),
+        ]);
+
+        $receipt->order()->associate($order);
+
+        $receipt->save();
+        $order->load(["products", "client.user"]);
+        return response()->json(['receipt' => $receipt, 'order' => $order, 'message' => 'Status updated successfully'], 200);
+    }
+
     public function delete_order($id)
     {
         $order = Order::find($id);
@@ -117,8 +149,8 @@ class OrderController extends Controller
             'email' => $request->email,
             'name' => $request->name,
             'role' => 'client',
-                'phone_number' => $request->phone_number,
-                'gender' => $request->gender,
+            'phone_number' => $request->phone_number,
+            'gender' => $request->gender,
         ]);
         $user->client()->save($client);
 

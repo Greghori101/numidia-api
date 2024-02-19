@@ -30,7 +30,7 @@ class LevelController extends Controller
         $levelsQuery = Level::when($search, function ($query) use ($search) {
             return $query->where(function ($subQuery) use ($search) {
                 $subQuery->where('education', 'like', "%$search%")
-                    ->orWhere('speciality', 'like', "%$search%")
+                    ->orWhere('specialty', 'like', "%$search%")
                     ->orWhere('year', 'like', "%$search%");
             });
         });
@@ -51,13 +51,13 @@ class LevelController extends Controller
     {
         $request->validate([
             'education' => ['required', 'string'],
-            'speciality' => ['nullable', 'string'],
+            'specialty' => ['nullable', 'string'],
             'year' => ['required', 'integer'],
         ]);
 
         $level = Level::create([
             'education' => $request->education,
-            'speciality' => $request->speciality,
+            'specialty' => $request->specialty,
             'year' => $request->year,
         ]);
         $level->save();
@@ -78,14 +78,14 @@ class LevelController extends Controller
     {
         $request->validate([
             'education' => ['required', 'string'],
-            'speciality' => ['nullable', 'string'],
+            'specialty' => ['nullable', 'string'],
             'year' => ['required', 'integer'],
         ]);
         $level = Level::updateOrCreate(
             ['id' => $id],
             [
                 'education' => $request->education,
-                'sepciality' => $request->sepciality,
+                'specialty' => $request->specialty,
                 'year' => $request->year,
             ]
         );

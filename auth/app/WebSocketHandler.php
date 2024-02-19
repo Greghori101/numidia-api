@@ -22,16 +22,14 @@ class WebSocketHandler  implements MessageComponentInterface
             $user_id = $queryParameters['user_id'];
 
             self::$clients[$user_id] = $conn;
-            echo "New connection! (user_id: {$user_id}, resourceId: {$conn->resourceId})\n";
         } else {
-            echo "New connection, but 'user_id' query parameter is missing.\n";
+            echo "error 'user_id' query parameter is missing.\n";
         }
     }
 
     public function onMessage(ConnectionInterface $from, $msg)
     {
         $data = json_decode($msg);
-        echo "New message! ". $msg . "\n";
         if ($data && $data->user_id) {
             self::send_message($data->user_id, $data->message);
         }
@@ -44,8 +42,6 @@ class WebSocketHandler  implements MessageComponentInterface
                 unset(self::$clients[$user_id]);
             }
         }
-
-        echo "Connection {$conn->resourceId} has disconnected\n";
     }
 
     public function onError(ConnectionInterface $conn, \Exception $e)

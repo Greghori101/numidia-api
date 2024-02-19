@@ -65,9 +65,15 @@ class GroupController extends Controller
     public function show($id)
     {
         $group = Group::with(['teacher.user', 'level', 'students.user'])->find($id);
-        $group->students->each(function ($student) {
-            $student['active'] = $student->user->wallet->balance >= 0;
-        });
+
+        foreach ($group->students as $student) {
+            $allCheckoutsTrue = $student->checkouts()
+                ->where('group_id', $id)
+                ->where('paid', false)
+                ->count() == 0;
+
+            $student["paid"] = $allCheckoutsTrue;
+        }
         return response()->json($group, 200);
     }
 
@@ -86,6 +92,7 @@ class GroupController extends Controller
         $teacher = Teacher::find($request->teacher_id);
         $level = Level::find($request->level_id);
         $group = Group::create([
+            'annex' => $request->annex,
             'module' => $request->module,
             'capacity' => $request->capacity,
             'price_per_month' => $request->price_per_month,
@@ -104,7 +111,7 @@ class GroupController extends Controller
                 'content' => "new group has been created",
                 'displayed' => false,
                 'id' => $teacher->user->id,
-                'department' => env('DEPARTEMENT'),
+                'department' => env('DEPARTMENT'),
             ]);
 
 
@@ -137,6 +144,7 @@ class GroupController extends Controller
         $level = Level::find($request->level_id);
         $group = Group::create([
             'module' => $request->module,
+            'annex' => $request->annex,
             'price_per_month' => $request->price_per_month,
             'type' => $request->type,
             'capacity' => $request->capacity,
@@ -152,27 +160,47 @@ class GroupController extends Controller
 
     public function students_create(Request $request, $id)
     {
-
         $request->validate([
-            'students' => ['required', 'array'],
+            'students' => ['array'],
             'students.*' => ['string'],
         ]);
         $group = Group::find($id);
+        $studentsToRemove = collect($group->students()->pluck('student_id')->toArray())->diff($request->students);
+
         foreach ($request->students as $studentId) {
             if (!$group->students->contains($studentId)) {
                 $student = Student::find($studentId);
-                $student->user->wallet->balance = $student->user->wallet->balance - $group->price_per_month;
 
                 $checkout = Checkout::create([
                     'price' => $group->price_per_month / $group->nb_session * $group->rest_session,
                     'date' => Carbon::now(),
                     'nb_session' => $group->rest_session,
+
                 ]);
+
+                $data = ["amount" => -$checkout->price - $checkout->discount, "user" => $student->user];
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
                 $student->checkouts()->save($checkout);
                 $group->checkouts()->save($checkout);
-                $student->user->wallet->save();
             }
         }
+
+        foreach ($studentsToRemove as $studentIdToRemove) {
+            $checkoutToRemove = Checkout::where('student_id', $studentIdToRemove)
+                ->where('group_id', $group->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($checkoutToRemove) {
+                $data = ["amount" => $checkoutToRemove->price - $checkoutToRemove->discount, "user" => $student->user];
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                $checkoutToRemove->delete();
+            }
+        }
+
         if ($request->students) {
             $group->students()->sync($request->students);
         } else {
@@ -184,18 +212,33 @@ class GroupController extends Controller
                 'client_secret' => env('CLIENT_SECRET'),
                 'type' => "info",
                 'title' => "Group members",
-                'content' => "the group memebers has been updated",
+                'content' => "the group members has been updated",
                 'displayed' => false,
                 'id' => $group->teacher->user->id,
-                'department' => env('DEPARTEMENT'),
+                'department' => env('DEPARTMENT'),
             ]);
 
         return response()->json(200);
     }
-    public function students_delete(Request $request, $id, $student_id)
+
+    public function students_delete($id, $student_id)
     {
         $group = Group::find($id);
         $group->students()->detach($student_id);
+
+        $student = Student::find($student_id);
+
+        $checkoutToRemove = Checkout::where('student_id', $student_id)
+            ->where('group_id', $group->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($checkoutToRemove) {
+            $data = ["amount" => $checkoutToRemove->price - $checkoutToRemove->discount, "user" => $student->user];
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
+            $checkoutToRemove->delete();
+        }
         return response()->json(200);
     }
     public function student_notin_group($id)
@@ -222,7 +265,7 @@ class GroupController extends Controller
 
     public function sessions($id)
     {
-        $group = Group::with(['sessions.exceptions'])->find($id);
+        $group = Group::with(["sessions.exceptions", "sessions.group.level", "sessions.group.teacher.user"])->find($id);
         $sessions = $group->sessions;
         return response()->json($sessions, 200);
     }
@@ -257,7 +300,7 @@ class GroupController extends Controller
                     'content' => "new session has been created at " . Carbon::parse($request->starts_at),
                     'displayed' => false,
                     'id' => $student->user->id,
-                    'department' => env('DEPARTEMENT'),
+                    'department' => env('DEPARTMENT'),
                 ]);
         }
 

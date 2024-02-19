@@ -27,8 +27,8 @@ class VerifyToken
 
         if ($response->status() === 200) {
             $data = $response->json();
-            $user_id = $data['id'];
-            $request->merge(['user_id' => $user_id]);
+            $user = $data['user'];
+            $request->merge(['user' => $user]);
             return $next($request);
         }
         abort(401, 'Unauthenticated');

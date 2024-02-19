@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AmphiController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\DawaratController;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\TicketController;
@@ -20,10 +21,13 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/create-user', [AuthController::class, 'create_user']);
+Route::post('/create-user', [AuthController::class, 'create_user_department']);
 
 
 Route::middleware(['auth-api-token',])->group(function () {
+    Route::post('/create-user/{id}', [AuthController::class, 'create_user']);
+    Route::get('/user.verify/{id}', [AuthController::class, 'verify_user_existence']);
+
     Route::get('/logout', [AuthController::class, 'logout']);
 
     Route::prefix('amphis')

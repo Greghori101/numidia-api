@@ -9,14 +9,13 @@ use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\Teacher;
 use App\Models\User;
-use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
 
-    public function create_user(Request $request)
+    public function create_user_department(Request $request)
     {
         $user = User::create([
             'id' => $request->id,
@@ -26,8 +25,46 @@ class AuthController extends Controller
             'phone_number' => $request->phone_number,
             'gender' => $request->gender,
         ]);
-        $user->wallet()->save(new Wallet());
+        if ($user->role == 'student') {
+            $level = Level::find($request->level_id);
+            $student = new Student();
+            $user->student()->save($student);
+            $level->students()->save($student);
+        } elseif ($user->role == 'supervisor') {
+            $user->supervisor()->save(new Supervisor());
+        }
     }
+
+    public function create_user(Request $request,$id)
+    {
+        $user = User::create([
+            'id' => $id,
+            'email' => $request->email,
+            'name' => $request->name,
+            'role' => $request->role,
+            'phone_number' => $request->phone_number,
+            'gender' => $request->gender,
+        ]);
+        if ($user->role == 'student') {
+            $level = Level::find($request->level_id);
+            $student = new Student();
+            $user->student()->save($student);
+            $level->students()->save($student);
+        } elseif ($user->role == 'supervisor') {
+            $user->supervisor()->save(new Supervisor());
+        }
+    }
+
+    public function verify_user_existence(Request $request, $id)
+    {
+        $user = User::find($id);
+        if ($user) {
+            return response()->json(['message' => "found"], 200);
+        } else {
+            return response()->json(['message' => "not registered"], 200);
+        }
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -52,7 +89,8 @@ class AuthController extends Controller
 
         if ($user->role == 'teacher') {
             $user->teacher()->save(new Teacher([
-                'module' => $request->module,
+                'modules' => implode("|", $request->modules),
+                'levels' => implode("|", $request->levels),
                 'percentage' => $request->percentage,
             ]));
         } elseif ($user->role == 'student') {
@@ -64,7 +102,6 @@ class AuthController extends Controller
             $user->supervisor()->save(new Supervisor());
         }
 
-        $user->wallet()->save(new Wallet());
 
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/register', [
@@ -89,7 +126,7 @@ class AuthController extends Controller
                     'content' => $user->name . " have been registred to numidia platform",
                     'displayed' => false,
                     'id' => $reciever->id,
-                    'department' => env('DEPARTEMENT'),
+                    'department' => env('DEPARTMENT'),
                 ]);
         }
         return response()->json($response->body(), 200);
@@ -98,8 +135,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => ['required',],
-            'password' => ['required',],
-            'location' => ['nullable',],
+            'password' => ['required'],
         ]);
         $data = $request->all();
         $data['client_id'] = env('CLIENT_ID');

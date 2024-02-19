@@ -13,7 +13,8 @@ class Teacher extends Model
 
 
     protected $fillable = [
-        'module',
+        'modules',
+        'levels',
         'percentage',
     ];
 
@@ -34,7 +35,7 @@ class Teacher extends Model
     {
         return $this->hasMany(Group::class);
     }
-    function Exams()
+    function exams()
     {
         return $this->hasMany(Exam::class);
     }

@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->string('name');
-            $table->string('role');
             $table->enum('gender', ['male', 'female'])->default('male');
             $table->string('phone_number');
             $table->string('email')->unique();
@@ -23,6 +22,9 @@ return new class extends Migration
             $table->string('password');
             $table->string('google_id')->nullable();
             $table->string('facebook_id')->nullable();
+
+            
+
             $table->rememberToken();
             $table->softDeletes($column = 'deleted_at', $precision = 0);
             $table->timestamps();

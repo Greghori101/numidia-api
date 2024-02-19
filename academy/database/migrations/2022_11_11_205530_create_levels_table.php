@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('levels', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->string('education');
-            $table->string('speciality')->nullable();
+            $table->string('specialty')->nullable();
             $table->integer('year');
 
             $table->timestamps();

@@ -19,10 +19,10 @@ return new class extends Migration
             $table->string('type');
             $table->integer('capacity');
             $table->integer('nb_session');
-            $table->integer('rest_session');
-            $table->bigInteger('price_per_month');
+            $table->unsignedBigInteger('price_per_month');
             $table->integer('current_nb_session')->default(1);
-            $table->string('unit')->default("school");
+            $table->integer('rest_session');
+            $table->string('annex')->nullable();
 
             $table->uuid('teacher_id')->nullable();
             $table->foreign('teacher_id')->references('id')->on('teachers')->onDelete('set null');

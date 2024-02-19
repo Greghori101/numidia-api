@@ -25,7 +25,6 @@ class User extends Authenticatable
         'email',
         'code',
         'name',
-        'role',
         'phone_number',
         'gender',
         'password',
@@ -75,5 +74,19 @@ class User extends Authenticatable
     function received_notifications()
     {
         return $this->hasMany(Notification::class, 'user_id')->orderBy('created_at', 'desc');
+    }
+    
+    function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
+   
+    function parent()
+    {
+        return $this->belongsTo(User::class,'user_id');
+    }
+    function transactions()
+    {
+        return $this->hasMany(Transaction::class)->orderBy('created_at', 'asc');
     }
 }

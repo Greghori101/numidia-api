@@ -34,10 +34,7 @@ class Student extends Model
     {
         return $this->belongsTo(Level::class);
     }
-    function wallet()
-    {
-        return $this->hasOneThrough(Wallet::class, User::class);
-    }
+    
     public function checkouts()
     {
         return $this->hasMany(Checkout::class);
@@ -66,7 +63,7 @@ class Student extends Model
         return $this->belongsToMany(Exam::class, 'answers', 'student_id', 'exam_id')
             ->distinct('exams.id')
             ->with(['answers' => function ($query) {
-                $query->where('student_id', $this->id)->select('*')->with(['question.choices']);
+                $query->where('student_id', $this->id)->select('*')->with(['question.choices','question.audio']);
             }]);
     }
 }

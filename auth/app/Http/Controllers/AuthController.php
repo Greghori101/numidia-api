@@ -11,14 +11,15 @@ use App\Models\File;
 use App\Models\Notification;
 use Laravel\Passport\Token;
 use App\Models\User;
+use App\Models\Wallet;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use Jenssegers\Agent\Agent;
 
 class AuthController extends Controller
 {
@@ -35,26 +36,25 @@ class AuthController extends Controller
 
             $remember = $request->remember_me;
             Auth::login($user, $remember);
-            $agent = new Agent();
-            $agent->setUserAgent($request->header('User-Agent'));
             $accessToken = $user->createToken('API Token');
             $token = $accessToken->token;
             $data = [
                 'id' => $user->id,
+                'wallet' => $user->wallet,
                 'verified' => $user->hasVerifiedEmail(),
                 'token' => $accessToken->accessToken,
                 'access_token_id' => $token->id,
                 'profile_picture' => $user->profile_picture,
+                'wallet' => $user->wallet,
             ];
             $user->activities()->save(Activity::create([
                 'details' => "login",
-                'browser' => $agent->browser(),
+                'browser' => $request->browser,
                 'ip_address' => $request->ip(),
-                'platfrom' => $agent->platform(),
+                'platform' =>  $request->platform,
                 'location' => $request->location,
-                'device' =>  $agent->device(),
+                'device' =>  $request->device,
                 'access_token_id' => $token->id,
-
             ]));
 
             return response()->json($data, 200);
@@ -64,7 +64,7 @@ class AuthController extends Controller
     }
     public function show($id)
     {
-        $user = User::with(['activities', 'profile_picture',])->find($id);
+        $user = User::with(['activities', 'profile_picture','wallet'])->find($id);
         return response()->json($user, 200);
     }
     public function revoke(Request $request, $id)
@@ -99,8 +99,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'code' => Str::upper(Str::random(6)),
             'phone_number' => $request->phone_number,
-            'role' => $request->phone_number,
-            'gender' => $request->phone_number,
+            'gender' => $request->gender,
         ]);
         $content = Storage::get('default-profile-picture.jpeg');
         $extension = 'jpeg';
@@ -113,6 +112,8 @@ class AuthController extends Controller
                 'extension' => $extension,
             ])
         );
+
+        $user->wallet()->save(new Wallet());
         try {
             $data = [
                 'url' =>
@@ -125,8 +126,7 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'code' => $user->code,
                 'phone_number' => $request->phone_number,
-                'role' => $request->phone_number,
-                'gender' => $request->phone_number,
+                'gender' => $request->gender,
             ];
             Mail::to($user)->send(new VerifyEmail($data));
         } catch (\Throwable $th) {
@@ -143,8 +143,7 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($password),
             'phone_number' => $request->phone_number,
-            'role' => $request->phone_number,
-            'gender' => $request->phone_number,
+            'gender' => $request->gender,
         ]);
         $content = Storage::get('default-profile-picture.jpeg');
         $extension = 'jpeg';
@@ -157,6 +156,8 @@ class AuthController extends Controller
                 'extension' => $extension,
             ])
         );
+
+        $user->wallet()->save(new Wallet());
         try {
             $data = [
                 'url' =>
@@ -169,10 +170,8 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'code' => $password,
                 'phone_number' => $request->phone_number,
-                'role' => $request->phone_number,
-                'gender' => $request->phone_number,
+                'gender' => $request->gender,
             ];
-            $user->markEmailAsVerified();
             $user->save();
             Mail::to($user)->send(new WelcomeEmail($data));
         } catch (\Throwable $th) {
@@ -418,7 +417,8 @@ class AuthController extends Controller
     }
     public function users(Request $request)
     {
-        $users = User::with(['profile_picture'])->whereIn('id', $request->ids)->get();
+        $users = User::with(['profile_picture','wallet'])->whereIn('id', $request->ids)->get();
         return response()->json($users, 200);
     }
+
 }

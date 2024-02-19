@@ -6,20 +6,19 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Wallet extends Model
+class File extends Model
 {
-    use HasFactory, HasUuids;
-
+    use HasFactory,HasUuids;
     protected $fillable = [
-        'balance',
+        'name',
+        'content',
+        'extension',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
 
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
+    public function fileable(){
+        return $this->morphTo();
     }
 }

@@ -10,6 +10,18 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
+
+    public function create_user(Request $request)
+    {
+        $user = User::create([
+            'id' => $request->id,
+            'email' => $request->email,
+            'name' => $request->name,
+            'role' => $request->role,
+            'phone_number' => $request->phone_number,
+            'gender' => $request->gender,
+        ]);
+    }
     public function index(Request $request)
     {
         $request->validate([
@@ -65,6 +77,7 @@ class UserController extends Controller
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
+
 
         return response()->json(['data' => $user], 200);
     }

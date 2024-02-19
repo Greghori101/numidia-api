@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('receipts', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->timestamp('date')->nullable();
+            $table->bigInteger('total')->default(0);
             $table->uuid('order_id')->nullable();
             $table->foreign('order_id')->references('id')->on('orders');
             $table->timestamps();

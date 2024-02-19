@@ -24,6 +24,7 @@ class ExamController extends Controller
             'questions.*.content' => 'required|string',
             'questions.*.answer' => 'required|string',
             'questions.*.choices' => 'required|array',
+            'questions.*.audio' => 'required|file',
         ]);
 
         $exam = Exam::create([
@@ -41,6 +42,15 @@ class ExamController extends Controller
                     'content' => $questionData['content'],
                     'answer' => $questionData['answer'],
                 ]);
+                $file = $questionData['audio'];
+                $content = file_get_contents($file);
+                $extension = $file->getClientOriginalExtension();
+                $question->audio()->create([
+                    'name' => 'question audio',
+                    'content' => base64_encode($content),
+                    'extension' => $extension,
+                ]);
+
 
                 foreach ($questionData['choices'] as $choiceData) {
                     $question->choices()->create(['content' => $choiceData['content']]);
@@ -58,7 +68,6 @@ class ExamController extends Controller
         $exam = Exam::find($exam);
         $data = $request->validate([
             'answers.*.question_id' => 'required|exists:questions,id',
-            'answers.*.answer' => 'required',
             'answers.*.score' => 'required',
         ]);
 
@@ -98,7 +107,7 @@ class ExamController extends Controller
 
     public function all()
     {
-        $exams = Exam::with(['questions.choices', 'answers', 'teacher'])->get();
+        $exams = Exam::with(['questions.choices', 'questions.audio', 'answers', 'teacher'])->get();
         return response()->json($exams, 200);
     }
 
@@ -118,8 +127,8 @@ class ExamController extends Controller
     }
     public function Teacher_exams($teacherId)
     {
-        $student_exams = Teacher::with(['exam.answers', 'exam.questions.choices'])->find($teacherId);
-        return response()->json($student_exams, 200);
+        $teacher_exams = Teacher::with(['exams.answers', 'exams.questions.choices', 'exams.questions.audio',])->find($teacherId);
+        return response()->json($teacher_exams, 200);
     }
 
     public function delete($exam)
@@ -130,7 +139,7 @@ class ExamController extends Controller
     }
     public function show($exam)
     {
-        $exam = Exam::with(['questions.choices', 'students.answers.question.choices', 'students.user', "students.level"])->find($exam);
+        $exam = Exam::with(['questions.choices', 'questions.audio', 'students.answers.question.choices', 'students.user', "students.level"])->find($exam);
         return response()->json($exam, 200);
     }
 

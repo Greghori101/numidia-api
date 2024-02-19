@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('role');
             $table->enum('gender', ['male', 'female'])->default('male');
             $table->string('phone_number');
+
+            
             $table->timestamps();
         });
     }

@@ -15,8 +15,11 @@ return new class extends Migration
             $table->uuid('id')->primary()->unique();
             $table->string('status')->default('pending');
             $table->integer('total')->default(0);
+            
             $table->uuid('client_id')->nullable();
             $table->foreign('client_id')->references('id')->on('clients');
+            $table->uuid('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users');
             $table->timestamps();
         });
     }

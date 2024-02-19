@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-// use Twilio\Rest\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Level;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\Teacher;
 use App\Models\User;
-use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -70,24 +68,28 @@ class UserController extends Controller
                 ]);
             $user['activities'] = $response->json()['activities'];
             $user['profile_picture'] = $response->json()['profile_picture'];
+            $user['wallet'] = $response->json()['wallet'];
+
             return response()->json($user, 200);
         } else {
             $user = User::find($id);
             if ($user->role == "student") {
-                $user->load("receipts.checkouts.group.teacher.user", 'wallet', 'student.presences.group.teacher.user', 'student.groups.teacher.user', 'student.level', 'student.checkouts', 'student.fee_inscription', 'student.supervisor.user', 'student.user');
+                $user->load("receipts.checkouts.group.teacher.user",  'student.presences.group.teacher.user', 'student.groups.teacher.user', 'student.level', 'student.checkouts', 'student.fee_inscription', 'student.supervisor.user', 'student.user');
             } elseif ($user->role == "teacher") {
-                $user->load("receipts.checkouts.group.teacher.user", 'wallet', 'teacher.groups.level', 'teacher.groups.students.user.wallet', 'teacher.groups.presence.students.user');
+                $user->load("receipts.checkouts.group.teacher.user",  'teacher.groups.level',  'teacher.groups.presence.students.user');
             } else if ($user->role == "supervisor") {
-                $user->load("receipts.checkouts.group.teacher.user", 'wallet', 'supervisor.students.user.profile_picture', 'supervisor.students.presences.group.teacher.user', 'supervisor.students.groups.teacher.user', 'supervisor.students.level', 'supervisor.students.checkouts', 'supervisor.students.fee_inscription',);
+                $user->load("receipts.checkouts.group.teacher.user",  'supervisor.students.user', 'supervisor.students.presences.group.teacher.user', 'supervisor.students.groups.teacher.user', 'supervisor.students.level', 'supervisor.students.checkouts', 'supervisor.students.fee_inscription',);
             } else {
-                $user->load("receipts.checkouts.group.teacher.user", 'wallet',);
+                $user->load("receipts.checkouts.group.teacher.user", );
             }
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->get(env('AUTH_API') . '/api/profile/' . $user->id, [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                 ]);
+
             $user['profile_picture'] = $response->json()['profile_picture'];
+            $user['wallet'] = $response->json()['wallet'];
 
             return response()->json($user, 200);
         }
@@ -115,8 +117,6 @@ class UserController extends Controller
             'role' => strtolower($request->role),
         ]);
 
-
-
         $user = User::create([
             'email' => $request->email,
             'name' => $request->name,
@@ -125,7 +125,6 @@ class UserController extends Controller
             'gender' => $request->gender,
         ]);
 
-        $user->wallet()->save(new Wallet());
 
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/users/create', [
@@ -140,7 +139,8 @@ class UserController extends Controller
             ]);
         if ($user->role == 'teacher') {
             $user->teacher()->save(new Teacher([
-                'module' => $request->module,
+                'modules' => implode("|", $request->modules),
+                'levels' => implode("|", $request->levels),
                 'percentage' => $request->percentage,
             ]));
         } elseif ($user->role == 'student') {
@@ -158,7 +158,7 @@ class UserController extends Controller
             ->where('role', '<>', "teacher")
             ->where('role', '<>', "supervisor")
             ->get();
-        foreach ($users as $reciever) {
+        foreach ($users as $receiver) {
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
@@ -167,8 +167,8 @@ class UserController extends Controller
                     'title' => "New Registration",
                     'content' => $user->name . " have been registred to numidia platform",
                     'displayed' => false,
-                    'id' => $reciever->id,
-                    'department' => env('DEPARTEMENT'),
+                    'id' => $receiver->id,
+                    'department' => env('DEPARTMENT'),
                 ]);
         }
         return response()->json(200);
@@ -210,7 +210,6 @@ class UserController extends Controller
             'gender' => $request->gender,
         ]);
 
-        $user->wallet()->save(new Wallet());
 
         if ($user->role == 'student') {
             $level = Level::find($request->level_id);
@@ -228,17 +227,17 @@ class UserController extends Controller
             ->where('role', '<>', "teacher")
             ->where('role', '<>', "supervisor")
             ->get();
-        foreach ($users as $reciever) {
+        foreach ($users as $receiver) {
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                     'type' => "success",
                     'title' => "New Registration",
-                    'content' => $user->name . " have been registred to numidia platform",
+                    'content' => $user->name . " have been registered to numidia platform",
                     'displayed' => false,
-                    'id' => $reciever->id,
-                    'department' => env('DEPARTEMENT'),
+                    'id' => $receiver->id,
+                    'department' => env('DEPARTMENT'),
                 ]);
         }
         return response()->json(true, 200);

@@ -3,6 +3,7 @@
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -23,8 +24,8 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login',]);
-Route::post('/password/forgot', [AuthController::class, 'forgotpassword']); 
-Route::post('/password/reset', [AuthController::class, 'restpassword']); 
+Route::post('/password/forgot', [AuthController::class, 'forgotpassword']);
+Route::post('/password/reset', [AuthController::class, 'restpassword']);
 Route::post('/users/create', [AuthController::class, 'create']);
 
 Route::get('/profile/{id}', [AuthController::class, 'show']);
@@ -38,8 +39,20 @@ Route::prefix('posts')
         Route::get('/{id}', 'show');
     });
 
+Route::prefix('wallet')->controller(WalletController::class)
+    ->group(function () {
+        Route::post('/add', 'add');
+        Route::get('/{id}', 'show');
+    });
+
+Route::prefix('notifications')
+    ->controller(NotificationController::class)
+    ->group(function () {
+        Route::post('/', 'send');
+    });
+
 Route::middleware(['auth:api'])->group(function () {
-    Route::post('/email/verify', [AuthController::class, 'verify']); 
+    Route::post('/email/verify', [AuthController::class, 'verify']);
     Route::post('/email/resent/code', [AuthController::class, 'resent_verification',]);
     Route::get('/email/isverified', [AuthController::class, 'email_verified']);
     Route::get('/logout', [AuthController::class, 'logout']);
@@ -49,6 +62,9 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/password/change', [AuthController::class, 'change_password']);
     Route::post('/picture/change/{id?}', [AuthController::class, 'change_profile_picture']);
     Route::put('/users/{id?}', [AuthController::class, 'update']);
+
+
+    Route::get('/transactions/{id?}', [WalletController::class, 'transactions']);
 
 
     Route::prefix('posts')
@@ -66,7 +82,6 @@ Route::middleware(['auth:api'])->group(function () {
             Route::put('/seen/all',  'seen_all');
             Route::delete('/clear',  'delete_all');
             Route::get('/all',  'all');
-            Route::post('/', 'send');
             Route::get('/{id}', 'show');
             Route::put('/seen/{id}', 'seen');
             Route::delete('/{id}', 'delete');

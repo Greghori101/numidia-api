@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('expenses', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->bigInteger("amount")->default(0);
-            $table->date('date')->nullable();
+            $table->bigInteger("total")->default(0);
+            $table->datetime('date')->nullable();
             $table->string("type");
             $table->string("description");
             $table->uuid('user_id')->nullable();

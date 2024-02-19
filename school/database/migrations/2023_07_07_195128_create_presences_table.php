@@ -14,11 +14,13 @@ return new class extends Migration
         Schema::create('presences', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->datetime('starts_at')->nullable();
-            $table->string('status')->default('pending');
             $table->datetime('ends_at')->nullable();
+            $table->string('status')->default('pending');
 
             $table->uuid('group_id')->nullable();
             $table->foreign('group_id')->references('id')->on('groups');
+            $table->uuid('session_id')->nullable();
+            $table->foreign('session_id')->references('id')->on('sessions');
             $table->timestamps();
         });
     }

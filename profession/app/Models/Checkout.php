@@ -5,28 +5,30 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Checkout extends Model
 {
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'date',
+        'status',
         'pay_date',
+        'date',
         'price',
-        'payed',
+        'paid',
         'nb_session',
-        'discount'
+        'discount',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
-    public function user(){
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 
-    public function group(){
+    public function group()
+    {
         return $this->belongsTo(Group::class);
     }
 
@@ -38,5 +40,4 @@ class Checkout extends Model
     {
         return $this->belongsTo(Receipt::class);
     }
-    
 }

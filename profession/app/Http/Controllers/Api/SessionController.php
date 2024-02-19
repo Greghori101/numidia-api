@@ -15,7 +15,7 @@ class SessionController extends Controller
     //
     public function index()
     {
-        $sessions = Session::with(["exceptions", "group.teacher.user"])->get();
+        $sessions = Session::with(["exceptions", "group.teacher.user","group.level"])->get();
         return response()->json($sessions, 200);
     }
 
@@ -56,12 +56,10 @@ class SessionController extends Controller
         ]);
         $session->update([
             'classroom' => $request->classroom,
-            'starts_at' => $request->starts_at,
-            'ends_at' => $request->ends_at,
+            'starts_at' => Carbon::parse($request->starts_at),
+            'ends_at' => Carbon::parse($request->ends_at),
         ]);
         $session->save();
-
-
 
         foreach ($session->group->students as $student) {
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
@@ -73,7 +71,7 @@ class SessionController extends Controller
                     'content' => "new session has been created at " . Carbon::parse($request->starts_at),
                     'displayed' => false,
                     'id' => $student->user->id,
-                    'department' => env('DEPARTEMENT'),
+                    'department' => env('DEPARTMENT'),
                 ]);
         }
 
