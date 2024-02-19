@@ -17,7 +17,7 @@ class StudentController extends Controller
 {
     public function all()
     {
-        $students = Student::with(['user'])->get();
+        $students = User::with(['student'])->get();
         return response()->json($students, 200);
     }
     public function index(Request $request)

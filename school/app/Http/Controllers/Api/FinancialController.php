@@ -6,7 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Checkout;
 use App\Models\Expense;
 use App\Models\FeeInscription;
+use App\Models\Group;
+use App\Models\Level;
 use App\Models\Student;
+use App\Models\Supervisor;
+use App\Models\Teacher;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -219,6 +223,30 @@ class FinancialController extends Controller
             "not_paid_fees" => $not_paid_fees,
         ];
 
+        return response()->json($data, 200);
+    }
+
+    public function stats(Request $request)
+    {
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->get(env('AUTH_API') . '/api/wallet/'.$request->user["id"]);
+
+        $parents = Supervisor::all()->count();
+        $students = Student::all()->count();
+        $teachers = Teacher::all()->count();
+        $users = User::all()->count();
+        $groups = Group::all()->count();
+        $financials = $response->json();
+        $levels = Level::all()->count();
+        $data = [
+            'financials' => $financials,
+            'levels' => $levels,
+            'users' => $users,
+            'students' => $students,
+            'parents' => $parents,
+            'teachers' => $teachers,
+            'groups' => $groups,
+        ];
         return response()->json($data, 200);
     }
 }

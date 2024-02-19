@@ -175,10 +175,7 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::post('/mark/presence', 'mark_presence');
             Route::post('/remove/presence', 'remove_presence');
         });
-    Route::controller(DashboardController::class)
-        ->group(function () {
-            Route::get('/dashboard-stats', 'stats');
-        });
+
     Route::prefix('statistics')
         ->controller(FinancialController::class)
         ->group(function () {
@@ -189,6 +186,7 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/employees', 'employee');
             Route::get('/expenses', 'expense');
             Route::get('/inscription_fees', 'fees');
+            Route::get('/dashboard', 'stats');
         });
     Route::prefix('exams')
         ->controller(ExamController::class)

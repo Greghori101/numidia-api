@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ExceptionSession;
-use App\Models\Notification;
 use App\Models\Session;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -77,7 +76,14 @@ class SessionController extends Controller
 
         return response()->json(200);
     }
+
+    
     public function all()
+    {
+        $sessions = Session::with(["exceptions", "group.teacher.user", "group.level"])->get();
+        return response()->json($sessions, 200);
+    }
+    public function all_details()
     {
         $sessions = Session::with(["exceptions", "group.teacher.user", "group.level"])->get();
         return response()->json($sessions, 200);

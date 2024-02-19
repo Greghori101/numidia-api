@@ -16,11 +16,7 @@ use Illuminate\Support\Facades\Http;
 class GroupController extends Controller
 {
 
-    public function all()
-    {
-        $groups  = Group::with(['level', 'teacher.user'])->get();
-        return response()->json($groups, 200);
-    }
+
     public function index(Request $request)
     {
         $request->validate([
@@ -64,7 +60,7 @@ class GroupController extends Controller
 
     public function show($id)
     {
-        $group = Group::with(['teacher.user', 'level', 'students.user'])->find($id);
+        $group = Group::with(['teacher.user', 'level', 'students.user', 'sessions.exceptions'])->find($id);
 
         foreach ($group->students as $student) {
             $allCheckoutsTrue = $student->checkouts()
@@ -305,5 +301,16 @@ class GroupController extends Controller
         }
 
         return response()->json($session, 200);
+    }
+
+    public function all()
+    {
+        $groups  = Group::with(['level', 'teacher.user'])->get();
+        return response()->json($groups, 200);
+    }
+    public function all_details()
+    {
+        $groups  = Group::with(['teacher.user', 'level', 'sessions.exceptions'])->get();
+        return response()->json($groups, 200);
     }
 }
