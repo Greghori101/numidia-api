@@ -3,8 +3,11 @@
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ContactController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -17,6 +20,15 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::prefix('contacts')
+    ->controller(ContactController::class)
+    ->group(function () {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+    });
 
 // Route::middleware(['client'])->group(function () {
 // });
@@ -26,11 +38,12 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login',]);
 Route::post('/password/forgot', [AuthController::class, 'forgotpassword']);
 Route::post('/password/reset', [AuthController::class, 'restpassword']);
+
 Route::post('/users/create', [AuthController::class, 'create']);
 
 Route::get('/profile/{id}', [AuthController::class, 'show']);
 
-Route::delete('/users', [AuthController::class, 'users']);
+Route::get('/users', [AuthController::class, 'users']);
 
 Route::prefix('posts')
     ->controller(PostController::class)
@@ -85,5 +98,16 @@ Route::middleware(['auth:api'])->group(function () {
             Route::get('/{id}', 'show');
             Route::put('/seen/{id}', 'seen');
             Route::delete('/{id}', 'delete');
+        });
+
+
+    Route::prefix('messages')
+        ->controller(MessageController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::get('/{id}', 'show');
+            Route::put('/{id}', 'update');
+            Route::delete('/{id}', 'destroy');
         });
 });

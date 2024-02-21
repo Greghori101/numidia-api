@@ -75,18 +75,27 @@ class User extends Authenticatable
     {
         return $this->hasMany(Notification::class, 'user_id')->orderBy('created_at', 'desc');
     }
-    
+
     function wallet()
     {
         return $this->hasOne(Wallet::class);
     }
-   
+
     function parent()
     {
-        return $this->belongsTo(User::class,'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
     function transactions()
     {
         return $this->hasMany(Transaction::class)->orderBy('created_at', 'asc');
+    }
+
+    function received_messages()
+    {
+        return $this->hasMany(Message::class,'to')->orderBy('created_at', 'desc');
+    }
+    function sent_messages()
+    {
+        return $this->hasMany(Message::class,'from')->orderBy('created_at', 'desc');
     }
 }
