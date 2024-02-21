@@ -17,7 +17,7 @@ class StudentController extends Controller
 {
     public function all()
     {
-        $students = User::with(['student'])->get();
+        $students = Student::with(['user'])->get();
         return response()->json($students, 200);
     }
     public function index(Request $request)
@@ -54,21 +54,21 @@ class StudentController extends Controller
                     });
             })
             ->orderByRaw("LOWER(sorted_column) $sortDirection")
-            ->with(['level','user', 'fee_inscription'])
+            ->with(['level', 'user', 'fee_inscription'])
             ->when($perPage !== 'all', function ($query) use ($perPage) {
                 return $query->paginate($perPage);
             }, function ($query) {
                 return $query->get();
             });
 
-        
+
 
         return $students;
     }
 
     public function show($id)
     {
-        $student = Student::with(['level','user', 'user.profile_picture'])->find($id);
+        $student = Student::with(['level', 'user', 'groups'])->find($id);
         return $student;
     }
 
@@ -90,6 +90,8 @@ class StudentController extends Controller
                 'price' => $group->price,
                 'date' => Carbon::now(),
                 'nb_session' => $group->rest_session,
+                'user_id' => $request->user["id"],
+                'month' => $group->month
             ]);
 
             $data = ["amount" => -$checkout->price + $checkout->discount, "user" => $student->user];
@@ -131,7 +133,7 @@ class StudentController extends Controller
             $data = ["amount" => $checkoutToRemove->price - $checkoutToRemove->discount, "user" => $student->user];
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
-                
+
             $checkoutToRemove->delete();
         }
 
@@ -177,6 +179,7 @@ class StudentController extends Controller
     public  function student_checkouts($id)
     {
         $checkouts = Checkout::query()
+            ->where('status', 'pending')
             ->with(['group.teacher.user'])
             ->when($id, function ($q) use ($id) {
                 return $q->where('student_id', 'like', "%$id%");

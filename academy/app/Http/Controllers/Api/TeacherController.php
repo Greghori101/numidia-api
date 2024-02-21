@@ -11,21 +11,15 @@ use Illuminate\Support\Facades\Http;
 
 class TeacherController extends Controller
 {
-    //
-    public function all()
-    {
-        $teachers = Teacher::with(['user'])->get();
-        return $teachers;
-    }
 
     public function index(Request $request)
     {
         $request->validate([
-            'sortBy' => ['nullable','string'],
-            'sortDirection' => ['nullable','string', 'in:asc,desc'],
-            'perPage' => ['nullable','integer', 'min:1'],
-            'search' => ['nullable','string'],
-            'gender' => ['nullable','string'],
+            'sortBy' => ['nullable', 'string'],
+            'sortDirection' => ['nullable', 'string', 'in:asc,desc'],
+            'perPage' => ['nullable', 'integer', 'min:1'],
+            'search' => ['nullable', 'string'],
+            'gender' => ['nullable', 'string'],
         ]);
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
@@ -55,7 +49,7 @@ class TeacherController extends Controller
 
     public function show($id)
     {
-        $teacher = Teacher::where('id', $id)->first()->user;
+        $teacher = Teacher::with(['user', 'groups.sessions.exceptions','groups.students.checkouts','groups.students.user', 'groups.level', 'exams'])->where('id', $id)->first();
         return $teacher;
     }
 
@@ -76,20 +70,14 @@ class TeacherController extends Controller
         $session->state = 'approved';
     }
 
-
+    public function all()
+    {
+        $teachers = Teacher::with([ 'groups.level','user'])->get();
+        return $teachers;
+    }
     public function all_details()
     {
-        $users = User::with(['teacher', "groups.level"])->get();
-        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-            ->get(env('AUTH_API') . '/api/users', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                'ids' => $users->pluck('id'),
-            ]);
-
-        $users = $users->concat($response->json());
-        $users = $users->groupBy('id');
-
+        $users = User::with(['teacher.groups.sessions.exceptions', 'teacher.groups.level'])->get();
         return $users;
     }
 }

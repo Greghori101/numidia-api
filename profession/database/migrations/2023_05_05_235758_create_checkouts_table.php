@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary()->unique();
             $table->unsignedBigInteger('price');
             $table->integer('nb_session');
+            $table->integer('month')->default(1);
             $table->string('status')->default("pending");
             $table->unsignedBigInteger('discount')->default(0);
             $table->datetime('pay_date')->nullable();

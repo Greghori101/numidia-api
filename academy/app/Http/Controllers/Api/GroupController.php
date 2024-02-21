@@ -16,11 +16,7 @@ use Illuminate\Support\Facades\Http;
 class GroupController extends Controller
 {
 
-    public function all()
-    {
-        $groups  = Group::with(['level', 'teacher.user'])->get();
-        return response()->json($groups, 200);
-    }
+
     public function index(Request $request)
     {
         $request->validate([
@@ -64,15 +60,13 @@ class GroupController extends Controller
 
     public function show($id)
     {
-        $group = Group::with(['teacher.user', 'level', 'students.user'])->find($id);
+        $group = Group::with(['teacher.user', 'level', 'students.user', 'sessions.exceptions','students.level'])->find($id);
 
         foreach ($group->students as $student) {
-            $allCheckoutsTrue = $student->checkouts()
-                ->where('group_id', $id)
-                ->where('paid', false)
-                ->count() == 0;
-
-            $student["paid"] = $allCheckoutsTrue;
+            $student["paid"] = $student->checkouts()
+            ->where('group_id', $id)
+            ->where('paid', false)
+            ->count() == 0;
         }
         return response()->json($group, 200);
     }
@@ -175,6 +169,8 @@ class GroupController extends Controller
                     'price' => $group->price_per_month / $group->nb_session * $group->rest_session,
                     'date' => Carbon::now(),
                     'nb_session' => $group->rest_session,
+                    'month' => $group->month,
+                    'user_id' => $request->user["id"],
 
                 ]);
 
@@ -305,5 +301,16 @@ class GroupController extends Controller
         }
 
         return response()->json($session, 200);
+    }
+
+    public function all()
+    {
+        $groups  = Group::with(['level', 'teacher.user'])->get();
+        return response()->json($groups, 200);
+    }
+    public function all_details()
+    {
+        $groups  = Group::with(['teacher.user', 'level', 'sessions.exceptions'])->get();
+        return response()->json($groups, 200);
     }
 }

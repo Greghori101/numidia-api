@@ -52,6 +52,8 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('sessions')
         ->controller(SessionController::class)
         ->group(function () {
+            Route::get('/all', 'all');
+            Route::get('/details', 'all_details');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/{id}/exception', 'except');
@@ -71,6 +73,7 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->controller(GroupController::class)
         ->group(function () {
             Route::get('/all', 'all');
+            Route::get('/details', 'all_details');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
@@ -99,6 +102,7 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->controller(TeacherController::class)
         ->group(function () {
             Route::get('/all', 'all');
+            Route::get('/details', 'all_details');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/sessions/reject', 'reject_session');

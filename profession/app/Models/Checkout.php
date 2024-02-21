@@ -18,6 +18,7 @@ class Checkout extends Model
         'paid',
         'nb_session',
         'discount',
+        'month'
     ];
 
     protected $keyType = 'string';

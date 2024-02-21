@@ -22,7 +22,6 @@ class User extends Model
     protected $fillable = [
         'id',
         'email',
-        'annex',
         'name',
         'role',
         'phone_number',

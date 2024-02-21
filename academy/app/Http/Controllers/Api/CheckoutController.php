@@ -114,7 +114,6 @@ class CheckoutController extends Controller
         ]);
         $ids  = $request->checkouts;
         $user = User::find($request->user["id"]);
-
         $total = 0;
         $receipt = Receipt::create([
             "total" => $total,

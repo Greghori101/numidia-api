@@ -49,7 +49,7 @@ class TeacherController extends Controller
 
     public function show($id)
     {
-        $teacher = Teacher::with(['user', 'groups.sessions.exceptions', 'groups.level', 'exams'])->where('id', $id)->first();
+        $teacher = Teacher::with(['user', 'groups.sessions.exceptions','groups.students.checkouts','groups.students.user', 'groups.level', 'exams'])->where('id', $id)->first();
         return $teacher;
     }
 
@@ -72,7 +72,7 @@ class TeacherController extends Controller
 
     public function all()
     {
-        $teachers = User::with(['teacher.groups.sessions.exceptions', 'teacher.groups.level'])->get();
+        $teachers = Teacher::with([ 'groups.level','user'])->get();
         return $teachers;
     }
     public function all_details()

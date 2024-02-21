@@ -115,7 +115,7 @@ class AttendanceController extends Controller
         return response()->json([], 200);
     }
 
-    public function presences()
+    public function presences(Request $request)
     {
         $presences = Presence::all();
 
@@ -136,6 +136,8 @@ class AttendanceController extends Controller
                         $group->update([
                             "rest_session" => $group->nb_session,
                             "current_nb_session" => 1,
+                            'month' => $group->month + 1,
+
                         ]);
 
                         foreach ($group->students as $student) {
@@ -147,6 +149,10 @@ class AttendanceController extends Controller
                                 'price' => $group->price_per_month / $group->nb_session * $group->rest_session,
                                 'date' => Carbon::now(),
                                 'nb_session' => $group->rest_session,
+                                'user_id' => $request->user["id"],
+                                'month' => $group->month + 1,
+
+
                             ]);
 
                             $data = ["amount" => -$checkout->price + $checkout->discount, "user" => $student->user];
@@ -260,11 +266,10 @@ class AttendanceController extends Controller
         $starts_at = Carbon::parse($request->starts_at);
         $ends_at = Carbon::parse($request->ends_at);
         $group = Group::find($group_id);
-        $presence = Presence::where([
-            'group_id' => $group_id,
-            'starts_at' => $starts_at,
-            'ends_at' => $ends_at,
-        ])->first();
+        $presence = Presence::where('starts_at', $starts_at)
+            ->where('ends_at', $ends_at)
+            ->where('group_id', $group_id)
+            ->first();
 
         if (!$presence) {
             $presence = Presence::create([

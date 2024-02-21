@@ -52,6 +52,8 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('sessions')
         ->controller(SessionController::class)
         ->group(function () {
+            Route::get('/all', 'all');
+            Route::get('/details', 'all_details');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/{id}/exception', 'except');
@@ -71,6 +73,7 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->controller(GroupController::class)
         ->group(function () {
             Route::get('/all', 'all');
+            Route::get('/details', 'all_details');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
@@ -99,6 +102,7 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->controller(TeacherController::class)
         ->group(function () {
             Route::get('/all', 'all');
+            Route::get('/details', 'all_details');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/sessions/reject', 'reject_session');
@@ -175,10 +179,7 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::post('/mark/presence', 'mark_presence');
             Route::post('/remove/presence', 'remove_presence');
         });
-    Route::controller(DashboardController::class)
-        ->group(function () {
-            Route::get('/dashboard-stats', 'stats');
-        });
+
     Route::prefix('statistics')
         ->controller(FinancialController::class)
         ->group(function () {
@@ -189,6 +190,7 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/employees', 'employee');
             Route::get('/expenses', 'expense');
             Route::get('/inscription_fees', 'fees');
+            Route::get('/dashboard', 'stats');
         });
     Route::prefix('exams')
         ->controller(ExamController::class)
