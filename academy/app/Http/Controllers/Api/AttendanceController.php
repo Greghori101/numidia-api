@@ -150,7 +150,7 @@ class AttendanceController extends Controller
                                 'date' => Carbon::now(),
                                 'nb_session' => $group->rest_session,
                                 'user_id' => $request->user["id"],
-                                'month' => $group->month + 1,
+                                'month' => $group->month,
 
 
                             ]);
@@ -277,6 +277,7 @@ class AttendanceController extends Controller
                 'session_id' => $session_id,
                 'starts_at' => $starts_at,
                 'ends_at' => $ends_at,
+                'month'=>$group->month,
             ]);
         }
         $presence->students()->sync($group->students, ['status' => 'absent']);

@@ -47,11 +47,19 @@ class TeacherController extends Controller
         return $teachers;
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $teacher = Teacher::with(['user', 'groups.sessions.exceptions','groups.students.checkouts','groups.students.user', 'groups.level', 'exams','groups.presence.students'])->where('id', $id)->first();
-        return $teacher;
+        $month =  $request->query('month', 1);
+        $teacher = Teacher::find($id);
+        $teacher->load(['user','groups.level','groups.presence' => function ($query) use ($month) {
+            $query->where('presences.month', $month);
+        }, 'groups.students.checkouts' => function ($query) use ($month) {
+            $query->where('checkouts.month', $month);
+        },'groups.presence.students.user','groups.students.user']);
+        return response()->json($teacher, 200);
     }
+
+   
 
 
 
@@ -72,7 +80,7 @@ class TeacherController extends Controller
 
     public function all()
     {
-        $teachers = Teacher::with([ 'groups.level','user'])->get();
+        $teachers = Teacher::with(['groups.level', 'user'])->get();
         return $teachers;
     }
     public function all_details()

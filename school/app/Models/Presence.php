@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Presence extends Model
 {
@@ -17,6 +16,7 @@ class Presence extends Model
         'group_id',
         'status',
         'session_id',
+        'month',
     ];
 
     protected $keyType = 'string';

@@ -17,6 +17,7 @@ class Presence extends Model
         'group_id',
         'status',
         'session_id',
+        'month',
     ];
 
     protected $keyType = 'string';

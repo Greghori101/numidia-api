@@ -16,6 +16,7 @@ return new class extends Migration
             $table->datetime('starts_at')->nullable();
             $table->datetime('ends_at')->nullable();
             $table->string('status')->default('pending');
+            $table->integer('month')->default(1);
 
             $table->uuid('group_id')->nullable();
             $table->foreign('group_id')->references('id')->on('groups');
