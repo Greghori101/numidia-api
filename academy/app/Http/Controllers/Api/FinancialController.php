@@ -36,9 +36,9 @@ class FinancialController extends Controller
             $paidCheckouts = $user->checkouts()->where('paid', true);
             $checkouts = $user->checkouts;
             $paidFees = $user->inscription_fees()->where('paid', true);
-            $fees = $user->inscription_fees;
             $expenses = $user->expenses;
-
+            $fees = $paidFees->get();
+            $fees = $fees->load(['student.user']);
             $cumulativePrice = $paidCheckouts->sum('price') + $paidFees->sum('total') - $expenses->sum('total');
 
             if ($cumulativePrice != 0) {

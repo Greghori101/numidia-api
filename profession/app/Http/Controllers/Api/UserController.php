@@ -74,9 +74,12 @@ class UserController extends Controller
         } else {
             $user = User::find($id);
             if ($user->role == "student") {
-                $user->load("receipts.checkouts.group.teacher.user",  'student.presences.group.teacher.user', 'student.groups.teacher.user', 'student.level', 'student.checkouts', 'student.fee_inscription', 'student.supervisor.user', 'student.user');
+                $user->load("receipts.checkouts.group.teacher.user",  'student.groups', 'student.groups.teacher.user', 'student.level', 'student.checkouts', 'student.fee_inscription', 'student.supervisor.user', 'student.user');
+                foreach($user->student->groups as $group){
+                    $group['presence'] = $user->student->presences()->where('group_id',$group->id)->orderBy('starts_at','desc')->get();
+                }
             } elseif ($user->role == "teacher") {
-                $user->load("receipts.checkouts.group.teacher.user",  'teacher.groups.level',  'teacher.groups.presence.students.user');
+                $user->load("receipts.checkouts.group.teacher.user",  'teacher.groups.level',  'teacher.groups.presence.students.user','teacher.groups.students.user');
             } else if ($user->role == "supervisor") {
                 $user->load("receipts.checkouts.group.teacher.user",  'supervisor.students.user', 'supervisor.students.presences.group.teacher.user', 'supervisor.students.groups.teacher.user', 'supervisor.students.level', 'supervisor.students.checkouts', 'supervisor.students.fee_inscription',);
             } else {

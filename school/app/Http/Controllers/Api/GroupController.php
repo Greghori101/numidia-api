@@ -24,8 +24,8 @@ class GroupController extends Controller
             'sortBy' => ['nullable', 'string'],
             'sortDirection' => ['nullable', 'string'],
             'search' => ['nullable', 'string'],
-            'level_id' => ['nullable',],
-            'teacher_id' => ['nullable',],
+            'level_id' => ['nullable'],
+            'teacher_id' => ['nullable'],
         ]);
 
         $perPage = $request->query('perPage', 10);
@@ -35,38 +35,36 @@ class GroupController extends Controller
         $levelId = $request->query('level_id');
         $teacherId = $request->query('teacher_id');
 
-        $query = Group::query();
-        $level = Level::find($levelId);
-        $teacher = Teacher::find($teacherId);
+        $teachersQuery = Teacher::with(['groups' => function ($query) use ($levelId, $search, $sortBy, $sortDirection) {
+            $query->when($levelId, function ($q) use ($levelId) {
+                $q->where('level_id', $levelId);
+            })
+                ->whereRaw('LOWER(module) LIKE ?', ["%$search%"])
+                ->orderBy($sortBy, $sortDirection)
+                ->with(['level']);
+        }, 'user']);
 
-        if ($level) {
-            $query = $level->groups();
-        }
-        if ($teacher) {
-            $query = $query->where('teacher_id', $teacherId);
+        if ($teacherId) {
+            $teachersQuery->where('id', $teacherId);
         }
 
-        $groups = $query
-            ->whereRaw('LOWER(module) LIKE ?', ["%$search%"])
-            ->orderBy($sortBy, $sortDirection)
-            ->with(['level', 'teacher.user'])
-            ->when($perPage !== 'all', function ($query) use ($perPage) {
-                return $query->paginate($perPage);
-            }, function ($query) {
-                return $query->get();
-            });
-        return response()->json($groups, 200);
+        // Paginate the results by teachers
+        $teachers = $teachersQuery->paginate($perPage);
+
+        return response()->json($teachers, 200);
     }
+
+
 
     public function show($id)
     {
-        $group = Group::with(['teacher.user', 'level', 'students.user', 'sessions.exceptions','students.level'])->find($id);
+        $group = Group::with(['teacher.user', 'level', 'students.user', 'sessions.exceptions', 'students.level'])->find($id);
 
         foreach ($group->students as $student) {
             $student["paid"] = $student->checkouts()
-            ->where('group_id', $id)
-            ->where('paid', false)
-            ->count() == 0;
+                ->where('group_id', $id)
+                ->where('paid', false)
+                ->count() == 0;
         }
         return response()->json($group, 200);
     }
