@@ -175,4 +175,5 @@ class CheckoutController extends Controller
 
         return response()->json($receipt, 200);
     }
+    
 }

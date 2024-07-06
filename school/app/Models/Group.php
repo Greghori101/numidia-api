@@ -11,17 +11,7 @@ class Group extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = [
-        'module',
-        'capacity',
-        'price_per_month',
-        'nb_session',
-        'type',
-        'rest_session',
-        'current_nb_session',
-        'annex',
-        'month'
-    ];
+    protected $fillable = ['module', 'capacity', 'price_per_month', 'nb_session', 'type', 'rest_session', 'current_nb_session', 'annex','month'];
 
     protected $keyType = 'string';
     public $incrementing = false;

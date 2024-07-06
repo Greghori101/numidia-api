@@ -71,7 +71,6 @@ class StudentController extends Controller
         $student = Student::with(['level', 'user', 'groups'])->find($id);
         return $student;
     }
-
     public function student_group_add(Request $request, $student_id)
     {
         $request->validate([

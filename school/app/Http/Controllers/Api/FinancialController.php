@@ -238,7 +238,6 @@ class FinancialController extends Controller
 
         return response()->json($data, 200);
     }
-
     public function stats(Request $request)
     {
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])

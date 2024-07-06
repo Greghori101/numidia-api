@@ -54,7 +54,6 @@ class AuthController extends Controller
             $user->supervisor()->save(new Supervisor());
         }
     }
-
     public function verify_user_existence(Request $request, $id)
     {
         $user = User::find($id);
@@ -145,6 +144,7 @@ class AuthController extends Controller
             ->post(env('AUTH_API') . '/api/login', $data);
 
         $data = json_decode($response->body(), true);
+
         $user = User::find($data['id']);
         $data['user'] = $user;
 

@@ -59,10 +59,6 @@ class TeacherController extends Controller
         return response()->json($teacher, 200);
     }
 
-   
-
-
-
     public function  reject_session(Request $request, $id)
     {
         $request->validate([

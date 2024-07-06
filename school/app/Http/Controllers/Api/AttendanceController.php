@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Http;
 
 class AttendanceController extends Controller
 {
-
     public function sessions(Request $request)
     {
         $sessions = Session::with(['exceptions', 'group.teacher.user'])->get();

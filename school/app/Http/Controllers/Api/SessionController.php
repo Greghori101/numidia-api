@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Http;
 
 class SessionController extends Controller
 {
-    //
     public function index()
     {
         $sessions = Session::with(["exceptions", "group.teacher.user","group.level"])->get();
@@ -34,7 +33,6 @@ class SessionController extends Controller
         $session->exceptions()->save(new ExceptionSession(['date' => Carbon::parse($request->date)]));
         return response()->json($session, 200);
     }
-
 
     public function delete($id)
     {
@@ -76,7 +74,6 @@ class SessionController extends Controller
 
         return response()->json(200);
     }
-
     
     public function all()
     {

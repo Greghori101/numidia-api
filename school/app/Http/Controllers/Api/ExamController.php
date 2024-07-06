@@ -61,8 +61,6 @@ class ExamController extends Controller
         return response()->json(200);
     }
 
-
-
     public function create_answers(Request $request, $exam)
     {
         $exam = Exam::find($exam);
@@ -98,7 +96,6 @@ class ExamController extends Controller
         return response()->json(200);
     }
 
-
     public function index()
     {
         $exams = Exam::with(['teacher'])->get();
@@ -110,7 +107,6 @@ class ExamController extends Controller
         $exams = Exam::with(['questions.choices', 'questions.audio', 'answers', 'teacher'])->get();
         return response()->json($exams, 200);
     }
-
 
     public function student_exam($exam, $studentId)
     {

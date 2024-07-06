@@ -128,9 +128,8 @@ class AuthController extends Controller
                 'phone_number' => $request->phone_number,
                 'gender' => $request->gender,
             ];
-            Mail::to($user)->send(new VerifyEmail($data));
+            Mail::to($user)->queue(new VerifyEmail($data));
         } catch (\Throwable $th) {
-            abort(400);
         }
         return response()->json($data, 200);
     }
@@ -173,9 +172,9 @@ class AuthController extends Controller
                 'gender' => $request->gender,
             ];
             $user->save();
-            Mail::to($user)->send(new WelcomeEmail($data));
+            Mail::to($user)->queue(new WelcomeEmail($data));
         } catch (\Throwable $th) {
-            abort(400);
+            
         }
         return response()->json(200);
     }
@@ -258,10 +257,8 @@ class AuthController extends Controller
                 'code' => $user->code,
                 'url' => $url,
             ];
-            Mail::to($user)->send(new ForgotPasswordEmail($data));
+            Mail::to($user)->queue(new ForgotPasswordEmail($data));
         } catch (\Throwable $th) {
-            //throw $th;
-            abort(400);
         }
 
         return response(200);
@@ -321,10 +318,8 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'code' => $user->code,
                 ];
-                Mail::to($user)->send(new VerifyEmail($data));
+                Mail::to($user)->queue(new VerifyEmail($data));
             } catch (\Throwable $th) {
-                //throw $th;
-                abort(400);
             }
             return response()->json('Code sent', 200);
         }

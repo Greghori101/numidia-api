@@ -17,7 +17,6 @@ class ReceiptController extends Controller
         return response()->json($receipts);
     }
 
-
     public function show(Receipt $receipt)
     {
         return response()->json($receipt);

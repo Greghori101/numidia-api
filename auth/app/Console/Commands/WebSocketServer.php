@@ -38,6 +38,13 @@ class WebSocketServer extends Command
             ),
             8090
         );
+        // `
+        //     INFO  Server running on [http://127.0.0.1:8090].
+        
+        //     Press Ctrl+C to stop the server
+        
+        // `;
         $server->run();
+        
     }
 }

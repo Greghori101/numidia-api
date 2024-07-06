@@ -75,15 +75,15 @@ class UserController extends Controller
             $user = User::find($id);
             if ($user->role == "student") {
                 $user->load("receipts.checkouts.group.teacher.user",  'student.groups', 'student.groups.teacher.user', 'student.level', 'student.checkouts', 'student.fee_inscription', 'student.supervisor.user', 'student.user');
-                foreach($user->student->groups as $group){
-                    $group['presence'] = $user->student->presences()->where('group_id',$group->id)->orderBy('starts_at','desc')->get();
+                foreach ($user->student->groups as $group) {
+                    $group['presence'] = $user->student->presences()->where('group_id', $group->id)->orderBy('starts_at', 'desc')->get();
                 }
             } elseif ($user->role == "teacher") {
-                $user->load("receipts.checkouts.group.teacher.user",  'teacher.groups.level',  'teacher.groups.presence.students.user','teacher.groups.students.user');
+                $user->load("receipts.checkouts.group.teacher.user",  'teacher.groups.level',  'teacher.groups.presence.students.user', 'teacher.groups.students.user');
             } else if ($user->role == "supervisor") {
                 $user->load("receipts.checkouts.group.teacher.user",  'supervisor.students.user', 'supervisor.students.presences.group.teacher.user', 'supervisor.students.groups.teacher.user', 'supervisor.students.level', 'supervisor.students.checkouts', 'supervisor.students.fee_inscription',);
             } else {
-                $user->load("receipts.checkouts.group.teacher.user", );
+                $user->load("receipts.checkouts.group.teacher.user",);
             }
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->get(env('AUTH_API') . '/api/profile/' . $user->id, [
@@ -109,16 +109,21 @@ class UserController extends Controller
     }
     public function store(Request $request)
     {
-        $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'role' => ['required', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:10'],
             'gender' => 'required|in:male,female',
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users',],
-        ]);
+        ];
         $request->merge([
             'role' => strtolower($request->role),
         ]);
+        if ($request->role === "student") {
+            $rules['level_id'] = ['required', 'exists:levels,id'];
+        }
+        $request->validate($rules);
+
 
         $user = User::create([
             'email' => $request->email,
@@ -140,6 +145,7 @@ class UserController extends Controller
                 'role' => $request->role,
                 'gender' => $request->gender,
             ]);
+
         if ($user->role == 'teacher') {
             $user->teacher()->save(new Teacher([
                 'modules' => implode("|", $request->modules),
@@ -192,17 +198,21 @@ class UserController extends Controller
         if ($user) {
             return response()->json(200);
         }
-        $request->validate([
+        $rules = [
 
             'name' => ['required', 'string', 'max:255'],
             'role' => ['required', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:10'],
             'gender' => 'required|in:male,female',
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users',],
-        ]);
+        ];
         $request->merge([
             'role' => strtolower($request->role),
         ]);
+        if ($request->role === "student") {
+            $rules['level_id'] = ['required', 'exists:levels,id'];
+        }
+        $request->validate($rules);
 
         $user = User::create([
             'id' => $request->user["id"],
@@ -265,6 +275,18 @@ class UserController extends Controller
             'phone_number' => $request->phone_number,
             'gender' => $request->gender,
         ]);
+        if ($user->role == 'teacher') {
+            $user->teacher()->update([
+                'modules' => implode("|", $request->modules),
+                'levels' => implode("|", $request->levels),
+                'percentage' => $request->percentage,
+            ]);
+        } elseif ($user->role == 'student') {
+            $level = Level::find($request->level_id);
+            $student = $user->student;
+            $level->students()->save($student);
+            return Student::with(['user', 'level'])->find($student->id);
+        } 
 
         return response()->json(['message' => 'User data updated successfully'], 200);
     }

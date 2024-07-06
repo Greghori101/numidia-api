@@ -42,7 +42,7 @@ class GroupController extends Controller
                 ->whereRaw('LOWER(module) LIKE ?', ["%$search%"])
                 ->orderBy($sortBy, $sortDirection)
                 ->with(['level']);
-        }, 'user']);
+        }, 'user'])->has('groups');
 
         if ($teacherId) {
             $teachersQuery->where('id', $teacherId);
@@ -53,8 +53,6 @@ class GroupController extends Controller
 
         return response()->json($teachers, 200);
     }
-
-
 
     public function show($id)
     {

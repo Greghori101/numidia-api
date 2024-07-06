@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 
 class LevelController extends Controller
 {
-    //
     public function all()
     {
         $levels = Level::all();
