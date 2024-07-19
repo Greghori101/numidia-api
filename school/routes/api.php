@@ -9,13 +9,13 @@ use App\Http\Controllers\Api\FeeInscriptionController;
 use App\Http\Controllers\Api\FinancialController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\LevelController;
+use App\Http\Controllers\Api\MarkSheetController;
 use App\Http\Controllers\Api\ParentController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\TeacherController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -23,7 +23,6 @@ Route::post('/register', [AuthController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login',]);
 Route::get('/levels/all', [LevelController::class, 'all']);
-Route::get('/program', [SessionController::class, 'index']);
 Route::get('/teachers/all-details', [TeacherController::class, 'all_details']);
 Route::post('/create-user', [AuthController::class, 'create_user_department']);
 
@@ -95,6 +94,7 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/{id}/checkouts', 'student_checkouts');
             Route::get('/{id}/groups', 'student_group');
             Route::get('/{id}/groups/unenrolled', 'group_notin_student');
+            Route::get('/{id}/mark_sheet', 'student_mark_sheets');
             Route::post('/{student_id}/groups', 'student_group_add');
             Route::delete('/{student_id}/groups/{group_id}', 'student_group_remove');
         });
@@ -123,8 +123,9 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/all', 'all');
             Route::get('', 'index');
             Route::get('/{id}', 'show');
-            Route::post('/pay', 'pay');
-            Route::delete('/{id}', 'delete');
+            Route::put('/{id}', 'update');
+            Route::post('/pay', 'pay_debt');
+            Route::post('/pay_by_sessions', 'pay_by_sessions');
         });
 
 
@@ -138,6 +139,19 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/receipts', 'receipts');
             Route::get('/sessions', 'sessions');
         });
+
+    Route::prefix('marks')
+        ->controller(MarkSheetController::class)
+        ->group(function () {
+            Route::get('/{id}', 'show');
+            Route::post('/', 'create');
+            Route::put('/{id}', 'update');
+            Route::delete('/{id}', 'delete');
+            Route::post('/marks', 'add_mark');
+            Route::put('/marks/{id}', 'update_mark');
+            Route::delete('/marks/{id}', 'delete_mark');
+        });
+
     Route::prefix('receipts')
         ->controller(ReceiptController::class)
         ->group(function () {

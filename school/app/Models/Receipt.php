@@ -26,8 +26,13 @@ class Receipt extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function checkouts()
+    public function employee()
     {
-        return $this->hasMany(Checkout::class);
+        return $this->belongsTo(User::class,'employee_id');
+    }
+
+    public function services()
+    {
+        return $this->hasMany(Service::class);
     }
 }

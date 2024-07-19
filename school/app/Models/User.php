@@ -47,10 +47,6 @@ class User extends Model
      * @var array<string, string>
      */
 
-    function checkouts()
-    {
-        return $this->hasMany(Checkout::class);
-    }
     function receipts()
     {
         return $this->hasMany(Receipt::class);
@@ -71,8 +67,8 @@ class User extends Model
     {
         return $this->hasMany(Expense::class);
     }
-    function inscription_fees()
+    function employee_receipts()
     {
-        return $this->hasMany(FeeInscription::class, "user_id");
+        return $this->hasMany(Receipt::class, "employee_id");
     }
 }

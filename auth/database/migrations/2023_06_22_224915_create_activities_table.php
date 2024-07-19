@@ -16,12 +16,10 @@ return new class extends Migration
                 ->uuid('id')
                 ->primary()
                 ->unique();
-            $table->string('browser')->nullable();
+            $table->text('user_agent')->nullable();
             $table->string('details');
             $table->string('status')->default('active');
-            $table->string('device')->nullable();
             $table->string('location')->nullable();
-            $table->string('platform')->nullable();
             $table->string('ip_address')->nullable();
 
             $table->string('access_token_id', 100)->nullable();

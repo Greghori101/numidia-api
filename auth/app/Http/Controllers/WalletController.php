@@ -23,7 +23,7 @@ class WalletController extends Controller
     public function show($id)
     {
         $user = User::find($id);
-        return response()->json($user->wallet->balance, 200);
+        return response()->json($user->wallet, 200);
     }
 
     public function transactions(Request $request, $id = null)

@@ -11,18 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('services', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->string('name');
-            $table->integer('purchase_price');
-            $table->integer('price');
+            $table->string('text');
             $table->integer('qte')->default(1);
-            $table->string('description')->nullable();
-            $table->string('level');
-            $table->string('tags')->nullable();
-            $table->timestamp('purchase_date')->nullable();
-            
+            $table->unsignedBigInteger('price')->default(0);
+            $table->unsignedBigInteger('discount')->default(0);
+            $table->text('notes')->nullable();
 
+            
+            $table->uuid('receipt_id')->nullable();
+            $table->foreign('receipt_id')->references('id')->on('receipts')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -32,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('products');
+        Schema::dropIfExists('services');
     }
 };

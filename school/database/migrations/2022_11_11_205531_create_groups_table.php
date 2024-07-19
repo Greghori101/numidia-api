@@ -15,15 +15,17 @@ return new class extends Migration
     {
         Schema::create('groups', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->string('module');
-            $table->string('type');
-            $table->integer('capacity');
-            $table->integer('month')->default(1);
-            $table->integer('nb_session');
-            $table->unsignedBigInteger('price_per_month');
-            $table->integer('current_nb_session')->default(1);
-            $table->integer('rest_session');
             $table->string('annex')->nullable();
+            $table->string('type');
+            $table->string('module');
+            $table->integer('capacity');
+            $table->integer('percentage');
+            $table->unsignedBigInteger('price_per_month');
+            $table->integer('nb_session');
+            $table->integer('month')->default(1);
+            $table->string('main_session');
+            $table->integer('current_month')->default(1);
+            $table->integer('current_nb_session')->default(1);
 
             $table->uuid('teacher_id')->nullable();
             $table->foreign('teacher_id')->references('id')->on('teachers')->onDelete('set null');

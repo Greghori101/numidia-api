@@ -15,7 +15,10 @@ class Product extends Model
         'price',
         'qte',
         'description',
-        'purchase_date'
+        'purchase_date',
+        'purchase_price',
+        'level',
+        'tags',
     ];
 
     protected $keyType = 'string';

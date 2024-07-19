@@ -117,7 +117,7 @@ class CheckoutController extends Controller
         $total = 0;
         $receipt = Receipt::create([
             "total" => $total,
-            "type" => "checkouts",
+            "type" => "checkout",
         ]);
 
         foreach ($ids as $id) {
@@ -126,7 +126,7 @@ class CheckoutController extends Controller
                 $student = $checkout->student;
                 $group = $checkout->group;
                 $teacher = $group->teacher;
-                $admin = User::where("role", "admin")->first();
+                $admin = User::where("role", "numidia")->first();
                 $checkout->paid = true;
                 $checkout->pay_date = Carbon::now();
 
@@ -157,7 +157,7 @@ class CheckoutController extends Controller
 
 
 
-        $users = User::where('role', "admin")
+        $users = User::where('role', "numidia")
             ->get();
         foreach ($users as $receiver) {
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])

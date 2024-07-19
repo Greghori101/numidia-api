@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Checkout;
+use App\Models\Group;
 use App\Models\Receipt;
+use App\Models\Service;
+use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -14,26 +17,10 @@ class CheckoutController extends Controller
 {
     public function all()
     {
-        $checkouts = Checkout::with(['user.profile_picture', 'student.user', 'group.teacher.user'])
-            ->get()
-            ->groupBy('user_id');
+        $checkouts = Checkout::with(['student.user', 'group.teacher.user'])
+            ->get();
 
-        $groupedCheckouts = [];
-
-        foreach ($checkouts as  $userCheckouts) {
-            $user = $userCheckouts->first()->user;
-
-            $paidCheckouts = $userCheckouts->where('paid', true);
-            $cumulativePrice = $paidCheckouts->sum('price');
-
-            $groupedCheckouts[] = [
-                'user' => $user,
-                'cumulative_price' => $cumulativePrice,
-                'checkouts' => $userCheckouts,
-            ];
-        }
-
-        return response()->json($groupedCheckouts, 200);
+        return response()->json($checkouts, 200);
     }
 
     public function index(Request $request)
@@ -106,74 +93,220 @@ class CheckoutController extends Controller
         return response()->json($checkout, 200);
     }
 
-    public function pay(Request $request)
+    public function pay_debt(Request $request)
     {
-
+        // Validate the incoming request
         $request->validate([
-            'checkouts.*' => ['string'],
+            'checkouts' => ['array'],
         ]);
-        $ids  = $request->checkouts;
+
+        // Initialize variables
+        $ids = $request->checkouts;
         $user = User::find($request->user["id"]);
         $total = 0;
-        $receipt = Receipt::create([
+
+        // Create a new receipt
+        $receipt = new Receipt([
             "total" => $total,
-            "type" => "checkouts",
+            "type" => "debt",
+            'employee_id' => $user->id,
         ]);
 
-        foreach ($ids as $id) {
+        // Process each checkout
+        foreach ($ids as $checkout) {
+            $id = $checkout['id'];
+            $paid_price = $checkout['paid_price'];
+
             $checkout = Checkout::find($id);
-            if (!$checkout->paid) {
+
+            // Check if the checkout is not paid
+            if ($checkout->status !== "paid") {
                 $student = $checkout->student;
                 $group = $checkout->group;
                 $teacher = $group->teacher;
-                $admin = User::where("role", "admin")->first();
-                $checkout->paid = true;
+                $admin = User::where("role", "numidia")->first();
+
+                // Update checkout details
+                $checkout->paid_price += $paid_price;
                 $checkout->pay_date = Carbon::now();
 
-                $data = ["amount" => ($teacher->percentage * $checkout->price) / 100, "user" => $teacher->user];
-                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                if ($checkout->paid_price >= ($checkout->price - $checkout->discount)) {
+                    $checkout->status = 'paid';
+                }else{
+                    $checkout->status = 'paying';
+                }
+
+                // Update teacher's wallet
+                $data = ["amount" => ($checkout->teacher_percentage * $paid_price) / 100, "user" => $teacher->user];
+                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
-                $data = ["amount" => ((100 - $teacher->percentage) * $checkout->price) / 100, "user" => $admin];
-                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                // Update admin's wallet
+                $data = ["amount" => ((100 - $checkout->teacher_percentage) * $paid_price) / 100, "user" => $admin];
+                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
-                $data = ["amount" => $checkout->price - $checkout->discount, "user" => $student->user];
-                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                // Update student's wallet
+                $data = ["amount" => $paid_price, "user" => $student->user];
+                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+                // Save the checkout
                 $checkout->save();
 
-                $total += $checkout->price;
+                // Update the total amount paid
+                $total += $paid_price;
 
-                $user->checkouts()->save($checkout);
-                $student->user->receipts()->save($receipt);
-                $receipt->checkouts()->save($checkout);
+                // Save the receipt and related services
+                $receipt->services()->save(new Service([
+                    'text' => $group->name . ' ' . $teacher->name . ' ' . $group->type,
+                    'price' => $paid_price,
+                ]));
+
+                // Update the student's debt for the group
+                $student->groups()->updateExistingPivot($group->id, [
+                    'debt' => $student->groups()->where('group_id', $group->id)->first()->pivot->debt - $paid_price
+                ]);
             }
         }
 
-        $receipt->total = $total;
-        $receipt->save();
-        $receipt->load('user', 'checkouts.group.teacher.user');
+        // If total is non-zero, finalize the receipt and send notifications
+        if ($total != 0) {
+            $receipt->total = $total;
+            $receipt->user_id = $student->user->id;
+            $receipt->employee_id = $user->id;
+            $receipt->save();
+            $receipt->load(['user', 'employee', 'services']);
 
+            // Notify admins about the payment
+            $admins = User::where('role', "numidia")->get();
+            foreach ($admins as $receiver) {
+                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                    ->post(env('AUTH_API') . '/api/notifications', [
+                        'client_id' => env('CLIENT_ID'),
+                        'client_secret' => env('CLIENT_SECRET'),
+                        'type' => "success",
+                        'title' => "New Payment",
+                        'content' => "The student: " . $student->user->name . " has paid the total: " . $total . ".00 DA",
+                        'displayed' => false,
+                        'id' => $receiver->id,
+                        'department' => env('DEPARTMENT'),
+                    ]);
+            }
 
-
-        $users = User::where('role', "admin")
-            ->get();
-        foreach ($users as $receiver) {
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/notifications', [
-                    'client_id' => env('CLIENT_ID'),
-                    'client_secret' => env('CLIENT_SECRET'),
-                    'type' => "success",
-                    'title' => "New Payment",
-                    'content' => "The student:" . $student->user->name . " has paid the total: " . $total . ".00 DA",
-                    'displayed' => false,
-                    'id' => $receiver->id,
-                    'department' => env('DEPARTMENT'),
-                ]);
+            // Return the receipt as JSON response
+            return response()->json($receipt, 200);
         }
 
-        return response()->json($receipt, 200);
+        // Return a response indicating no payments were made
+        return response()->json(['message' => 'No payments were made'], 400);
     }
-    
+
+
+    public function pay_by_sessions(Request $request, $student_id)
+    {
+        // Validate the incoming request
+        $request->validate([
+            'groups' => ['array'],
+        ]);
+
+        // Initialize variables
+        $user = User::find($request->user["id"]);
+        $total = 0;
+        $hasPayment = false;
+
+        $student = Student::findOrFail($student_id);
+        // Create a new receipt
+        $receipt = new Receipt([
+            "total" => $total,
+            "type" => "sessions",
+            'employee_id' => $user->id,
+            'user_id' => $student->user->id,
+        ]);
+
+        // Process each group
+        foreach ($request->groups as $groupData) {
+            $paid_price = $groupData['paid_price'];
+            $nb_paid_session = $groupData['nb_paid_session'];
+            $group = Group::findOrFail($groupData['id']);
+
+            // Check if the student has no remaining debt for the group
+            $pivot = $student->groups()->where('group_id', $group->id)->first()->pivot;
+            if ($pivot->debt <= 0) {
+                $hasPayment = true;
+
+                // Update the student's wallet
+                $data = ["amount" => $paid_price, "user" => $student->user];
+                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+                // Update the receipt and total
+                $total += $paid_price;
+                $receipt->services()->save(new Service([
+                    'text' => $group->name,
+                    'price' => $paid_price,
+                    'qte' => $nb_paid_session,
+                ]));
+
+                // Update student's group pivot table
+                $student->groups()->updateExistingPivot($group->id, [
+                    'nb_paid_session' => $pivot->nb_paid_session + $nb_paid_session,
+                ]);
+            }
+        }
+
+        // Finalize receipt and send notifications if any payments were made
+        if ($hasPayment) {
+            $receipt->total = $total;
+            $receipt->save();
+            $receipt->load('user', 'services'); // Load related user and services
+
+            // Notify admins about the payment
+            $admins = User::where('role', "numidia")->get();
+            foreach ($admins as $receiver) {
+                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                    ->post(env('AUTH_API') . '/api/notifications', [
+                        'client_id' => env('CLIENT_ID'),
+                        'client_secret' => env('CLIENT_SECRET'),
+                        'type' => "success",
+                        'title' => "New Payment",
+                        'content' => "The student: " . $student->user->name . " has paid the total: " . $total . ".00 DA",
+                        'displayed' => false,
+                        'id' => $receiver->id,
+                        'department' => env('DEPARTMENT'),
+                    ]);
+            }
+
+            // Return the receipt as JSON response
+            return response()->json($receipt, 200);
+        }
+
+        // Return a response indicating no payments were made
+        return response()->json(['message' => 'No payments were made'], 400);
+    }
+
+
+    public function update(Request $request, $id)
+    {
+
+        $request->validate([
+            'status' => ['required', 'string'],
+            'discount' => ['required', 'string'],
+            'price' => ['required', 'string'],
+            'pay_date' => ['required', 'string'],
+            'teacher_percentage' => ['required', 'string'],
+            'notes' => ['required', 'string'],
+        ]);
+        $checkout = Checkout::findOrFail($id);
+        $checkout->update([
+            'status' => $request->status,
+            'discount' => $request->discount,
+            'price' => $request->price,
+            'pay_date' => $request->pay_date,
+            'teacher_percentage' => $request->teacher_percentage,
+            'notes' => $request->notes,
+        ]);
+
+        return response()->json(200);
+    }
 }

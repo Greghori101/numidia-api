@@ -344,7 +344,7 @@ class UserController extends Controller
     {
         $user = User::find($request->user["id"]);
         $receipts = $user->receipts;
-        $receipts->load(["checkouts"]);
+        $receipts->load(["services"]);
         return response()->json($receipts, 200);
     }
     public function sessions(Request $request)

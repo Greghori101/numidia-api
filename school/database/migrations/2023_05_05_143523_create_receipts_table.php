@@ -18,7 +18,8 @@ return new class extends Migration
 
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users'); 
-            
+            $table->uuid('employee_id')->nullable();
+            $table->foreign('employee_id')->references('id')->on('users'); 
             $table->timestamps();
             $table->softDeletes($column = 'deleted_at', $precision = 0);
         });

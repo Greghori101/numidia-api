@@ -18,10 +18,32 @@ class UserController extends Controller
 {
 
     
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with(['profile_picture'])->all();
-        return response()->json($users, 200);
+        $request->validate([
+            'sortBy' => ['nullable', 'string'],
+            'sortDirection' => ['nullable', 'string', 'in:asc,desc'],
+            'perPage' => ['nullable', 'integer', 'min:1'],
+            'search' => ['nullable', 'string'],
+        ]);
+        $sortBy = $request->query('sortBy', 'created_at');
+        $sortDirection = $request->query('sortDirection', 'desc');
+        $perPage = $request->query('perPage', 10);
+        $search = $request->query('search', '');
+
+        $usersQuery = User::query()->where('role', 'client');
+
+        $usersQuery->when($search, function ($query) use ($search) {
+            return $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('name', 'like', "%$search%")
+                    ->orWhere('email', 'like', "%$search%");
+            });
+        });
+        $users = $usersQuery->orderBy($sortBy, $sortDirection)
+
+            ->paginate($perPage);
+
+        return $users;
     }
 
     public function create(Request $request)

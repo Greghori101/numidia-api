@@ -6,32 +6,23 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Checkout extends Model
+class Service extends Model
 {
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'month',
-        'status',
-        'price',
         'discount',
-        'paid_price',
-        'pay_date',
-        'teacher_percentage',
+        'text',
+        'qte',
+        'price',
         'notes',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
     
-    public function group()
+    public function receipt()
     {
-        return $this->belongsTo(Group::class);
+        return $this->belongsTo(Receipt::class);
     }
-
-    public function student()
-    {
-        return $this->belongsTo(Student::class);
-    }
-    
 }

@@ -51,6 +51,7 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->group(function () {
             Route::get('/', 'index');
             Route::get('/{id}', 'show_order_products');
+            Route::get('/{id}/receipt', 'order_receipt');
             Route::post('/{id}/pay', 'order_pay');
             Route::put('/{id}', 'order_status');
             Route::delete('/{id}', 'delete_order');

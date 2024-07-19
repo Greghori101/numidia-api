@@ -13,10 +13,12 @@ return new class extends Migration
     {
         Schema::create('presences', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
+            $table->integer('month')->default(1);
+            $table->integer('session_number')->default(1);
+            $table->string('status')->default('pending');
+            $table->string('type')->default('normal');
             $table->datetime('starts_at')->nullable();
             $table->datetime('ends_at')->nullable();
-            $table->string('status')->default('pending');
-            $table->integer('month')->default(1);
 
             $table->uuid('group_id')->nullable();
             $table->foreign('group_id')->references('id')->on('groups');

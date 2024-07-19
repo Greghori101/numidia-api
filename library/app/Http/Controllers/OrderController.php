@@ -94,8 +94,10 @@ class OrderController extends Controller
 
         if (!$order) {
             return response()->json(['message' => 'Order not found'], 404);
+        } else if ($order->status != "pending") {
+            return response()->json(['message' => 'check order status'], 400);
         }
-        $admin = User::where("role", "=", "admin")->first();
+        $admin = User::where("role", "=", "numidia")->first();
         $data = ["amount" => $order->total, "user" => $admin];
 
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
@@ -207,5 +209,11 @@ class OrderController extends Controller
         $order->save();
 
         return response()->json(200);
+    }
+
+    public function order_receipt($id)
+    {
+        $order = Order::with(['products','client.user'])->findOrFail($id);
+        return response()->json(['receipt' => $order->receipt, 'order' => $order], 200);
     }
 }

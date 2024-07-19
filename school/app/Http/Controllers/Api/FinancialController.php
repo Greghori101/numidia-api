@@ -14,38 +14,71 @@ use App\Models\Teacher;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class FinancialController extends Controller
 {
 
-    public function all_per_employee()
+    public function all_per_employee(Request $request)
     {
-        $users = User::with(['checkouts.student.user', 'checkouts.group.teacher.user', 'inscription_fees.student.user', 'expenses'])
+        // Validate request parameters
+        $request->validate([
+            'starts_at' => 'nullable|date',
+            'ends_at' => 'nullable|date',
+        ]);
+
+        $startsAt = $request->input('starts_at') ? Carbon::parse($request->input('starts_at')) : null;
+        $endsAt = $request->input('ends_at') ? Carbon::parse($request->input('ends_at')) : null;
+
+        // Fetch users with relationships
+        $users = User::with(['employee_receipts.user', 'receipts.services', 'expenses'])
             ->get();
 
         $data = [];
-        foreach ($users as  $user) {
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+
+        foreach ($users as $user) {
+            // Fetch profile picture
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->get(env('AUTH_API') . '/api/profile/' . $user->id, [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                 ]);
             $user['profile_picture'] = $response->json()['profile_picture'];
 
-            $paidCheckouts = $user->checkouts()->where('paid', true);
-            $checkouts = $user->checkouts;
-            $paidFees = $user->inscription_fees()->where('paid', true);
-            $expenses = $user->expenses;
-            $fees = $paidFees->get();
-            $fees = $fees->load(['student.user']);
-            $cumulativePrice = $paidCheckouts->sum('price') + $paidFees->sum('total') - $expenses->sum('total');
+            // Apply date filters if provided
+            $checkoutsQuery = $user->employee_receipts()->where('type', 'debt');
+            $sessionsQuery = $user->employee_receipts()->where('type', 'sessions');
+            $feesQuery = $user->employee_receipts()->where('type', 'inscription fee');
+            $expensesQuery = $user->expenses();
+
+            if ($startsAt) {
+                $checkoutsQuery->where('created_at', '>=', $startsAt);
+                $sessionsQuery->where('created_at', '>=', $startsAt);
+                $feesQuery->where('created_at', '>=', $startsAt);
+                $expensesQuery->where('created_at', '>=', $startsAt);
+            }
+
+            if ($endsAt) {
+                $checkoutsQuery->where('created_at', '<=', $endsAt);
+                $sessionsQuery->where('created_at', '<=', $endsAt);
+                $feesQuery->where('created_at', '<=', $endsAt);
+                $expensesQuery->where('created_at', '<=', $endsAt);
+            }
+
+            $checkouts = $checkoutsQuery->get();
+            $sessions = $sessionsQuery->get();
+            $fees = $feesQuery->get();
+            $expenses = $expensesQuery->get();
+
+            $cumulativePrice = $checkouts->sum('total') + $fees->sum('total') + $sessions->sum('total') - $expenses->sum('total');
 
             if ($cumulativePrice != 0) {
                 $data[] = [
                     'user' => $user,
                     'cumulative_price' => $cumulativePrice,
                     'checkouts' => $checkouts,
+                    'sessions' => $sessions,
                     'expenses' => $expenses,
                     'fees' => $fees,
                 ];
@@ -56,17 +89,17 @@ class FinancialController extends Controller
     }
     public function checkouts()
     {
-        $stats = Checkout::selectRaw('date, SUM(price) as total_price')
-            ->groupBy('date')
-            ->orderBy('date', 'asc')
+        $stats = Checkout::selectRaw('pay_date, SUM(price-discount) as total_price')
+            ->groupBy('pay_date')
+            ->orderBy('pay_date', 'asc')
             ->get();
-        $paid = Checkout::where('paid', true)->selectRaw('date, SUM(price) as total_price')
-            ->groupBy('date',)
-            ->orderBy('date', 'asc')
+        $paid = Checkout::selectRaw('pay_date, SUM(paid_price) as total_price')
+            ->groupBy('pay_date',)
+            ->orderBy('pay_date', 'asc')
             ->get();
-        $not_paid = Checkout::where('paid', false)->selectRaw('date, SUM(price) as total_price')
-            ->groupBy('date',)
-            ->orderBy('date', 'asc')
+        $not_paid = Checkout::selectRaw('pay_date, SUM(price-discount-paid_price) as total_price')
+            ->groupBy('pay_date',)
+            ->orderBy('pay_date', 'asc')
             ->get();
 
         $data = [
@@ -83,32 +116,30 @@ class FinancialController extends Controller
             'type' => 'nullable',
         ]);
         $type = $request->query('type');
-        $users = User::with(['checkouts', 'expenses', 'inscription_fees'])
+        $users = User::with(['employee_receipts', 'expenses'])
             ->get();
 
         $data = [];
 
         foreach ($users as $user) {
-
-            $totalCheckouts = $user->checkouts->where('paid', true)->sum('price');
-            $totalExpenses = $user->expenses->sum('total');
-            $totalFeeInscriptions = $user->inscription_fees->where('paid', true)->sum('total');
+            $total = $user->employee_receipts->sum(function ($receipt) {
+                return $receipt->total - $receipt->discount;
+            }) - $user->expenses->sum('total');
 
             if ($type === "day") {
-                $totalCheckouts = $user->checkouts->where('paid', true)->whereDate('date', Carbon::now())->sum('price');
-                $totalExpenses = $user->expenses->whereDate('date', Carbon::now())->sum('total');
-                $totalFeeInscriptions = $user->inscription_fees->where('paid', true)->whereDate('date', Carbon::now())->sum('total');
+                $total = $user->employee_receipts->whereDate('created_at', Carbon::now())->sum(function ($receipt) {
+                    return $receipt->total - $receipt->discount;
+                }) - $user->expenses->whereDate('date', Carbon::now())->sum('total');
             } elseif ($type === "month") {
-                $totalCheckouts = $user->checkouts->where('paid', true)->whereMonth('date', Carbon::now()->month)->sum('price');
-                $totalExpenses = $user->expenses->whereMonth('date', Carbon::now()->month)->sum('total');
-                $totalFeeInscriptions = $user->inscription_fees->where('paid', true)->whereMonth('date', Carbon::now()->month)->sum('total');
+                $total = $user->employee_receipts->whereMonth('created_at', Carbon::now()->month)->sum(function ($receipt) {
+                    return $receipt->total - $receipt->discount;
+                }) - $user->expenses->whereMonth('date', Carbon::now()->month)->sum('total');
             } elseif ($type === "year") {
-                $totalCheckouts = $user->checkouts->where('paid', true)->whereYear('date', Carbon::now()->year)->sum('price');
-                $totalExpenses = $user->expenses->whereYear('date', Carbon::now()->year)->sum('total');
-                $totalFeeInscriptions = $user->inscription_fees->where('paid', true)->whereYear('date', Carbon::now()->year)->sum('total');
+                $total = $user->employee_receipts->whereYear('created_at', Carbon::now()->year)->sum(function ($receipt) {
+                    return $receipt->total - $receipt->discount;
+                }) - $user->expenses->whereYear('date', Carbon::now()->year)->sum('total');
             }
 
-            $total = $totalCheckouts + $totalFeeInscriptions - $totalExpenses;
             if ($total !== 0) {
                 $data[] = [
                     'user' => $user->only(['id', 'name', 'email', 'phone_number', 'role', 'gender']), // Include only necessary user data
@@ -119,67 +150,51 @@ class FinancialController extends Controller
 
         return response()->json($data, 200);
     }
+
     public function employee(Request $request)
     {
         $request->validate([
             'type' => 'nullable',
         ]);
 
-        $type = $request->query('type');
-
-        $users = User::with(['checkouts', 'expenses', 'inscription_fees'])->get();
+        $users = User::with(['employee_receipts', 'employee_receipts.services', 'expenses'])->get();
 
         $data = [];
 
         foreach ($users as $user) {
-            $checkouts = $user->checkouts;
+            $checkouts = $user->employee_receipts->where('type', 'debt');
+            $paid_sessions = $user->employee_receipts->where('type', 'sessions');
+            $inscription_fees = $user->employee_receipts->where('type', 'inscription fee');
             $expenses = $user->expenses;
-            $inscription_fees = $user->inscription_fees;
 
-            $totalCheckoutsPayed = $checkouts->where('paid', true)->sum('price');
-            $totalCheckoutsNotPayed = $checkouts->where('paid', false)->sum('price');
+            $totalCheckoutsPaid = $checkouts->sum('total');
+            $totalPaidSessions = $paid_sessions->sum('total');
             $totalExpenses = $expenses->sum('total');
-            $totalFeeInscriptionsPayed = $inscription_fees->where('paid', true)->sum('total');
-            $totalFeeInscriptionsNotPayed = $inscription_fees->where('paid', false)->sum('total');
+            $totalPaidInscriptionFees = $inscription_fees->sum('total');
 
-            switch ($type) {
-                case 'day':
-                    $checkouts = $checkouts->whereDate('date', Carbon::now());
-                    $expenses = $expenses->whereDate('date', Carbon::now());
-                    $inscription_fees = $inscription_fees->whereDate('date', Carbon::now());
-                    break;
-                case 'month':
-                    $checkouts = $checkouts->whereMonth('date', Carbon::now()->month);
-                    $expenses = $expenses->whereMonth('date', Carbon::now()->month);
-                    $inscription_fees = $inscription_fees->whereMonth('date', Carbon::now()->month);
-                    break;
-                case 'year':
-                    $checkouts = $checkouts->whereYear('date', Carbon::now()->year);
-                    $expenses = $expenses->whereYear('date', Carbon::now()->year);
-                    $inscription_fees = $inscription_fees->whereYear('date', Carbon::now()->year);
-                    break;
-            }
+            $totalCheckoutsNotPaid = Checkout::selectRaw('SUM(price - discount - paid_price) as total')
+                ->where('user_id', $user->id)
+                ->value('total');
+            $totalFeeInscriptionsNotPaid = FeeInscription::where('paid', false)
+                ->where('user_id', $user->id)
+                ->sum('total');
 
-            $totalCheckoutsPayed = $checkouts->where('paid', true)->sum('price');
-            $totalCheckoutsNotPayed = $checkouts->where('paid', false)->sum('price');
-            $totalExpenses = $expenses->sum('total');
-            $totalFeeInscriptionsPayed = $inscription_fees->where('paid', true)->sum('total');
-            $totalFeeInscriptionsNotPayed = $inscription_fees->where('paid', false)->sum('total');
-
-            if ($totalCheckoutsPayed !== 0 || $totalExpenses !== 0 || $totalFeeInscriptionsPayed !== 0 || $totalCheckoutsNotPayed !== 0 || $totalFeeInscriptionsNotPayed !== 0) {
+            if ($totalCheckoutsPaid !== 0 || $totalExpenses !== 0 || $totalPaidInscriptionFees !== 0 || $totalCheckoutsNotPaid !== 0 || $totalFeeInscriptionsNotPaid !== 0) {
                 $data[] = [
-                    'user' => $user->only(['id', 'name', 'email', 'phone_number', 'role', 'gender']), // Include only necessary user data
-                    'checkouts_paid' => $totalCheckoutsPayed,
+                    'user' => $user->only(['id', 'name', 'email', 'phone_number', 'role', 'gender']),
+                    'checkouts_paid' => $totalCheckoutsPaid,
                     'expenses' => -$totalExpenses,
-                    'fees_paid' => $totalFeeInscriptionsPayed,
-                    'checkouts_not_paid' => -$totalCheckoutsNotPayed,
-                    'fees_not_paid' => -$totalFeeInscriptionsNotPayed,
+                    'fees_paid' => $totalPaidInscriptionFees,
+                    'paid_sessions' => $totalPaidSessions,
+                    'checkouts_not_paid' => -$totalCheckoutsNotPaid,
+                    'fees_not_paid' => -$totalFeeInscriptionsNotPaid,
                 ];
             }
         }
 
         return response()->json($data, 200);
     }
+
 
     public function expense()
     {
@@ -218,16 +233,23 @@ class FinancialController extends Controller
     }
     public function students()
     {
+        $paid_checkouts = DB::table('group_student')
+            ->selectRaw('COUNT(DISTINCT student_id) as paid_checkouts')
+            ->where('debt', 0)
+            ->value('paid_checkouts');
 
-        $paid_checkouts = Student::whereDoesntHave('checkouts', function ($query) {
-            $query->where('paid', false);
-        })->count();
-        $not_paid_checkouts =  Student::whereHas('checkouts', function ($query) {
-            $query->where('paid', false);
-        })->count();
-        $paid_fees = FeeInscription::where("paid", true)->distinct("student_id")->count();
-        $not_paid_fees = FeeInscription::where("paid", false)->distinct("student_id")->count();
+        $not_paid_checkouts = DB::table('group_student')
+            ->selectRaw('COUNT(DISTINCT student_id) as not_paid_checkouts')
+            ->where('debt', '>', 0)
+            ->value('not_paid_checkouts');
 
+        $paid_fees = FeeInscription::where("paid", true)
+            ->distinct("student_id")
+            ->count();
+
+        $not_paid_fees = FeeInscription::where("paid", false)
+            ->distinct("student_id")
+            ->count();
 
         $data = [
             "paid_checkouts" => $paid_checkouts,
@@ -238,6 +260,7 @@ class FinancialController extends Controller
 
         return response()->json($data, 200);
     }
+
     public function stats(Request $request)
     {
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])

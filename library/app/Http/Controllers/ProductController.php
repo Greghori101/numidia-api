@@ -32,20 +32,22 @@ class ProductController extends Controller
             'tags' => $request->tags,
             'level' => $request->level
         ]);
-        $pictures = $request->file('pictures');
-        foreach ($pictures as $picture) {
+        if ($request->hasFile('pictures')) {
+            $pictures = $request->file('pictures');
+            foreach ($pictures as $picture) {
 
-            $name = $picture->getClientOriginalName();
-            $content = file_get_contents($picture->getRealPath());
-            $extension = $picture->getClientOriginalExtension();
+                $name = $picture->getClientOriginalName();
+                $content = file_get_contents($picture->getRealPath());
+                $extension = $picture->getClientOriginalExtension();
 
-            $product->pictures()->save(
-                new File([
-                    'name' => $name,
-                    'content' => base64_encode($content),
-                    'extension' => $extension,
-                ])
-            );
+                $product->pictures()->save(
+                    new File([
+                        'name' => $name,
+                        'content' => base64_encode($content),
+                        'extension' => $extension,
+                    ])
+                );
+            }
         }
 
         return response()->json(['message' => 'Product added successfully'], 201);

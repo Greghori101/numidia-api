@@ -38,14 +38,14 @@ class DatabaseSeeder extends Seeder
             ])
         );
         $user->wallet()->save(new Wallet());
-        
+
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('SCHOOL_API') . '/api/create-user', [
                 'id' => $user->id,
                 'email' => 'admin@admin.com',
                 'name' => 'numidia admin',
                 'phone_number' => '0990990990',
-                'role' => 'admin',
+                'role' => "numidia",
                 'gender' => 'male',
             ]);
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
@@ -54,7 +54,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'admin@admin.com',
                 'name' => 'numidia admin',
                 'phone_number' => '0990990990',
-                'role' => 'admin',
+                'role' => "numidia",
                 'gender' => 'male',
             ]);
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
@@ -63,7 +63,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'admin@admin.com',
                 'name' => 'numidia admin',
                 'phone_number' => '0990990990',
-                'role' => 'admin',
+                'role' => "numidia",
                 'gender' => 'male',
             ]);
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
@@ -72,7 +72,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'admin@admin.com',
                 'name' => 'numidia admin',
                 'phone_number' => '0990990990',
-                'role' => 'admin',
+                'role' => "numidia",
                 'gender' => 'male',
                 'city' => 'batna',
                 'wilaya' => 'batna',
@@ -84,7 +84,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'admin@admin.com',
                 'name' => 'numidia admin',
                 'phone_number' => '0990990990',
-                'role' => 'admin',
+                'role' => "numidia",
                 'gender' => 'male',
             ]);
     }

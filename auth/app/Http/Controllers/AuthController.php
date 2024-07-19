@@ -49,11 +49,9 @@ class AuthController extends Controller
             ];
             $user->activities()->save(Activity::create([
                 'details' => "login",
-                'browser' => $request->browser,
+                'user_agent' => $request->userAgent,
                 'ip_address' => $request->ip(),
-                'platform' =>  $request->platform,
                 'location' => $request->location,
-                'device' =>  $request->device,
                 'access_token_id' => $token->id,
             ]));
 

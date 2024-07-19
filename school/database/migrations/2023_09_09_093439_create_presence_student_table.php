@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             
             $table->string('status')->default('absent');
+            $table->string('type')->default('paid');
+            $table->text('notes')->nullable();
 
             $table->uuid('presence_id')->nullable();
             $table->foreign('presence_id')->references('id')->on('presences')->onDelete('cascade');

@@ -6,32 +6,24 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Checkout extends Model
+class Mark extends Model
 {
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'month',
-        'status',
-        'price',
-        'discount',
-        'paid_price',
-        'pay_date',
-        'teacher_percentage',
+        'module',
+        'coefficient',
+        'mark',
         'notes',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
     
-    public function group()
-    {
-        return $this->belongsTo(Group::class);
-    }
 
-    public function student()
+   
+    public function sheet()
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(MarkSheet::class,'mark_sheet_id');
     }
-    
 }

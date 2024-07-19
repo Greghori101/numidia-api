@@ -128,7 +128,7 @@ class FeeInscriptionController extends Controller
 
         $user = $student->user;
         if ($request->type == "inscription fee") {
-            $admin = User::where("role", "admin")->first();
+            $admin = User::where("role", "numidia")->first();
 
             $data = ["amount" => $request->total, "user" => $admin];
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
@@ -149,7 +149,7 @@ class FeeInscriptionController extends Controller
         ]);
 
 
-        $users = User::where('role', "admin")
+        $users = User::where('role', "numidia")
             ->get();
         foreach ($users as $receiver) {
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])

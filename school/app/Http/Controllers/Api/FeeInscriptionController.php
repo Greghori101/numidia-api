@@ -45,7 +45,7 @@ class FeeInscriptionController extends Controller
 
     public function show($id)
     {
-        $feeInscription = FeeInscription::with(['user', 'student'])->find($id);
+        $feeInscription = FeeInscription::with(['student.user'])->find($id);
         return response()->json($feeInscription, 200);
     }
 
@@ -64,7 +64,7 @@ class FeeInscriptionController extends Controller
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
-            $student->fee_inscription->update([
+            $student->fee_inscription()->update([
                 'total' => $request->total,
                 'date' => $request->date,
             ]);
@@ -90,83 +90,92 @@ class FeeInscriptionController extends Controller
     }
     public function pay(Request $request)
     {
+        // Validate the incoming request
         $request->validate([
             'student_id' => 'required|exists:students,id',
             'total' => 'required|numeric',
             'date' => 'required|date',
             'type' => 'required|string',
         ]);
-        $student = Student::find($request->student_id);
-        if ($student->fee_inscription) {
+
+        // Fetch the student and fee inscription details
+        $student = Student::findOrFail($request->student_id);
+
+        // Check if the fee inscription exists and is not paid
+        if ($student->fee_inscription && !$student->fee_inscription->paid) {
             $feeInscription = $student->fee_inscription;
 
-            $data = ["amount" => $student->fee_inscription->total -  $request->total, "user" => $student->user];
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            // Update wallet and fee inscription details
+            $data = ["amount" => $student->fee_inscription->total - $request->total, "user" => $student->user];
+            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
             $student->fee_inscription->update([
                 'total' => $request->total,
                 'date' => $request->date,
             ]);
+        } elseif ($student->fee_inscription && $student->fee_inscription->paid) {
+            // Return an error response if the fee inscription is already paid
+            return response()->json(['message' => 'Fee inscription already paid'], 400);
         } else {
+            // Create a new fee inscription if it doesn't exist
             $feeInscription = FeeInscription::create([
                 'total' => $request->total,
-                'date'
-                => $request->date,
+                'date' => $request->date,
             ]);
             $student->fee_inscription()->save($feeInscription);
 
+            // Update the student's wallet
             $data = ["amount" => -$request->total, "user" => $student->user];
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
         }
 
+        // Handle the payment for inscription fee
+        $admin = User::where("role", "numidia")->first();
 
-        $user = User::find($request->user["id"]);
-        $user->inscription_fees()->save($feeInscription);
+        // Update admin's wallet
+        $data = ["amount" => $request->total, "user" => $admin];
+        Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+            ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
+        // Update student's wallet and fee inscription status
+        $data = ["amount" => $request->total, "user" => $student->user];
+        Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+            ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
-        $user = $student->user;
-        if ($request->type == "inscription fee") {
-            $admin = User::where("role", "admin")->first();
-
-            $data = ["amount" => $request->total, "user" => $admin];
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
-            $data = ["amount" => $request->total, "user" => $user];
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/wallet/add', $data);
-            $user->student->fee_inscription()->update([
-                'paid' => true,
-                'pay_date' => Carbon::now(),
-            ]);
-        }
-        Receipt::create([
-            'total' => $request->total,
-            'type' => $request->type,
-            'user_id' => $user->id,
+        $student->fee_inscription()->update([
+            'paid' => true,
+            'pay_date' => Carbon::now(),
         ]);
 
+        // Create a new receipt
+        Receipt::create([
+            'total' => $request->total,
+            'type' => 'inscription fee',
+            'user_id' => $student->user->id,
+            'employee_id' => $request->user["id"],
+        ]);
 
-        $users = User::where('role', "admin")
-            ->get();
-        foreach ($users as $receiver) {
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+        // Send notifications to all admins
+        $admins = User::where('role', "numidia")->get();
+        foreach ($admins as $admin) {
+            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                     'type' => "success",
                     'title' => "New Payment",
-                    'content' => "The student:" . $student->user->name . " has paid the total: " . $request->total . ".00 DA",
+                    'content' => "The student: " . $student->user->name . " has paid the total: " . $request->total . ".00 DA",
                     'displayed' => false,
-                    'id' => $receiver->id,
+                    'id' => $admin->id,
                     'department' => env('DEPARTMENT'),
                 ]);
         }
 
-        return response()->json(200);
+        return response()->json(['message' => 'Payment processed successfully'], 200);
     }
+
 
     public function delete($id)
     {

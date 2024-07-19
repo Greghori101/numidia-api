@@ -12,12 +12,14 @@ class Presence extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
+        'group_id',
+        'month',
+        'session_id',
+        'session_number',
+        'status',
+        'type',
         'starts_at',
         'ends_at',
-        'group_id',
-        'status',
-        'session_id',
-        'month',
     ];
 
     protected $keyType = 'string';
@@ -31,7 +33,7 @@ class Presence extends Model
             'presence_student',
             'presence_id',
             'student_id'
-        )->withPivot('status');
+        )->withPivot(['status','type','notes']);
     }
     public function group()
     {

@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Mark;
+use App\Models\MarkSheet;
+use Illuminate\Http\Request;
+
+class MarkSheetController extends Controller
+{
+
+   
+
+    public function show($id){
+        return MarkSheet::with(['marks','level','student'])->findOrFail($id);
+    }
+
+    public function create(Request $request)
+    {
+        MarkSheet::create([
+            'year' => $request->year,
+            'season' => $request->season,
+            'mark' => $request->mark,
+            'notes' => $request->notes,
+            'level_id' => $request->level_id,
+            'student_id' => $request->student_id,
+        ]);
+    }
+    public function update(Request $request, $id)
+    {
+        $mark_sheet  = MarkSheet::findOrFail($id);
+        $mark_sheet->update([
+            'year' => $request->year,
+            'season' => $request->season,
+            'mark' => $request->mark,
+            'notes' => $request->notes,
+            'level_id' => $request->level_id,
+            'student_id' => $request->student_id,
+        ]);
+    }
+
+    public function delete($id)
+    {
+        $mark_sheet  = MarkSheet::findOrFail($id);
+        $mark_sheet->delete();
+    }
+
+    public function add_mark(Request $request, $id)
+    {
+        $mark_sheet  = MarkSheet::findOrFail($id);
+        $mark_sheet->marks()->save(new Mark([
+            'module' => $request->module,
+            'coefficient' => $request->coefficient,
+            'mark' => $request->mark,
+            'notes' => $request->notes,
+        ]));
+    }
+    public function update_mark(Request $request, $id)
+    {
+        $mark = Mark::findOrFail($id);
+        $mark->update([
+            'module' => $request->module,
+            'coefficient' => $request->coefficient,
+            'mark' => $request->mark,
+            'notes' => $request->notes,
+        ]);
+    }
+    public function delete_mark($id)
+    {
+        $mark = Mark::findOrFail($id);
+        $mark->delete();
+    }
+}

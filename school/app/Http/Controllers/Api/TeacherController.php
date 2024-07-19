@@ -51,11 +51,11 @@ class TeacherController extends Controller
     {
         $month =  $request->query('month', 1);
         $teacher = Teacher::find($id);
-        $teacher->load(['user','groups.level','groups.presence' => function ($query) use ($month) {
+        $teacher->load(['user', 'groups.level', 'groups.presence' => function ($query) use ($month) {
             $query->where('presences.month', $month);
         }, 'groups.students.checkouts' => function ($query) use ($month) {
             $query->where('checkouts.month', $month);
-        },'groups.presence.students.user','groups.students.user']);
+        }, 'groups.presence.students.user', 'groups.students.user']);
         return response()->json($teacher, 200);
     }
 
@@ -79,9 +79,46 @@ class TeacherController extends Controller
         $teachers = Teacher::with(['groups.level', 'user'])->get();
         return $teachers;
     }
-    public function all_details()
+    public function all_details(Request $request)
     {
-        $users = User::with(['teacher.groups.sessions.exceptions', 'teacher.groups.level'])->get();
+        $request->validate([
+            'perPage' => ['nullable', 'integer', 'min:1'],
+            'search' => ['nullable', 'string'],
+            'gender' => ['nullable', 'string'],
+        ]);
+        $perPage = $request->query('perPage', 10);
+        $search = $request->query('search', '');
+        $levelId = $request->level_id;
+
+        $users = User::when($search, function ($query) use ($search) {
+            return $query->where('name', 'like', '%' . $search . '%')
+                ->orWhere('email', 'like', '%' . $search . '%')
+                ->orWhere('phone_number', '%' . $search . '%');
+        })
+            ->with(['teacher.groups' => function ($query) use ($levelId) {
+                $query->when($levelId, function ($q) use ($levelId) {
+                    $q->where('level_id', 'like', "%$levelId%");
+                })->with(["sessions.exceptions", "levels"]);
+            }])
+            ->paginate($perPage);
+        return $users;
+    }
+    public function teacher_details(Request $request, $id)
+    {
+        $request->validate([
+            'search' => ['nullable', 'string'],
+            'gender' => ['nullable', 'string'],
+        ]);
+        $search = $request->query('search', '');
+        $levelId = $request->level_id;
+
+        $users = User::with(['teacher.groups' => function ($query) use ($levelId, $search) {
+            $query->when($levelId, function ($q) use ($levelId, $search) {
+                $q->where('level_id', 'like', "%$levelId%")
+                    ->orWhere('name', 'like', '%' . $search . '%')
+                    ->orWhere('main_session', 'like', '%' . $search . '%');
+            })->with(["sessions.exceptions", "levels"]);
+        }])->findOrFail($id);
         return $users;
     }
 }

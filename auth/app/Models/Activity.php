@@ -12,12 +12,11 @@ class Activity extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'browser',
+        'user_agent',
+        'status',
         'details',
         'ip_address',
         'location',
-        'device',
-        'platform',
         'access_token_id',
     ];
 

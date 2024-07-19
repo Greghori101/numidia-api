@@ -11,7 +11,19 @@ class Group extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['module', 'capacity', 'price_per_month', 'nb_session', 'type', 'rest_session', 'current_nb_session', 'annex','month'];
+    protected $fillable = [
+        'annex',
+        'type',
+        'module',
+        'capacity',
+        'price_per_month',
+        'percentage',
+        'nb_session',
+        'month',
+        'main_session',
+        'current_month',
+        'current_nb_session',
+    ];
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -23,8 +35,17 @@ class Group extends Model
             'group_student',
             'group_id',
             'student_id',
-
-        );
+        )->withPivot([
+            'first_session',
+            'first_month',
+            'last_session',
+            'last_month',
+            'nb_absence',
+            'nb_paid_session',
+            'status',
+            'debt',
+            'discount',
+        ]);
     }
 
     function level()

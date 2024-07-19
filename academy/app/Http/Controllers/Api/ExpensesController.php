@@ -69,7 +69,7 @@ class ExpensesController extends Controller
         $user = User::find($request->user["id"]);
         $user->expenses()->save($expense);
 
-        $admin = User::where("role", "admin")->first();
+        $admin = User::where("role", "numidia")->first();
 
         $data = ["amount" => -$request->total, "user" => $admin];
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
@@ -77,7 +77,7 @@ class ExpensesController extends Controller
 
 
 
-        $users = User::where('role', "admin")
+        $users = User::where('role', "numidia")
             ->get();
         foreach ($users as $receiver) {
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])

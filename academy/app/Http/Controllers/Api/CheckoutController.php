@@ -113,11 +113,11 @@ class CheckoutController extends Controller
             'checkouts.*' => ['string'],
         ]);
         $ids  = $request->checkouts;
-        $user = User::find($request->user["id"]);
         $total = 0;
         $receipt = Receipt::create([
             "total" => $total,
-            "type" => "checkouts",
+            "type" => "checkout",
+            'employee_id' => $request->user["id"],
         ]);
 
         foreach ($ids as $id) {
@@ -126,7 +126,7 @@ class CheckoutController extends Controller
                 $student = $checkout->student;
                 $group = $checkout->group;
                 $teacher = $group->teacher;
-                $admin = User::where("role", "admin")->first();
+                $admin = User::where("role", "numidia")->first();
                 $checkout->paid = true;
                 $checkout->pay_date = Carbon::now();
 
@@ -145,19 +145,22 @@ class CheckoutController extends Controller
 
                 $total += $checkout->price;
 
-                $user->checkouts()->save($checkout);
-                $student->user->receipts()->save($receipt);
                 $receipt->checkouts()->save($checkout);
             }
         }
-
+        $receipt = Receipt::create([
+            "total" => $total,
+            "type" => "checkout",
+            'employee_id' => $request->user["id"],
+            'user_id' => $student->user->id,
+        ]);
         $receipt->total = $total;
         $receipt->save();
         $receipt->load('user', 'checkouts.group.teacher.user');
 
 
 
-        $users = User::where('role', "admin")
+        $users = User::where('role', "numidia")
             ->get();
         foreach ($users as $receiver) {
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])

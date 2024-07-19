@@ -58,12 +58,6 @@ class GroupController extends Controller
     {
         $group = Group::with(['teacher.user', 'level', 'students.user', 'sessions.exceptions', 'students.level'])->find($id);
 
-        foreach ($group->students as $student) {
-            $student["paid"] = $student->checkouts()
-                ->where('group_id', $id)
-                ->where('paid', false)
-                ->count() == 0;
-        }
         return response()->json($group, 200);
     }
 
@@ -72,11 +66,12 @@ class GroupController extends Controller
         $request->validate([
             'teacher_id' => ['required'],
             'level_id' => ['required'],
+            'annex' => ['required', 'string'],
+            'type' => ['required', 'string'],
             'module' => ['required', 'string'],
             'capacity' => ['required', 'integer'],
             'nb_session' => ['required', 'integer'],
             'price_per_month' => ['required', 'integer'],
-            'type' => ['required', 'string'],
         ]);
 
         $teacher = Teacher::find($request->teacher_id);
@@ -88,7 +83,8 @@ class GroupController extends Controller
             'price_per_month' => $request->price_per_month,
             'type' => $request->type,
             'nb_session' => $request->nb_session,
-            'rest_session' => $request->nb_session,
+            'percentage' => $teacher->percentage,
+            'main_session' => "",
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
@@ -122,9 +118,12 @@ class GroupController extends Controller
         $request->validate([
             'teacher_id' => ['required'],
             'level_id' => ['required'],
+            'annex' => ['required', 'string'],
             'module' => ['required', 'string'],
             'capacity' => ['required', 'integer'],
             'nb_session' => ['required', 'integer'],
+            'main_session' => ['required', 'string'],
+            'percentage' => ['required', 'integer'],
             'price_per_month' => ['required', 'integer'],
             'type' => ['required', 'string'],
         ]);
@@ -138,7 +137,9 @@ class GroupController extends Controller
             'price_per_month' => $request->price_per_month,
             'type' => $request->type,
             'capacity' => $request->capacity,
-            'nb_session' => $request->capacity,
+            'nb_session' => $request->nb_session,
+            'main_session' => $request->main_session,
+            'percentage' => $request->percentage,
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
@@ -157,25 +158,34 @@ class GroupController extends Controller
         $group = Group::find($id);
         $studentsToRemove = collect($group->students()->pluck('student_id')->toArray())->diff($request->students);
 
+        $students = [];
         foreach ($request->students as $studentId) {
+            $student = Student::find($studentId);
+            $rest_session = $group->nb_session - $group->current_nb_session + 1;
             if (!$group->students->contains($studentId)) {
-                $student = Student::find($studentId);
-
                 $checkout = Checkout::create([
-                    'price' => $group->price_per_month / $group->nb_session * $group->rest_session,
-                    'date' => Carbon::now(),
-                    'nb_session' => $group->rest_session,
-                    'month' => $group->month,
-                    'user_id' => $request->user["id"],
-
+                    'price' => $group->price_per_month / $group->nb_session * $rest_session,
+                    'month' => $group->current_month,
+                    'teacher_percentage' => $group->percentage,
                 ]);
 
-                $data = ["amount" => -$checkout->price - $checkout->discount, "user" => $student->user];
+                $data = ["amount" => - ($checkout->price - $checkout->discount), "user" => $student->user];
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
                 $student->checkouts()->save($checkout);
                 $group->checkouts()->save($checkout);
+                $students[] = [$studentId => [
+                    'first_session' => $group->current_nb_session,
+                    'first_month' => $group->current_month,
+                    'debt' => $student->groups()->where('group_id', $id)->first()->pivot->debt + $checkout->price - $checkout->discount,
+                ]];
+            } else {
+                $students[] = [$studentId => [
+                    'first_session' => $group->current_nb_session,
+                    'first_month' => $group->current_month,
+                    'debt' => $student->groups()->where('group_id', $id)->first()->pivot->debt,
+                ]];
             }
         }
 
@@ -191,12 +201,18 @@ class GroupController extends Controller
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
                 $checkoutToRemove->delete();
             }
+            $students[] = [$studentIdToRemove => [
+                'last_session' => $group->current_nb_session,
+                'last_month' => $group->current_month,
+                'status' => 'stopped',
+                'debt' => $checkoutToRemove ?
+                    $student->groups()->where('group_id', $id)->first()->pivot->debt + $checkoutToRemove->price - $checkoutToRemove->discount
+                    : $student->groups()->where('group_id', $id)->first()->pivot->debt,
+            ]];
         }
 
-        if ($request->students) {
-            $group->students()->sync($request->students);
-        } else {
-            $group->students()->detach();
+        if ($students) {
+            $group->students()->sync($students);
         }
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/notifications', [
@@ -216,14 +232,17 @@ class GroupController extends Controller
     public function students_delete($id, $student_id)
     {
         $group = Group::find($id);
-        $group->students()->detach($student_id);
+        $student = $group->students()->where("student_id", $student_id)->first();
 
-        $student = Student::find($student_id);
+        $student->groups()->updateExistingPivot([$group->id => ['status' => 'stopped']]);
+        $rest_session = $group->nb_session - $group->current_nb_session + 1;
 
         $checkoutToRemove = Checkout::where('student_id', $student_id)
             ->where('group_id', $group->id)
             ->where('status', 'pending')
+            ->where('paid_price', 0)
             ->first();
+
 
         if ($checkoutToRemove) {
             $data = ["amount" => $checkoutToRemove->price - $checkoutToRemove->discount, "user" => $student->user];
@@ -231,6 +250,17 @@ class GroupController extends Controller
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
             $checkoutToRemove->delete();
         }
+
+        $students[] = [$student_id => [
+            'first_session' => $group->current_nb_session,
+            'first_month' => $group->current_month,
+            'debt' => $checkoutToRemove ?
+                $student->groups()->where('group_id', $id)->first()->pivot->debt + $checkoutToRemove->price - $checkoutToRemove->discount
+                : $student->groups()->where('group_id', $id)->first()->pivot->debt,
+        ]];
+
+        $group->students()->syncWithoutDetaching($students);
+
         return response()->json(200);
     }
     public function student_notin_group($id)
@@ -263,7 +293,6 @@ class GroupController extends Controller
     }
     public function sessions_create(Request $request, $id)
     {
-
         $request->validate([
             'classroom' => ['required', 'string'],
             'starts_at' => ['required', 'date'],
@@ -272,24 +301,45 @@ class GroupController extends Controller
         ]);
 
         $group = Group::find($id);
+
+        // Parse the start and end times
+        $starts_at = Carbon::parse($request->starts_at);
+        $ends_at = Carbon::parse($request->ends_at);
+
+        // Check for overlapping sessions
+        $overlappingSessions = $group->sessions()
+            ->where(function ($query) use ($starts_at, $ends_at) {
+                $query->whereBetween('starts_at', [$starts_at, $ends_at])
+                    ->orWhereBetween('ends_at', [$starts_at, $ends_at])
+                    ->orWhere(function ($query) use ($starts_at, $ends_at) {
+                        $query->where('starts_at', '<', $starts_at)
+                            ->where('ends_at', '>', $ends_at);
+                    });
+            })
+            ->exists();
+
+        if ($overlappingSessions) {
+            return response()->json(['error' => 'The session times overlap with an existing session.'], 422);
+        }
+
+        // Create the new session
         $session = Session::create([
             "classroom" => $request->classroom,
-            "starts_at" => Carbon::parse($request->starts_at),
-            "ends_at" => Carbon::parse($request->ends_at),
+            "starts_at" => $starts_at,
+            "ends_at" => $ends_at,
             "repeating" => $request->repeating,
         ]);
         $group->sessions()->save($session);
 
-
-
+        // Notify students
         foreach ($group->students as $student) {
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                     'type' => "info",
                     'title' => "New Session",
-                    'content' => "new session has been created at " . Carbon::parse($request->starts_at),
+                    'content' => "A new session has been created at " . $starts_at->toDateTimeString(),
                     'displayed' => false,
                     'id' => $student->user->id,
                     'department' => env('DEPARTMENT'),
@@ -298,6 +348,7 @@ class GroupController extends Controller
 
         return response()->json($session, 200);
     }
+
 
     public function all()
     {
