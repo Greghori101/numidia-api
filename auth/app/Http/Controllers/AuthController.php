@@ -389,7 +389,7 @@ class AuthController extends Controller
     }
     public function verify_token(Request $request)
     {
-        $data = ['user' => User::find($request->user()->id)];
+        $data = ['user' => User::with('permissions')->find($request->user()->id)];
         return response()->json($data, 200);
     }
     public function change_profile_picture(Request $request, $id = null)

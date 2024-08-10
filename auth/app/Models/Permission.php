@@ -6,27 +6,21 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Post extends Model
+class Permission extends Model
 {
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'title',
-        'content',
+        'name',
         'department',
+        'user_id',
     ];
-
     protected $keyType = 'string';
     public $incrementing = false;
-
 
 
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-    public function photos()
-    {
-        return $this->morphMany(File::class, "fileable");
     }
 }

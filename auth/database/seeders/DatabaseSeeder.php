@@ -78,14 +78,6 @@ class DatabaseSeeder extends Seeder
                 'wilaya' => 'batna',
                 'street' => 'batna',
             ]);
-        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-            ->post(env('DAWARAT_API') . '/api/create-user', [
-                'id' => $user->id,
-                'email' => 'admin@admin.com',
-                'name' => 'numidia admin',
-                'phone_number' => '0990990990',
-                'role' => "numidia",
-                'gender' => 'male',
-            ]);
+       
     }
 }

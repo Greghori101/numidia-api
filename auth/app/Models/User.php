@@ -92,10 +92,34 @@ class User extends Authenticatable
 
     function received_messages()
     {
-        return $this->hasMany(Message::class,'to')->orderBy('created_at', 'desc');
+        return $this->hasMany(Message::class, 'to')->orderBy('created_at', 'desc');
     }
     function sent_messages()
     {
-        return $this->hasMany(Message::class,'from')->orderBy('created_at', 'desc');
+        return $this->hasMany(Message::class, 'from')->orderBy('created_at', 'desc');
+    }
+
+    function permissions()
+    {
+        return $this->hasMany(Permission::class);
+    }
+    function has(array $permissions)
+    {
+        if (!is_array($permissions)) {
+            $permissions = [$permissions];
+        }
+    
+        foreach ($permissions as $permission) {
+            if (!isset($permission['department']) || !isset($permission['name'])) {
+                continue; // Skip if department or name is not provided
+            }
+            
+            if (!$this->permissions()->where('department', $permission['department'])
+                                     ->where('name', $permission['name'])
+                                     ->exists()) {
+                return false;
+            }
+        }
+        return true;
     }
 }
