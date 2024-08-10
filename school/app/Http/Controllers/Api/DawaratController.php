@@ -353,4 +353,39 @@ class DawaratController extends Controller
         $groups  = Group::with(['teacher.user', 'level', 'sessions.exceptions'])->get();
         return response()->json($groups, 200);
     }
+
+    public function teachers(Request $request)
+    {
+        $request->validate([
+            'sortBy' => ['nullable', 'string'],
+            'sortDirection' => ['nullable', 'string', 'in:asc,desc'],
+            'perPage' => ['nullable', 'integer', 'min:1'],
+            'search' => ['nullable', 'string'],
+            'gender' => ['nullable', 'string'],
+        ]);
+        $sortBy = $request->query('sortBy', 'created_at');
+        $sortDirection = $request->query('sortDirection', 'desc');
+        $perPage = $request->query('perPage', 10);
+        $search = $request->query('search', '');
+        $gender = $request->query('gender', '');
+
+        $teachersQuery = Teacher::join('users', 'teachers.user_id', '=', 'users.id')
+            ->select('teachers.*', "users.$sortBy as sorted_column")
+            ->when($search, function ($query) use ($search) {
+                return $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('name', 'like', "%$search%")
+                        ->orWhere('email', 'like', "%$search%");
+                });
+            });
+
+        $teachersQuery->when($gender, function ($query) use ($gender) {
+            return $query->where('gender', $gender);
+        });
+
+        $teachers = $teachersQuery->orderByRaw("LOWER(sorted_column) $sortDirection")
+            ->with(['user'])
+            ->paginate($perPage);
+
+        return $teachers;
+    }
 }
