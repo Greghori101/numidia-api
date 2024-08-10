@@ -20,8 +20,8 @@ return new class extends Migration
             $table->integer('first_session')->default(1);
             $table->integer('last_month')->default(1);
             $table->integer('last_session')->default(1);
-            $table->integer('nb_absence')->default(0);
             $table->integer('nb_paid_session')->default(0);
+            $table->integer('nb_session')->default(0);
             $table->string('status')->default('active');
             $table->unsignedBigInteger('debt')->default(0);
             $table->unsignedBigInteger('discount')->default(0);

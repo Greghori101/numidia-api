@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('year');
 
             $table->timestamps();
+            $table->unique(['education', 'year', 'specialty']);
         });
     }
 

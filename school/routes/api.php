@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AmphiController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CheckoutController;
@@ -16,6 +17,9 @@ use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\TeacherController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\DawaratController;
+use App\Http\Controllers\Api\PresenceController;
+use App\Http\Controllers\Api\TicketController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -35,6 +39,7 @@ Route::middleware(['auth-api-token'])->group(function () {
 
 
     Route::get('/profile/{id?}', [UserController::class, 'show']);
+    Route::put('/profile/{id?}', [UserController::class, 'update']);
 
     Route::prefix('users')
         ->controller(UserController::class)
@@ -72,6 +77,7 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->controller(GroupController::class)
         ->group(function () {
             Route::get('/all', 'all');
+            Route::get('/daily', 'groups_per_day');
             Route::get('/details', 'all_details');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
@@ -205,7 +211,11 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/expenses', 'expense');
             Route::get('/inscription_fees', 'fees');
             Route::get('/dashboard', 'stats');
+            Route::get('/employee_receipts', 'get_employee_receipts');
+            Route::get('/transactions', 'transactions');
+            Route::get('/paid_sessions', 'paid_sessions');
         });
+
     Route::prefix('exams')
         ->controller(ExamController::class)
         ->group(function () {
@@ -221,5 +231,57 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/student/{id}', 'student_exams');
             Route::get('/teacher/{id}', 'teacher_exams');
             Route::put('/{exam}', 'update');
+        });
+
+
+    Route::prefix('amphitheaters')
+        ->controller(AmphiController::class)
+        ->group(function () {
+            Route::get('/all', 'all');
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
+            Route::post('/', 'create');
+            Route::put('/{id}', 'update');
+            Route::delete('/{id}', 'delete');
+        });
+    Route::prefix('dawarat')
+        ->controller(DawaratController::class)
+        ->group(function () {
+            Route::get('/all', 'all');
+            Route::get('/daily', 'groups_per_day');
+            Route::get('/details', 'all_details');
+            Route::get('/teachers', 'teachers');
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
+            Route::post('/', 'create');
+            Route::put('/{id}', 'update');
+            Route::delete('/{id}', 'delete');
+            Route::get('/{id}/students', 'students');
+            Route::get('/{id}/students/unenrolled', 'student_notin_group');
+            Route::post('/{id}/students', 'students_create');
+            Route::delete('/{id}/students/{student_id}', 'students_delete');
+            Route::get('/{id}/sessions', 'sessions');
+            Route::post('/{id}/sessions', 'sessions_create');
+        });
+    Route::prefix('dawarat')
+        ->controller(PresenceController::class)
+        ->group(function () {
+            Route::get('/sessions', 'sessions');
+            Route::get('/presences', 'presences');
+            Route::get('/sessions/{session_id}/cancel', 'cancel_session');
+            Route::get('/presence/sheets', 'presence_sheets');
+            Route::post('/presence', 'create_presence');
+            Route::post('/mark/presence', 'mark_presence');
+            Route::post('/remove/presence', 'remove_presence');
+        });
+    Route::prefix('tickets')
+        ->controller(TicketController::class)
+        ->group(function () {
+            Route::get('/all', 'all');
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
+            Route::post('/', 'create');
+            Route::put('/{id}', 'update');
+            Route::delete('/{id}', 'delete');
         });
 });

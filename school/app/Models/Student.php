@@ -40,8 +40,8 @@ class Student extends Model
                 'last_session',
                 'last_month',
                 'debt',
-                'nb_absence',
                 'nb_paid_session',
+                'nb_session',
                 'discount'
             ]);
     }

@@ -24,7 +24,7 @@ class ExamController extends Controller
             'questions.*.content' => 'required|string',
             'questions.*.answer' => 'required|string',
             'questions.*.choices' => 'required|array',
-            'questions.*.audio' => 'required|file',
+            'questions.*.audio' => 'nullable|file',
         ]);
 
         $exam = Exam::create([
@@ -43,13 +43,16 @@ class ExamController extends Controller
                     'answer' => $questionData['answer'],
                 ]);
                 $file = $questionData['audio'];
-                $content = file_get_contents($file);
-                $extension = $file->getClientOriginalExtension();
-                $question->audio()->create([
-                    'name' => 'question audio',
-                    'content' => base64_encode($content),
-                    'extension' => $extension,
-                ]);
+                if ($file) {
+                    $content = file_get_contents($file);
+                    $extension = $file->getClientOriginalExtension();
+                    $question->audio()->create([
+                        'name' => 'question audio',
+                        'content' => base64_encode($content),
+                        'extension' => $extension,
+                    ]);
+                }
+
 
 
                 foreach ($questionData['choices'] as $choiceData) {

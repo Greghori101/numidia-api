@@ -74,16 +74,25 @@ class UserController extends Controller
         } else {
             $user = User::find($id);
             if ($user->role == "student") {
-                $user->load("receipts.checkouts.group.teacher.user",  'student.groups', 'student.groups.teacher.user', 'student.level', 'student.checkouts', 'student.fee_inscription', 'student.supervisor.user', 'student.user');
+                $user->load("receipts.services",  'student.groups', 'student.groups.teacher.user', 'student.level', 'student.checkouts', 'student.fee_inscription', 'student.supervisor.user', 'student.user');
                 foreach ($user->student->groups as $group) {
-                    $group['presence'] = $user->student->presences()->where('group_id', $group->id)->orderBy('starts_at', 'desc')->get();
+                    $group['presences'] = $user->student->presences()->where('group_id', $group->id)->get()->filter(function ($presence) {
+                        return $presence->status === 'ended';
+                    });
                 }
             } elseif ($user->role == "teacher") {
-                $user->load("receipts.checkouts.group.teacher.user",  'teacher.groups.level',  'teacher.groups.presence.students.user', 'teacher.groups.students.user');
+                $user->load("receipts.services",  'teacher.groups.level',  'teacher.groups.presences.students.user', 'teacher.groups.students.user');
             } else if ($user->role == "supervisor") {
-                $user->load("receipts.checkouts.group.teacher.user",  'supervisor.students.user', 'supervisor.students.presences.group.teacher.user', 'supervisor.students.groups.teacher.user', 'supervisor.students.level', 'supervisor.students.checkouts', 'supervisor.students.fee_inscription',);
+                $user->load("receipts.services",  'supervisor.students.user',  'supervisor.students.groups.teacher.user', 'supervisor.students.level', 'supervisor.students.checkouts', 'supervisor.students.fee_inscription',);
+                foreach ($user->supervisor->students as $student) {
+                    foreach ($student->groups as $group) {
+                        $group['presences'] = $student->presences()->where('group_id', $group->id)->get()->filter(function ($presence) {
+                            return $presence->status === 'ended';
+                        });
+                    }
+                }
             } else {
-                $user->load("receipts.checkouts.group.teacher.user",);
+                $user->load("receipts.services",);
             }
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->get(env('AUTH_API') . '/api/profile/' . $user->id, [
@@ -286,7 +295,7 @@ class UserController extends Controller
             $student = $user->student;
             $level->students()->save($student);
             return Student::with(['user', 'level'])->find($student->id);
-        } 
+        }
 
         return response()->json(['message' => 'User data updated successfully'], 200);
     }

@@ -32,8 +32,36 @@ class FinancialController extends Controller
         $endsAt = $request->input('ends_at') ? Carbon::parse($request->input('ends_at')) : null;
 
         // Fetch users with relationships
-        $users = User::with(['employee_receipts.user', 'receipts.services', 'expenses'])
-            ->get();
+        $users = User::with([
+            'employee_receipts' => function ($query) use ($startsAt, $endsAt) {
+                if ($startsAt) {
+                    $query->where('date', '>=', $startsAt);
+                }
+                if ($endsAt) {
+                    $query->where('date', '<=', $endsAt);
+                }
+            },
+            'employee_receipts.user',
+            'employee_receipts.services',
+            'receipts' => function ($query) use ($startsAt, $endsAt) {
+                if ($startsAt) {
+                    $query->where('date', '>=', $startsAt);
+                }
+                if ($endsAt) {
+                    $query->where('date', '<=', $endsAt);
+                }
+            },
+            'receipts.user',
+            'receipts.services',
+            'expenses' => function ($query) use ($startsAt, $endsAt) {
+                if ($startsAt) {
+                    $query->where('date', '>=', $startsAt);
+                }
+                if ($endsAt) {
+                    $query->where('date', '<=', $endsAt);
+                }
+            }
+        ])->get();
 
         $data = [];
 
@@ -46,43 +74,187 @@ class FinancialController extends Controller
                 ]);
             $user['profile_picture'] = $response->json()['profile_picture'];
 
-            // Apply date filters if provided
-            $checkoutsQuery = $user->employee_receipts()->where('type', 'debt');
-            $sessionsQuery = $user->employee_receipts()->where('type', 'sessions');
-            $feesQuery = $user->employee_receipts()->where('type', 'inscription fee');
-            $expensesQuery = $user->expenses();
+            // Categorize employee receipts
+            $employeeReceiptsByType = $user->employee_receipts->groupBy('type');
 
-            if ($startsAt) {
-                $checkoutsQuery->where('created_at', '>=', $startsAt);
-                $sessionsQuery->where('created_at', '>=', $startsAt);
-                $feesQuery->where('created_at', '>=', $startsAt);
-                $expensesQuery->where('created_at', '>=', $startsAt);
-            }
+            // Calculate cumulative price
+            $positiveReceipts = $employeeReceiptsByType->filter(function ($value, $key) {
+                return in_array($key, ['debt', 'sessions', 'fee_inscription', 'deposit']);
+            })->flatten();
 
-            if ($endsAt) {
-                $checkoutsQuery->where('created_at', '<=', $endsAt);
-                $sessionsQuery->where('created_at', '<=', $endsAt);
-                $feesQuery->where('created_at', '<=', $endsAt);
-                $expensesQuery->where('created_at', '<=', $endsAt);
-            }
+            $negativeReceipts = $employeeReceiptsByType->get('withdraw', collect());
 
-            $checkouts = $checkoutsQuery->get();
-            $sessions = $sessionsQuery->get();
-            $fees = $feesQuery->get();
-            $expenses = $expensesQuery->get();
-
-            $cumulativePrice = $checkouts->sum('total') + $fees->sum('total') + $sessions->sum('total') - $expenses->sum('total');
+            $cumulativePrice = $positiveReceipts->sum('total') - $user->expenses->sum('total') - $negativeReceipts->sum('total');
 
             if ($cumulativePrice != 0) {
                 $data[] = [
                     'user' => $user,
                     'cumulative_price' => $cumulativePrice,
-                    'checkouts' => $checkouts,
-                    'sessions' => $sessions,
-                    'expenses' => $expenses,
-                    'fees' => $fees,
+                    'receipts' => $user->receipts,
+                    'expenses' => $user->expenses,
+                    'employee_receipts' => [
+                        'debt' => $employeeReceiptsByType->get('debt', collect())->values(),
+                        'sessions' => $employeeReceiptsByType->get('sessions', collect())->values(),
+                        'fee_inscription' => $employeeReceiptsByType->get('fee_inscription', collect())->values(),
+                        'withdraw' => $employeeReceiptsByType->get('withdraw', collect())->values(),
+                        'deposit' => $employeeReceiptsByType->get('deposit', collect())->values(),
+                    ]
                 ];
             }
+        }
+
+        return response()->json($data, 200);
+    }
+
+    public function get_employee_receipts(Request $request)
+    {
+        // Validate request parameters
+        $request->validate([
+            'starts_at' => 'nullable|date',
+            'ends_at' => 'nullable|date',
+        ]);
+
+        $startsAt = $request->input('starts_at') ? Carbon::parse($request->input('starts_at')) : null;
+        $endsAt = $request->input('ends_at') ? Carbon::parse($request->input('ends_at')) : null;
+
+        // Fetch users with relationships
+        $user = User::with([
+            'employee_receipts' => function ($query) use ($startsAt, $endsAt) {
+                if ($startsAt) {
+                    $query->where('date', '>=', $startsAt);
+                }
+                if ($endsAt) {
+                    $query->where('date', '<=', $endsAt);
+                }
+            },
+            'employee_receipts.user',
+            'employee_receipts.services',
+            'receipts' => function ($query) use ($startsAt, $endsAt) {
+                if ($startsAt) {
+                    $query->where('date', '>=', $startsAt);
+                }
+                if ($endsAt) {
+                    $query->where('date', '<=', $endsAt);
+                }
+            },
+            'receipts.user',
+            'receipts.services',
+            'expenses' => function ($query) use ($startsAt, $endsAt) {
+                if ($startsAt) {
+                    $query->where('date', '>=', $startsAt);
+                }
+                if ($endsAt) {
+                    $query->where('date', '<=', $endsAt);
+                }
+            }
+        ])->findOrFail($request->user["id"]);
+
+        $data = [];
+
+        if ($user) {
+            // Fetch profile picture
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                ->get(env('AUTH_API') . '/api/profile/' . $user->id, [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                ]);
+            $user['profile_picture'] = $response->json()['profile_picture'];
+
+            // Categorize employee receipts
+            $employeeReceiptsByType = $user->employee_receipts->groupBy('type');
+
+            // Calculate cumulative price
+            $positiveReceipts = $employeeReceiptsByType->filter(function ($value, $key) {
+                return in_array($key, ['debt', 'sessions', 'fee_inscription', 'deposit']);
+            })->flatten();
+
+            $negativeReceipts = $employeeReceiptsByType->get('withdraw', collect());
+
+            $cumulativePrice = $positiveReceipts->sum('total') - $user->expenses->sum('total') - $negativeReceipts->sum('total');
+
+            if ($cumulativePrice != 0) {
+                $data[] = [
+                    'user' => $user,
+                    'cumulative_price' => $cumulativePrice,
+                    'receipts' => $user->receipts,
+                    'expenses' => $user->expenses,
+                    'employee_receipts' => [
+                        'debt' => $employeeReceiptsByType->get('debt', collect())->values(),
+                        'sessions' => $employeeReceiptsByType->get('sessions', collect())->values(),
+                        'fee_inscription' => $employeeReceiptsByType->get('fee_inscription', collect())->values(),
+                        'withdraw' => $employeeReceiptsByType->get('withdraw', collect())->values(),
+                        'deposit' => $employeeReceiptsByType->get('deposit', collect())->values(),
+                    ]
+                ];
+            }
+        }
+
+        return response()->json($data, 200);
+    }
+    public function paid_sessions(Request $request)
+    {
+        // Validate request parameters
+        $request->validate([
+            'starts_at' => 'nullable|date',
+            'ends_at' => 'nullable|date',
+        ]);
+
+        $startsAt = $request->input('starts_at') ? Carbon::parse($request->input('starts_at')) : null;
+        $endsAt = $request->input('ends_at') ? Carbon::parse($request->input('ends_at')) : null;
+
+        // Fetch users with relationships
+        $user = User::with([
+            'employee_receipts' => function ($query) use ($startsAt, $endsAt) {
+                if ($startsAt) {
+                    $query->where('date', '>=', $startsAt);
+                }
+                if ($endsAt) {
+                    $query->where('date', '<=', $endsAt);
+                }
+                $query->where('type', 'sessions');
+            },
+            'employee_receipts.user',
+            'employee_receipts.services',
+        ])->findOrFail($request->user["id"]);
+
+        $data = [];
+
+        if ($user) {
+            $data = $user->employee_receipts;
+        }
+
+        return response()->json($data, 200);
+    }
+    public function transactions(Request $request)
+    {
+        // Validate request parameters
+        $request->validate([
+            'starts_at' => 'nullable|date',
+            'ends_at' => 'nullable|date',
+        ]);
+
+        $startsAt = $request->input('starts_at') ? Carbon::parse($request->input('starts_at')) : null;
+        $endsAt = $request->input('ends_at') ? Carbon::parse($request->input('ends_at')) : null;
+
+        // Fetch users with relationships
+        $user = User::with([
+            'employee_receipts' => function ($query) use ($startsAt, $endsAt) {
+                if ($startsAt) {
+                    $query->where('date', '>=', $startsAt);
+                }
+                if ($endsAt) {
+                    $query->where('date', '<=', $endsAt);
+                }
+                $query->where('type', 'deposit')->orWhere('type', 'withdraw');
+            },
+            'employee_receipts.user',
+            'employee_receipts.services',
+        ])->findOrFail($request->user["id"]);
+
+        $data = [];
+
+        if ($user) {
+            $data = $user->employee_receipts;
         }
 
         return response()->json($data, 200);
@@ -172,26 +344,24 @@ class FinancialController extends Controller
             $totalExpenses = $expenses->sum('total');
             $totalPaidInscriptionFees = $inscription_fees->sum('total');
 
-            $totalCheckoutsNotPaid = Checkout::selectRaw('SUM(price - discount - paid_price) as total')
-                ->where('user_id', $user->id)
-                ->value('total');
-            $totalFeeInscriptionsNotPaid = FeeInscription::where('paid', false)
-                ->where('user_id', $user->id)
-                ->sum('total');
 
-            if ($totalCheckoutsPaid !== 0 || $totalExpenses !== 0 || $totalPaidInscriptionFees !== 0 || $totalCheckoutsNotPaid !== 0 || $totalFeeInscriptionsNotPaid !== 0) {
-                $data[] = [
+
+            if ($totalCheckoutsPaid !== 0 || $totalExpenses !== 0 || $totalPaidInscriptionFees !== 0) {
+                $data['employees'][] = [
                     'user' => $user->only(['id', 'name', 'email', 'phone_number', 'role', 'gender']),
                     'checkouts_paid' => $totalCheckoutsPaid,
                     'expenses' => -$totalExpenses,
                     'fees_paid' => $totalPaidInscriptionFees,
                     'paid_sessions' => $totalPaidSessions,
-                    'checkouts_not_paid' => -$totalCheckoutsNotPaid,
-                    'fees_not_paid' => -$totalFeeInscriptionsNotPaid,
                 ];
             }
         }
-
+        $totalCheckoutsNotPaid = Checkout::selectRaw('SUM(price - discount - paid_price) as total')
+            ->value('total');
+        $totalFeeInscriptionsNotPaid = FeeInscription::where('paid', false)
+            ->sum('total');
+        $data['checkouts_not_paid'] = -$totalCheckoutsNotPaid;
+        $data['fees_not_paid'] = -$totalFeeInscriptionsNotPaid;
         return response()->json($data, 200);
     }
 

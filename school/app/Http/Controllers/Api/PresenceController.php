@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+
 use App\Models\Checkout;
 use App\Models\ExceptionSession;
 use App\Models\Group;
@@ -14,8 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Models\User;
 
-
-class AttendanceController extends Controller
+class PresenceController extends Controller
 {
     public function sessions(Request $request)
     {
@@ -182,89 +182,9 @@ class AttendanceController extends Controller
 
                             if ($group->current_nb_session > $group->nb_session) {
                                 $group->update([
-                                    "current_nb_session" =>  $group->type === "revision" || $group->type === "dawarat" ? $group->current_nb_session : 1,
-                                    'current_month' => $group->type === "revision" || $group->type === "dawarat" ? $group->current_month : $group->current_month + 1,
+                                    "current_nb_session" =>   $group->type === "dawarat" ? $group->current_nb_session : 1,
+                                    'current_month' => $group->type === "dawarat" ? $group->current_month : $group->current_month + 1,
                                 ]);
-                                if ($group->type !== 'revision' && $group->type !== "dawarat") {
-                                    $rest_session = $group->nb_session - $group->current_nb_session + 1;
-                                    $checkout = Checkout::create([
-                                        'paid_price' => 0,
-                                        'price' => ($group->price_per_month - $group->discount) / $group->nb_session * $rest_session,
-                                        'month' => $group->current_month,
-                                        'discount' => $student->pivot->discount,
-                                        'teacher_percentage' => $group->percentage,
-                                        'nb_session' => $rest_session,
-                                    ]);
-
-                                    $price = 0;
-                                    if ($student->pivot->nb_paid_session >= $rest_session) {
-                                        $checkout->paid_price += $rest_session * ($group->price_per_month - $group->discount) / $group->nb_session;
-                                        $checkout->status = "paid";
-                                        $price = -$rest_session * ($group->price_per_month - $group->discount) / $group->nb_session;
-                                        $group->students()->updateExistingPivot($student->id, [
-                                            "nb_session" => $student->pivot->nb_session - 1,
-                                        ]);
-                                    } elseif ($student->pivot->nb_paid_session > 0) {
-                                        $student->groups()->updateExistingPivot($group->id, [
-                                            'debt' => $student->groups()->where('group_id', $group->id)->first()->pivot->debt + ($rest_session - $student->pivot->nb_paid_session) *  ($group->price_per_month - $group->discount) / $group->nb_session
-                                        ]);
-                                        $checkout->paid_price += $student->pivot->nb_paid_session * ($group->price_per_month - $group->discount) / $group->nb_session;
-                                        $price = -$rest_session * ($group->price_per_month - $group->discount) / $group->nb_session;
-                                        $checkout->status = "paying";
-                                    } else {
-                                        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                                            ->get(env('AUTH_API') . '/api/wallet/' . $student->user->id);
-
-                                        if ($response) {
-                                            $balance = json_decode($response->body(), true)['balance'];
-
-                                            if ($balance >= $checkout->price - $checkout->discount - $checkout->paid_price) {
-                                                $checkout->paid_price += $checkout->price - $checkout->discount - $checkout->paid_price;
-                                                $price = $checkout->price - $checkout->discount - $checkout->paid_price;
-                                                $checkout->status = "paid";
-                                                $group->students()->updateExistingPivot($student->id, [
-                                                    "nb_session" => $student->pivot->nb_session - 1,
-                                                ]);
-                                            } elseif ($balance > 0) {
-                                                $student->groups()->updateExistingPivot($group->id, [
-                                                    'debt' => $student->groups()->where('group_id', $group->id)->first()->pivot->debt +  ($checkout->price - $checkout->discount - $balance)
-                                                ]);
-                                                $checkout->paid_price += $balance;
-                                                $price = $balance;
-                                                $checkout->status = "paying";
-                                            } else {
-                                                $price = -$checkout->price + $checkout->discount;
-                                                $student->groups()->updateExistingPivot($group->id, [
-                                                    'debt' => $student->groups()->where('group_id', $group->id)->first()->pivot->debt +  ($checkout->price - $checkout->discount)
-                                                ]);
-                                            }
-                                        } else {
-                                            $price = -$checkout->price + $checkout->discount;
-                                            $student->groups()->updateExistingPivot($group->id, [
-                                                'debt' => $student->groups()->where('group_id', $group->id)->first()->pivot->debt +  ($checkout->price - $checkout->discount)
-                                            ]);
-                                        }
-                                    }
-                                    $checkout->save();
-                                    if ($price > 0) {
-                                        $admin = User::where("role", "numidia")->first();
-                                        // Update teacher's wallet
-                                        $data = ["amount" => ($checkout->teacher_percentage * $price) / 100, "user" => $checkout->group->teacher->user];
-                                        Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                                            ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
-                                        // Update admin's wallet
-                                        $data = ["amount" => ((100 - $checkout->teacher_percentage) * $price) / 100, "user" => $admin];
-                                        Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                                            ->post(env('AUTH_API') . '/api/wallet/add', $data);
-                                    }
-                                    $data = ["amount" => $price, "user" => $student->user];
-                                    $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                                        ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
-                                    $student->checkouts()->save($checkout);
-                                    $group->checkouts()->save($checkout);
-                                }
                             }
                         } else if (!$status) {
                             $student->groups()->updateExistingPivot($group->id, ['status' => 'stopped', 'last_session' => $group->current_nb_session, 'last_month' => $group->current_month]);

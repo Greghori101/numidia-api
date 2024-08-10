@@ -13,57 +13,9 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
-class GroupController extends Controller
+class DawaratController extends Controller
 {
-
-    public function groups_per_day(Request $request)
-    {
-        // Validate the request
-        $request->validate([
-            'date' => ['required', 'date'],
-            'perPage' => ['nullable', 'integer'],
-            'sortBy' => ['nullable', 'string'],
-            'sortDirection' => ['nullable', 'string'],
-            'search' => ['nullable', 'string'],
-        ]);
-
-        $perPage = $request->query('perPage', 10);
-        $sortBy = $request->query('sortBy', 'created_at');
-        $sortDirection = $request->query('sortDirection', 'desc');
-        $search = $request->query('search', '');
-
-        $date = Carbon::parse($request->date)->toDateString();
-
-        // Get groups with sessions on the given date
-        $groupsQuery = Group::whereHas('sessions', function ($query) use ($date) {
-            $query->whereDate('starts_at', $date)
-                ->orWhere(function ($q) use ($date) {
-                    $q->where('repeating', 'daily')
-                        ->orWhere(function ($q2) use ($date) {
-                            $q2->where('repeating', 'weekly')
-                                ->whereRaw('WEEKDAY(starts_at) = WEEKDAY(?)', [$date]);
-                        })
-                        ->orWhere(function ($q3) use ($date) {
-                            $q3->where('repeating', 'monthly')
-                                ->whereDay('starts_at', Carbon::parse($date)->day);
-                        });
-                });
-        });
-
-        // Filter by search term if provided
-        if (!empty($search)) {
-            $groupsQuery->where('name', 'like', '%' . $search . '%');
-        }
-
-        // Filter out sessions that have exceptions on the given date
-        $groups = $groupsQuery->with(['sessions' => function ($query) use ($date) {
-            $query->whereDoesntHave('exceptions', function ($query) use ($date) {
-                $query->where('date', $date);
-            });
-        }])->orderBy($sortBy, $sortDirection)->paginate($perPage);
-
-        return response()->json($groups, 200);
-    }
+    
     public function index(Request $request)
     {
         $request->validate([
@@ -130,7 +82,7 @@ class GroupController extends Controller
             'nb_session' => $request->nb_session,
             'percentage' => $teacher->percentage,
             'main_session' => "",
-            'current_month'=>date('n'),
+            'current_month' => date('n'),
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
@@ -210,7 +162,7 @@ class GroupController extends Controller
                     'price' => $group->price_per_month / $group->nb_session * $rest_session,
                     'month' => $group->current_month,
                     'teacher_percentage' => $group->percentage,
-                    'nb_session'=> $rest_session,
+                    'nb_session' => $rest_session,
                 ]);
 
                 $data = ["amount" => - ($checkout->price - $checkout->discount), "user" => $student->user];

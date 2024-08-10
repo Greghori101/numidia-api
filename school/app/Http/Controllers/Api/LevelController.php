@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Level;
 use Illuminate\Http\Request;
-
+use Illuminate\Validation\Rule;
 class LevelController extends Controller
 {
     public function all()
@@ -52,6 +52,11 @@ class LevelController extends Controller
             'education' => ['required', 'string'],
             'specialty' => ['nullable', 'string'],
             'year' => ['required', 'integer'],
+            Rule::unique('levels')->where(function ($query) use ($request) {
+                return $query->where('education', $request->education)
+                             ->where('year', $request->year)
+                             ->where('specialty', $request->specialty);
+            }),
         ]);
 
         $level = Level::create([
@@ -79,6 +84,11 @@ class LevelController extends Controller
             'education' => ['required', 'string'],
             'specialty' => ['nullable', 'string'],
             'year' => ['required', 'integer'],
+            Rule::unique('levels')->where(function ($query) use ($request) {
+                return $query->where('education', $request->education)
+                             ->where('year', $request->year)
+                             ->where('specialty', $request->specialty);
+            }),
         ]);
         $level = Level::updateOrCreate(
             ['id' => $id],

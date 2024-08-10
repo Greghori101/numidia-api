@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('checkouts', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
             $table->integer('month')->default(1);
+            $table->integer('nb_session')->default(0);
             $table->string('status')->default("pending");
             $table->unsignedBigInteger('price');
             $table->unsignedBigInteger('discount')->default(0);

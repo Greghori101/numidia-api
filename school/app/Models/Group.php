@@ -19,7 +19,6 @@ class Group extends Model
         'price_per_month',
         'percentage',
         'nb_session',
-        'month',
         'main_session',
         'current_month',
         'current_nb_session',
@@ -40,8 +39,8 @@ class Group extends Model
             'first_month',
             'last_session',
             'last_month',
-            'nb_absence',
             'nb_paid_session',
+            'nb_session',
             'status',
             'debt',
             'discount',
@@ -67,8 +66,21 @@ class Group extends Model
     {
         return $this->hasMany(Checkout::class);
     }
-    function presence()
+    function presences()
     {
         return $this->hasMany(Presence::class);
+    }
+
+    public function dawarat_presences()
+    {
+        return $this->hasMany(DawaratPresence::class);
+    }
+    public function amphi()
+    {
+        return $this->hasOne(Amphi::class);
+    }
+    public function photos()
+    {
+        return $this->morphMany(File::class, "fileable");
     }
 }

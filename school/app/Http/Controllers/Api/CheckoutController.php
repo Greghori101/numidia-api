@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Checkout;
 use App\Models\Group;
 use App\Models\Receipt;
-use App\Models\Service;
+use App\Models\ReceiptService;
 use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
@@ -121,8 +121,8 @@ class CheckoutController extends Controller
 
             // Check if the checkout is not paid
             if ($checkout->status !== "paid") {
-                $student = $checkout->student;
                 $group = $checkout->group;
+                $student = $group->students()->where($checkout->student)->first();
                 $teacher = $group->teacher;
                 $admin = User::where("role", "numidia")->first();
 
@@ -132,35 +132,26 @@ class CheckoutController extends Controller
 
                 if ($checkout->paid_price >= ($checkout->price - $checkout->discount)) {
                     $checkout->status = 'paid';
-                }else{
+                    $group->students()->updateExistingPivot($student->id, [
+                        "nb_session" => $student->pivot->nb_session +$checkout->nb_session,
+                    ]);
+                } else {
                     $checkout->status = 'paying';
                 }
 
-                // Update teacher's wallet
-                $data = ["amount" => ($checkout->teacher_percentage * $paid_price) / 100, "user" => $teacher->user];
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
-                // Update admin's wallet
-                $data = ["amount" => ((100 - $checkout->teacher_percentage) * $paid_price) / 100, "user" => $admin];
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
-                // Update student's wallet
-                $data = ["amount" => $paid_price, "user" => $student->user];
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
                 // Save the checkout
                 $checkout->save();
 
                 // Update the total amount paid
                 $total += $paid_price;
-
+                $receipt->save();
                 // Save the receipt and related services
-                $receipt->services()->save(new Service([
+                $receipt->services()->save(ReceiptService::create([
                     'text' => $group->name . ' ' . $teacher->name . ' ' . $group->type,
                     'price' => $paid_price,
+                    'receipt_id'=>$receipt->id,
                 ]));
 
                 // Update the student's debt for the group
@@ -172,6 +163,20 @@ class CheckoutController extends Controller
 
         // If total is non-zero, finalize the receipt and send notifications
         if ($total != 0) {
+            // Update teacher's wallet
+            $data = ["amount" => ($checkout->teacher_percentage * $total) / 100, "user" => $teacher->user];
+            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+            // Update admin's wallet
+            $data = ["amount" => ((100 - $checkout->teacher_percentage) * $total) / 100, "user" => $admin];
+            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+            // Update student's wallet
+            $data = ["amount" => $total, "user" => $student->user];
+            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
             $receipt->total = $total;
             $receipt->user_id = $student->user->id;
             $receipt->employee_id = $user->id;
@@ -242,11 +247,12 @@ class CheckoutController extends Controller
 
                 // Update the receipt and total
                 $total += $paid_price;
-                $receipt->services()->save(new Service([
+                $service = ReceiptService::create([
                     'text' => $group->name,
                     'price' => $paid_price,
                     'qte' => $nb_paid_session,
-                ]));
+                    'receipt_id' => $receipt->id,
+                ]);
 
                 // Update student's group pivot table
                 $student->groups()->updateExistingPivot($group->id, [

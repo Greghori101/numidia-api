@@ -22,7 +22,6 @@ return new class extends Migration
             $table->integer('percentage');
             $table->unsignedBigInteger('price_per_month');
             $table->integer('nb_session');
-            $table->integer('month')->default(1);
             $table->string('main_session');
             $table->integer('current_month')->default(1);
             $table->integer('current_nb_session')->default(1);

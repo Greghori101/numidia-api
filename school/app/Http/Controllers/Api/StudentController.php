@@ -84,6 +84,7 @@ class StudentController extends Controller
                 'discount' => $group->discount,
                 'month' => $group->current_month,
                 'teacher_percentage' => $group->percentage,
+                'nb_session'=> $group->rest_session,
             ]);
             $student->groups()->attach([$group->id => [
                 'first_session' => $group->current_nb_session,
@@ -123,7 +124,7 @@ class StudentController extends Controller
         $checkoutToRemove = Checkout::where('student_id', $student_id)
             ->where('group_id', $group->id)
             ->where('status', 'pending')
-            ->where('paid_price',0)
+            ->where('paid_price', 0)
             ->first();
 
         if ($checkoutToRemove) {
@@ -138,7 +139,7 @@ class StudentController extends Controller
             'last_session' => $group->current_nb_session,
             'last_month' => $group->current_month,
             'status' => 'stopped',
-            'debt' => $checkoutToRemove ? $student->groups()->where('group_id',$group_id)->pivot->debt + $checkoutToRemove->price - $checkoutToRemove->discount : $student->groups()->where('group_id',$group_id)->pivot->debt,
+            'debt' => $checkoutToRemove ? $student->groups()->where('group_id', $group_id)->pivot->debt + $checkoutToRemove->price - $checkoutToRemove->discount : $student->groups()->where('group_id', $group_id)->pivot->debt,
 
         ]]);
 
@@ -180,12 +181,12 @@ class StudentController extends Controller
         return response()->json($groups, 200);
     }
 
-    public  function student_checkouts($id)
+    public  function student_checkouts(Request $request, $id)
     {
         $checkouts = Checkout::query()
             ->with(['group.teacher.user'])
-            ->when($id, function ($q) use ($id) {
-                return $q->where('student_id', 'like', "%$id%");
+            ->when($id, function ($q) use ($id,$request) {
+                return $q->where('student_id', 'like', "%$id%")->where('group_id', 'like', "%$request->group_id%");
             })->get();
         return response()->json($checkouts, 200);
     }
