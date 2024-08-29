@@ -21,7 +21,6 @@ class Section extends Model
         'id',
         'ending_column',
         'ending_row',
-        'name',
         'starting_column',
         'starting_row',
     ];

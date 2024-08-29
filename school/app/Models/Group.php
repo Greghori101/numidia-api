@@ -71,16 +71,17 @@ class Group extends Model
         return $this->hasMany(Presence::class);
     }
 
-    public function dawarat_presences()
-    {
-        return $this->hasMany(DawaratPresence::class);
-    }
+    
     public function amphi()
     {
-        return $this->hasOne(Amphi::class);
+        return $this->belongsTo(Amphi::class);
     }
     public function photos()
     {
         return $this->morphMany(File::class, "fileable");
+    }
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class);
     }
 }

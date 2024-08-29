@@ -6,7 +6,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Ticket extends Model
 {
@@ -21,7 +20,6 @@ class Ticket extends Model
         'id',
         'row',
         'seat',
-        'section',
         'title',
         'date',
         'price',
@@ -52,10 +50,6 @@ class Ticket extends Model
     public function student()
     {
         return $this->belongsTo(Student::class);
-    }
-    public function presence()
-    {
-        return $this->belongsTo(Presence::class);
     }
     public function dawarat()
     {

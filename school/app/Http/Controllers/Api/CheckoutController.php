@@ -15,13 +15,7 @@ use Illuminate\Support\Facades\Http;
 
 class CheckoutController extends Controller
 {
-    public function all()
-    {
-        $checkouts = Checkout::with(['student.user', 'group.teacher.user'])
-            ->get();
 
-        return response()->json($checkouts, 200);
-    }
 
     public function index(Request $request)
     {

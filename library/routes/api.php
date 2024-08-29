@@ -63,7 +63,7 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->controller(ProductController::class)
         ->group(function () {
             Route::post('/', 'create_product');
-            Route::put('/{id}', 'update_product');
+            Route::post('/{id}', 'update_product');
             Route::delete('/{id}', 'delete_product');
         });
     Route::prefix('receipts')

@@ -86,4 +86,9 @@ class Student extends Model
     public function mark_sheets(){
         return $this->hasMany(MarkSheet::class);
     }
+
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class);
+    }
 }

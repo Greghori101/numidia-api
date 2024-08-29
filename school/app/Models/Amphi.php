@@ -47,7 +47,7 @@ class Amphi extends Model
 
     function dawarat()
     {
-        return $this->belongsTo(group::class);
+        return $this->hasMany(group::class);
     }
     function sections()
     {

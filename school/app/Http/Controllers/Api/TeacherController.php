@@ -76,11 +76,6 @@ class TeacherController extends Controller
         $session->state = 'approved';
     }
 
-    public function all()
-    {
-        $teachers = Teacher::with(['groups.level', 'user'])->get();
-        return $teachers;
-    }
     public function all_details(Request $request)
     {
         $request->validate([

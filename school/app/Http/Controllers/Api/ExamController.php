@@ -105,12 +105,6 @@ class ExamController extends Controller
         return response()->json($exams, 200);
     }
 
-    public function all()
-    {
-        $exams = Exam::with(['questions.choices', 'questions.audio', 'answers', 'teacher'])->get();
-        return response()->json($exams, 200);
-    }
-
     public function student_exam($exam, $studentId)
     {
         $exam = Exam::find($exam);

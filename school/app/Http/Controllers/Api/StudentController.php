@@ -12,11 +12,7 @@ use Illuminate\Support\Facades\Http;
 
 class StudentController extends Controller
 {
-    public function all()
-    {
-        $students = Student::with(['user'])->get();
-        return response()->json($students, 200);
-    }
+    
     public function index(Request $request)
     {
         $request->validate([

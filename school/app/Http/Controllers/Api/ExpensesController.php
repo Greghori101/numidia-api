@@ -12,12 +12,6 @@ use Illuminate\Support\Facades\Http;
 class ExpensesController extends Controller
 {
 
-    public function all()
-    {
-        $expenses = Expense::all();
-        return $expenses;
-    }
-
     public function index(Request $request)
     {
         $request->validate([
@@ -104,7 +98,7 @@ class ExpensesController extends Controller
             $expense->delete();
             return response()->json(null, 204);
         } else {
-            return response()->json(['error' => 'Expense not found'], 404);
+            return response()->json(['message' => 'Expense not found'], 404);
         }
     }
 
@@ -128,7 +122,7 @@ class ExpensesController extends Controller
 
             return response()->json($expense, 200);
         } else {
-            return response()->json(['error' => 'Expense not found'], 404);
+            return response()->json(['message' => 'Expense not found'], 404);
         }
     }
 }

@@ -8,10 +8,32 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('pictures')->get();
-        return response()->json($products, 200);
+
+        $request->validate([
+            'sortBy' => ['nullable', 'string'],
+            'sortDirection' => ['nullable', 'string', 'in:asc,desc'],
+            'perPage' => ['nullable', 'integer', 'min:1'],
+            'search' => ['nullable', 'string'],
+        ]);
+        $sortBy = $request->query('sortBy', 'created_at');
+        $sortDirection = $request->query('sortDirection', 'desc');
+        $perPage = $request->query('perPage', 10);
+        $search = $request->query('search', '');
+
+        $productsQuery = Product::query();
+
+        $productsQuery->when($search, function ($query) use ($search) {
+            return $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('name', 'like', "%$search%");
+            });
+        });
+        $products = $productsQuery->with('pictures')->orderBy($sortBy, $sortDirection)
+
+            ->paginate($perPage);
+
+        return $products;
     }
 
     public function create_product(Request $request)
@@ -67,6 +89,8 @@ class ProductController extends Controller
             return response()->json(['message' => 'Product not found'], 404);
         }
 
+
+
         $product->name = $request->name;
         $product->price = $request->price;
         $product->qte = $request->qte;
@@ -75,6 +99,26 @@ class ProductController extends Controller
         $product->purchase_price = $request->purchase_price;
         $product->tags = $request->tags;
         $product->level = $request->level;
+
+        $product->pictures()->delete();
+        if ($request->hasFile('pictures')) {
+            $pictures = $request->file('pictures');
+            foreach ($pictures as $picture) {
+
+                $name = $picture->getClientOriginalName();
+                $content = file_get_contents($picture->getRealPath());
+                $extension = $picture->getClientOriginalExtension();
+
+                $product->pictures()->save(
+                    new File([
+                        'name' => $name,
+                        'content' => base64_encode($content),
+                        'extension' => $extension,
+                    ])
+                );
+            }
+        }
+
         $product->save();
 
         return response()->json(['message' => 'Product updated successfully'], 200);

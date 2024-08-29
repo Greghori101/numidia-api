@@ -13,9 +13,8 @@ return new class extends Migration
     {
         Schema::create('tickets', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->integer('row');
-            $table->integer('seat');
-            $table->string('section');
+            $table->integer('row')->nullable();
+            $table->integer('seat')->nullable();
             $table->string('title');
             $table->bigInteger('price');
             $table->string('status')->default('waiting');
@@ -25,8 +24,6 @@ return new class extends Migration
 
             $table->uuid('student_id')->nullable();
             $table->foreign('student_id')->references('id')->on('students');
-            $table->uuid('presence_id')->nullable();
-            $table->foreign('presence_id')->references('id')->on('presences');
             $table->uuid('dawarat_id')->nullable();
             $table->foreign('dawarat_id')->references('id')->on('groups');
             $table->timestamps();

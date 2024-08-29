@@ -13,11 +13,6 @@ use Illuminate\Support\Facades\Http;
 
 class FeeInscriptionController extends Controller
 {
-    public function all()
-    {
-        $feeInscriptions = FeeInscription::all();
-        return $feeInscriptions;
-    }
 
     public function index(Request $request)
     {
@@ -191,7 +186,7 @@ class FeeInscriptionController extends Controller
             $feeInscription->delete();
             return response()->json(null, 204);
         } else {
-            return response()->json(['error' => 'Fee inscription not found'], 404);
+            return response()->json(['message' => 'Fee inscription not found'], 404);
         }
     }
 
@@ -219,7 +214,7 @@ class FeeInscriptionController extends Controller
 
             return response()->json($feeInscription, 200);
         } else {
-            return response()->json(['error' => 'Fee inscription not found'], 404);
+            return response()->json(['message' => 'Fee inscription not found'], 404);
         }
     }
 }

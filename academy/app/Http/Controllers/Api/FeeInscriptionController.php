@@ -182,7 +182,7 @@ class FeeInscriptionController extends Controller
             $feeInscription->delete();
             return response()->json(null, 204);
         } else {
-            return response()->json(['error' => 'Fee inscription not found'], 404);
+            return response()->json(['message' => 'Fee inscription not found'], 404);
         }
     }
 
@@ -210,7 +210,7 @@ class FeeInscriptionController extends Controller
 
             return response()->json($feeInscription, 200);
         } else {
-            return response()->json(['error' => 'Fee inscription not found'], 404);
+            return response()->json(['message' => 'Fee inscription not found'], 404);
         }
     }
 }

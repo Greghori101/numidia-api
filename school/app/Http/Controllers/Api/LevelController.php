@@ -8,11 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 class LevelController extends Controller
 {
-    public function all()
-    {
-        $levels = Level::all();
-        return $levels;
-    }
+    
     public function index(Request $request)
     {
         $request->validate([

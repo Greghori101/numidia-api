@@ -64,6 +64,40 @@ class GroupController extends Controller
 
         return response()->json($groups, 200);
     }
+    public function all(Request $request)
+    {
+        $request->validate([
+            'perPage' => ['nullable', 'integer'],
+            'sortBy' => ['nullable', 'string'],
+            'sortDirection' => ['nullable', 'string'],
+            'search' => ['nullable', 'string'],
+            'level_id' => ['nullable'],
+            'teacher_id' => ['nullable'],
+        ]);
+
+        $perPage = $request->query('perPage', 10);
+        $sortBy = $request->query('sortBy', 'created_at');
+        $sortDirection = $request->query('sortDirection', 'desc');
+        $search = $request->query('search', "");
+        $levelId = $request->query('level_id');
+        $teacherId = $request->query('teacher_id');
+
+        $groupsQuery = Group::with(['level', 'teacher.user', 'sessions.exceptions'])
+            ->when($levelId, function ($q) use ($levelId) {
+                $q->where('level_id', $levelId);
+            })
+            ->whereRaw('LOWER(module) LIKE ?', ["%$search%"])
+            ->orderBy($sortBy, $sortDirection);
+
+        if ($teacherId) {
+            $groupsQuery->where('teacher_id', $teacherId);
+        }
+
+        // Paginate the results by groups
+        $groups = $groupsQuery->paginate($perPage);
+
+        return response()->json($groups, 200);
+    }
     public function index(Request $request)
     {
         $request->validate([
@@ -130,7 +164,7 @@ class GroupController extends Controller
             'nb_session' => $request->nb_session,
             'percentage' => $teacher->percentage,
             'main_session' => "",
-            'current_month'=>date('n'),
+            'current_month' => date('n'),
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
@@ -210,7 +244,7 @@ class GroupController extends Controller
                     'price' => $group->price_per_month / $group->nb_session * $rest_session,
                     'month' => $group->current_month,
                     'teacher_percentage' => $group->percentage,
-                    'nb_session'=> $rest_session,
+                    'nb_session' => $rest_session,
                 ]);
 
                 $data = ["amount" => - ($checkout->price - $checkout->discount), "user" => $student->user];
@@ -390,15 +424,5 @@ class GroupController extends Controller
         }
 
         return response()->json($session, 200);
-    }
-    public function all()
-    {
-        $groups  = Group::with(['level', 'teacher.user'])->get();
-        return response()->json($groups, 200);
-    }
-    public function all_details()
-    {
-        $groups  = Group::with(['teacher.user', 'level', 'sessions.exceptions'])->get();
-        return response()->json($groups, 200);
     }
 }

@@ -30,6 +30,9 @@ return new class extends Migration
             $table->foreign('teacher_id')->references('id')->on('teachers')->onDelete('set null');
             $table->uuid('level_id')->nullable();
             $table->foreign('level_id')->references('id')->on('levels')->onDelete('cascade');
+            $table->uuid('amphi_id')->nullable();
+            $table->foreign('amphi_id')->references('id')->on('amphis');
+
             $table->timestamps();
         });
     }

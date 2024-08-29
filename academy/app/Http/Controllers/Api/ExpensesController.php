@@ -104,7 +104,7 @@ class ExpensesController extends Controller
             $expense->delete();
             return response()->json(null, 204);
         } else {
-            return response()->json(['error' => 'Expense not found'], 404);
+            return response()->json(['message' => 'Expense not found'], 404);
         }
     }
 
@@ -128,7 +128,7 @@ class ExpensesController extends Controller
 
             return response()->json($expense, 200);
         } else {
-            return response()->json(['error' => 'Expense not found'], 404);
+            return response()->json(['message' => 'Expense not found'], 404);
         }
     }
 }

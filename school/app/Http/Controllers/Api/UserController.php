@@ -13,11 +13,7 @@ use Illuminate\Support\Facades\Http;
 
 class UserController extends Controller
 {
-    public function all(Request $request)
-    {
-        $users = User::where('id', '<>', $request->user["id"])->get();
-        return response()->json($users, 200);
-    }
+
     public function index(Request $request)
     {
         $request->validate([

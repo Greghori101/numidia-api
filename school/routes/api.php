@@ -26,8 +26,10 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/auth/{provider}/login', [AuthController::class, 'provider_login',]);
-Route::get('/levels/all', [LevelController::class, 'all']);
+Route::get('/levels', [LevelController::class, 'index']);
 Route::get('/teachers/all-details', [TeacherController::class, 'all_details']);
+Route::get('/groups/all-details', [GroupController::class, 'all']);
+Route::get('/dawarat/all-details', [DawaratController::class, 'all']);
 Route::post('/create-user', [AuthController::class, 'create_user_department']);
 
 
@@ -56,7 +58,6 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('sessions')
         ->controller(SessionController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/details', 'all_details');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
@@ -67,7 +68,6 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('levels')
         ->controller(LevelController::class)
         ->group(function () {
-            Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
             Route::put('/{id}', 'update');
@@ -76,10 +76,10 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('groups')
         ->controller(GroupController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/daily', 'groups_per_day');
             Route::get('/details', 'all_details');
             Route::get('/', 'index');
+            Route::get('/all', 'all');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
             Route::put('/{id}', 'update');
@@ -94,7 +94,6 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('students')
         ->controller(StudentController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::get('/{id}/checkouts', 'student_checkouts');
@@ -107,7 +106,6 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('teachers')
         ->controller(TeacherController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/details', 'all_details');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
@@ -117,7 +115,6 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('parents')
         ->controller(ParentController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/{id}/students', 'add_student');
@@ -126,7 +123,6 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('checkouts')
         ->controller(CheckoutController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('', 'index');
             Route::get('/{id}', 'show');
             Route::put('/{id}', 'update');
@@ -170,7 +166,6 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('expenses')
         ->controller(ExpensesController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
@@ -180,7 +175,6 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('inscription_fees')
         ->controller(FeeInscriptionController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
@@ -225,7 +219,6 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::delete('/{exam}/close', 'close_exam');
             Route::put('/{exam}/open', 'open_exam');
             Route::delete('/{exam}', 'delete');
-            Route::get('/all', 'all');
             Route::get('/{exam}', 'show');
             Route::get('/{exam}/student/{id}', 'student_exam');
             Route::get('/student/{id}', 'student_exams');
@@ -237,17 +230,15 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('amphitheaters')
         ->controller(AmphiController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
-            Route::post('/', 'create');
+            Route::post('/', 'store');
             Route::put('/{id}', 'update');
             Route::delete('/{id}', 'delete');
         });
     Route::prefix('dawarat')
         ->controller(DawaratController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/daily', 'groups_per_day');
             Route::get('/details', 'all_details');
             Route::get('/teachers', 'teachers');
@@ -277,11 +268,12 @@ Route::middleware(['auth-api-token'])->group(function () {
     Route::prefix('tickets')
         ->controller(TicketController::class)
         ->group(function () {
-            Route::get('/all', 'all');
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
             Route::put('/{id}', 'update');
+            Route::delete('/{id}/cancel', 'cancel');
+            Route::post('/{id}/pay', 'pay');
             Route::delete('/{id}', 'delete');
         });
 });

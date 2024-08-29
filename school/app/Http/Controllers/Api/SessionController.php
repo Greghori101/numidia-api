@@ -75,11 +75,6 @@ class SessionController extends Controller
         return response()->json(200);
     }
     
-    public function all()
-    {
-        $sessions = Session::with(["exceptions", "group.teacher.user", "group.level"])->get();
-        return response()->json($sessions, 200);
-    }
     public function all_details()
     {
         $sessions = Session::with(["exceptions", "group.teacher.user", "group.level"])->get();

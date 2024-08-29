@@ -15,7 +15,6 @@ return new class extends Migration
             $table->uuid('id')->primary()->unique();
             $table->integer('ending_row');
             $table->integer('ending_column');
-            $table->string('name');
             $table->integer('starting_column');
             $table->integer('starting_row');
 

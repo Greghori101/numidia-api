@@ -18,8 +18,6 @@ return new class extends Migration
             $table->string('name');
             $table->integer('nb_columns');
             $table->integer('nb_rows');
-            $table->uuid('dawarat_id')->nullable();
-            $table->foreign('dawarat_id')->references('id')->on('groups');
             $table->timestamps();
         });
     }
