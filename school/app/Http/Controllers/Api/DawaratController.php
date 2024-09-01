@@ -140,7 +140,7 @@ class DawaratController extends Controller
                 $hex = bin2hex($bytes);
                 $file_name = substr($hex, 0, 64);
 
-                $file_url = '/posts/' .  $file_name . '.' . $file_extension;
+                $file_url = '/dawarat/' .  $file_name . '.' . $file_extension;
 
                 Storage::put($file_url, file_get_contents($file));
 

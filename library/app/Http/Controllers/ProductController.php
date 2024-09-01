@@ -68,7 +68,7 @@ class ProductController extends Controller
                 $hex = bin2hex($bytes);
                 $file_name = substr($hex, 0, 64);
 
-                $file_url = '/posts/' .  $file_name . '.' . $file_extension;
+                $file_url = '/products/' .  $file_name . '.' . $file_extension;
                 Storage::put($file_url, file_get_contents($file));
                 $product->pictures()->save(
                     new File([
@@ -119,7 +119,7 @@ class ProductController extends Controller
                 $hex = bin2hex($bytes);
                 $file_name = substr($hex, 0, 64);
 
-                $file_url = '/posts/' .  $file_name . '.' . $file_extension;
+                $file_url = '/products/' .  $file_name . '.' . $file_extension;
 
                 Storage::put($file_url, file_get_contents($file));
 
