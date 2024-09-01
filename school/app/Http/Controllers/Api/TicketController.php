@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Http;
 
 class TicketController extends Controller
 {
-    public function store(Request $request)
+    public function create(Request $request)
     {
         $request->validate([]);
         $student = Student::find($request->student_id);
