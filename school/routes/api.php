@@ -31,7 +31,7 @@ Route::get('/teachers/all-details', [TeacherController::class, 'all_details']);
 Route::get('/groups/all-details', [GroupController::class, 'all']);
 Route::get('/dawarat/all-details', [DawaratController::class, 'all']);
 Route::post('/create-user', [AuthController::class, 'create_user_department']);
-
+Route::get('/files', [AuthController::class,'getFile']);
 
 
 // Verified routes (require email verification)

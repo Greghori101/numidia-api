@@ -14,6 +14,7 @@ use App\Models\File;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class DawaratController extends Controller
 {
@@ -73,7 +74,7 @@ class DawaratController extends Controller
         $levelId = $request->query('level_id');
         $teacherId = $request->query('teacher_id');
 
-        $groupsQuery = Group::with(['level', 'teacher.user', 'sessions.exceptions','photos','amphi.sections','sessions.exceptions'])
+        $groupsQuery = Group::with(['level', 'teacher.user', 'sessions.exceptions', 'photos', 'amphi.sections', 'sessions.exceptions'])
             ->when($levelId, function ($q) use ($levelId) {
                 $q->where('level_id', $levelId);
             })
@@ -120,25 +121,33 @@ class DawaratController extends Controller
             'percentage' => $teacher->percentage,
             'main_session' => "",
             'current_month' => date('n'),
+            'current_nb_session' => 1,
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
         if ($amphi) {
             $amphi->dawarat()->save($group);
         }
-        $files = $request->file('uploaded_images');
-        foreach ($files as $file) {
-            # code...
-            $name = $file->getClientOriginalName();
-            $content = file_get_contents($file->getRealPath());
-            $extension = $file->getClientOriginalExtension();
 
-            $group->photos()->save(new File([
-                'name' => $name,
-                'content' => base64_encode($content),
-                'extension' => $extension,
-            ]));
+        $images =  $request->file('uploaded_images');
+        if ($images) {
+            foreach ($images as $image) {
+                $file = $image;
+
+                $file_extension = $image->extension();
+
+                $bytes = random_bytes(ceil(64 / 2));
+                $hex = bin2hex($bytes);
+                $file_name = substr($hex, 0, 64);
+
+                $file_url = '/posts/' .  $file_name . '.' . $file_extension;
+
+                Storage::put($file_url, file_get_contents($file));
+
+                $group->photos()->create(['url' => $file_url]);
+            }
         }
+       
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/notifications', [
                 'client_id' => env('CLIENT_ID'),
@@ -205,6 +214,21 @@ class DawaratController extends Controller
         $sessions = $group->sessions;
         return response()->json($sessions, 200);
     }
+    public function student_notin_group($id)
+    {
+        $group = Group::find($id);
+        $level = $group->level;
+
+        $students = $level
+            ->students()
+            ->whereNotIn('id', $group->students->modelKeys())
+            ->get();
+        foreach ($students as $student) {
+            # code...
+            $student['user'] = $student->user;
+        }
+        return response()->json($students, 200);
+    }
     public function sessions_create(Request $request, $id)
     {
         $request->validate([
@@ -262,6 +286,41 @@ class DawaratController extends Controller
         }
 
         return response()->json($session, 200);
+    }
+    public function students_delete($id, $student_id)
+    {
+        $group = Group::find($id);
+        $student = $group->students()->where("student_id", $student_id)->first();
+
+        $student->groups()->updateExistingPivot($group->id, ['status' => 'stopped', 'last_session' => $group->current_nb_session, 'last_month' => $group->current_month]);
+        $rest_session = $group->nb_session - $group->current_nb_session + 1;
+
+        $checkoutToRemove = Checkout::where('student_id', $student_id)
+            ->where('group_id', $group->id)
+            ->where('status', 'pending')
+            ->where('paid_price', 0)
+            ->first();
+
+
+        if ($checkoutToRemove) {
+            $data = ["amount" => $checkoutToRemove->price - $checkoutToRemove->discount, "user" => $student->user];
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
+            $checkoutToRemove->delete();
+        }
+
+        $students[$student_id] =  [
+            'first_session' => $group->current_nb_session,
+            'first_month' => $group->current_month,
+            'debt' => $checkoutToRemove ?
+                $student->groups()->where('group_id', $id)->first()->pivot->debt + $checkoutToRemove->price - $checkoutToRemove->discount
+                : $student->groups()->where('group_id', $id)->first()->pivot->debt,
+
+        ];
+
+        $group->students()->syncWithoutDetaching($students);
+
+        return response()->json(200);
     }
     public function teachers(Request $request)
     {

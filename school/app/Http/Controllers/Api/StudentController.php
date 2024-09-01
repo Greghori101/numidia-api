@@ -168,7 +168,7 @@ class StudentController extends Controller
 
         $groups = $level->groups()
             ->whereNotIn('id',  $student->groups->modelKeys())
-            ->with("level", "teacher.user")
+            ->with("level", "teacher.user",'students')
             ->get();
         foreach ($groups as $group) {
             # code...

@@ -165,6 +165,7 @@ class GroupController extends Controller
             'percentage' => $teacher->percentage,
             'main_session' => "",
             'current_month' => date('n'),
+            'current_nb_Session' => 1,
         ]);
         $teacher->groups()->save($group);
         $level->groups()->save($group);
@@ -253,17 +254,17 @@ class GroupController extends Controller
 
                 $student->checkouts()->save($checkout);
                 $group->checkouts()->save($checkout);
-                $students[] = [$studentId => [
+                $students[$studentId] = [
                     'first_session' => $group->current_nb_session,
                     'first_month' => $group->current_month,
-                    'debt' => $student->groups()->where('group_id', $id)->first()->pivot->debt + $checkout->price - $checkout->discount,
-                ]];
+                    'debt' => ($checkout->price - $checkout->discount),
+                ];
             } else {
-                $students[] = [$studentId => [
+                $students[$studentId] = [
                     'first_session' => $group->current_nb_session,
                     'first_month' => $group->current_month,
                     'debt' => $student->groups()->where('group_id', $id)->first()->pivot->debt,
-                ]];
+                ];
             }
         }
 
@@ -279,14 +280,14 @@ class GroupController extends Controller
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
                 $checkoutToRemove->delete();
             }
-            $students[] = [$studentIdToRemove => [
+            $students[$studentIdToRemove] =  [
                 'last_session' => $group->current_nb_session,
                 'last_month' => $group->current_month,
                 'status' => 'stopped',
                 'debt' => $checkoutToRemove ?
                     $student->groups()->where('group_id', $id)->first()->pivot->debt + $checkoutToRemove->price - $checkoutToRemove->discount
                     : $student->groups()->where('group_id', $id)->first()->pivot->debt,
-            ]];
+            ];
         }
 
         if ($students) {
@@ -311,7 +312,7 @@ class GroupController extends Controller
         $group = Group::find($id);
         $student = $group->students()->where("student_id", $student_id)->first();
 
-        $student->groups()->updateExistingPivot($group->id, ['status' => 'stopped', 'last_session' => $group->current_session, 'last_month' => $group->current_month]);
+        $student->groups()->updateExistingPivot($group->id, ['status' => 'stopped', 'last_session' => $group->current_nb_session, 'last_month' => $group->current_month]);
         $rest_session = $group->nb_session - $group->current_nb_session + 1;
 
         $checkoutToRemove = Checkout::where('student_id', $student_id)
@@ -328,13 +329,14 @@ class GroupController extends Controller
             $checkoutToRemove->delete();
         }
 
-        $students[] = [$student_id => [
+        $students[$student_id] =  [
             'first_session' => $group->current_nb_session,
             'first_month' => $group->current_month,
             'debt' => $checkoutToRemove ?
                 $student->groups()->where('group_id', $id)->first()->pivot->debt + $checkoutToRemove->price - $checkoutToRemove->discount
                 : $student->groups()->where('group_id', $id)->first()->pivot->debt,
-        ]];
+            
+        ];
 
         $group->students()->syncWithoutDetaching($students);
 

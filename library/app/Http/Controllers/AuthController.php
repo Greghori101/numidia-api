@@ -7,8 +7,10 @@ use App\Models\Admin;
 use App\Models\File;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -81,5 +83,13 @@ class AuthController extends Controller
         ]);
     }
 
-    
+    public function getFile(Request $request)
+    {
+        $url = $request->url;
+        if (Storage::exists($url)) {
+            return Storage::get($url);
+        } else {
+            return response()->json(Response::HTTP_NOT_FOUND);
+        }
+    }
 }

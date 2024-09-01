@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Illuminate\Http\Response;
+
 
 class AuthController extends Controller
 {
@@ -62,7 +64,7 @@ class AuthController extends Controller
     }
     public function show($id)
     {
-        $user = User::with(['activities', 'profile_picture','wallet'])->find($id);
+        $user = User::with(['activities', 'profile_picture', 'wallet'])->find($id);
         return response()->json($user, 200);
     }
     public function revoke(Request $request, $id)
@@ -99,17 +101,16 @@ class AuthController extends Controller
             'phone_number' => $request->phone_number,
             'gender' => $request->gender,
         ]);
-        $content = Storage::get('default-profile-picture.jpeg');
-        $extension = 'jpeg';
-        $name = 'profile picture';
 
-        $user->profile_picture()->save(
-            new File([
-                'name' => $name,
-                'content' => base64_encode($content),
-                'extension' => $extension,
-            ])
-        );
+        $content = Storage::get('default-profile-picture.jpeg');
+
+
+        $bytes = random_bytes(ceil(64 / 2));
+        $hex = bin2hex($bytes);
+        $file_name = substr($hex, 0, 64);
+        $file_url = '/avatars/' .  $file_name . '.jpeg';
+        Storage::put($file_url, $content);
+        $user->profile_picture()->update(['url' => $file_url]);
 
         $user->wallet()->save(new Wallet());
         try {
@@ -142,17 +143,17 @@ class AuthController extends Controller
             'phone_number' => $request->phone_number,
             'gender' => $request->gender,
         ]);
-        $content = Storage::get('default-profile-picture.jpeg');
-        $extension = 'jpeg';
-        $name = 'profile picture';
 
-        $user->profile_picture()->save(
-            new File([
-                'name' => $name,
-                'content' => base64_encode($content),
-                'extension' => $extension,
-            ])
-        );
+        $content = Storage::get('default-profile-picture.jpeg');
+
+
+        $bytes = random_bytes(ceil(64 / 2));
+        $hex = bin2hex($bytes);
+        $file_name = substr($hex, 0, 64);
+        $file_url = '/avatars/' .  $file_name . '.jpeg';
+        Storage::put($file_url, $content);
+        $user->profile_picture()->update(['url' => $file_url]);
+
 
         $user->wallet()->save(new Wallet());
         try {
@@ -172,7 +173,6 @@ class AuthController extends Controller
             $user->save();
             Mail::to($user)->queue(new WelcomeEmail($data));
         } catch (\Throwable $th) {
-            
         }
         return response()->json(200);
     }
@@ -398,20 +398,39 @@ class AuthController extends Controller
             $id = $request->user()->id;
         }
         $user = User::find($id);
-        $file = $request->file('profile_picture');
-        $content = $file->get();
-        $extension = $file->extension();
-        $user->profile_picture()->update([
-            'name' => 'profile picture',
-            'content' => base64_encode($content),
-            'extension' => $extension,
-        ]);
+        if ($user->profile_picture && Storage::exists($user->profile_picture->url)) {
+            Storage::delete($user->profile_picture->url);
+        }
+
+        $file = $request->file("profile_picture");
+
+        if ($file) {
+            $bytes = random_bytes(ceil(64 / 2));
+            $hex = bin2hex($bytes);
+            $file_name = substr($hex, 0, 64);
+            $file_url = '/avatars/' .  $file_name . $file->extension();
+            Storage::put($file_url, file_get_contents($file));
+            $user->profile_picture()->update(['url' => $file_url]);
+            return response()->json(['message' => 'Profile picture updated successfully'], Response::HTTP_OK);
+        } else {
+
+            return response()->json(['message' => 'Profile picture was missing, please upload image'], Response::HTTP_BAD_REQUEST);
+        }
         return response()->json(['message' => 'Profile picture changed successfully'], 200);
     }
     public function users(Request $request)
     {
-        $users = User::with(['profile_picture','wallet'])->whereIn('id', $request->ids)->get();
+        $users = User::with(['profile_picture', 'wallet'])->whereIn('id', $request->ids)->get();
         return response()->json($users, 200);
     }
 
+    public function getFile(Request $request)
+    {
+        $url = $request->url;
+        if (Storage::exists($url)) {
+            return Storage::get($url);
+        } else {
+            return response()->json(Response::HTTP_NOT_FOUND);
+        }
+    }
 }

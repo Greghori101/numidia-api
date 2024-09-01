@@ -44,6 +44,7 @@ Route::post('/users/create', [AuthController::class, 'create']);
 Route::get('/profile/{id}', [AuthController::class, 'show']);
 
 Route::get('/users', [AuthController::class, 'users']);
+Route::get('/files', [AuthController::class,'getFile']);
 
 Route::prefix('posts')
     ->controller(PostController::class)

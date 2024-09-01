@@ -9,6 +9,7 @@ use App\Models\Post;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -35,19 +36,24 @@ class PostController extends Controller
         ]);
 
         $user = User::find($request->user()->id);
-        $files = $request->file('uploaded_images');
-        $user->posts()->save($post);
-        foreach ($files as $file) {
-            # code...
-            $name = $file->getClientOriginalName();
-            $content = file_get_contents($file->getRealPath());
-            $extension = $file->getClientOriginalExtension(); 
 
-            $post->photos()->save(new File([
-                'name' => $name,
-                'content' => base64_encode($content),
-                'extension' => $extension,
-            ]));
+        $images =  $request->file('uploaded_images');
+        if ($images) {
+            foreach ($images as $image) {
+                $file = $image;
+
+                $file_extension = $image->extension();
+
+                $bytes = random_bytes(ceil(64 / 2));
+                $hex = bin2hex($bytes);
+                $file_name = substr($hex, 0, 64);
+
+                $file_url = '/posts/' .  $file_name . '.' . $file_extension;
+
+                Storage::put($file_url, file_get_contents($file));
+
+                $post->photos()->create(['url' => $file_url]);
+            }
         }
         $user->posts()->save($post);
 

@@ -27,16 +27,16 @@ class DatabaseSeeder extends Seeder
 
         ]);
         $user->markEmailAsVerified();
+
         $content = Storage::get('default-profile-picture.jpeg');
-        $extension = 'jpeg';
-        $name = 'profile picture';
-        $user->profile_picture()->save(
-            new File([
-                'name' => $name,
-                'content' => base64_encode($content),
-                'extension' => $extension,
-            ])
-        );
+        $bytes = random_bytes(ceil(64 / 2));
+        $hex = bin2hex($bytes);
+        $file_name = substr($hex, 0, 64);
+        $file_url = '/avatars/' .  $file_name . '.jpeg';
+        Storage::put($file_url, $content);
+        $user->profile_picture()->create(['url' => $file_url]);
+
+
         $user->wallet()->save(new Wallet());
 
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
@@ -78,6 +78,5 @@ class DatabaseSeeder extends Seeder
                 'wilaya' => 'batna',
                 'street' => 'batna',
             ]);
-       
     }
 }

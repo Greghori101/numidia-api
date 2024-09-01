@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Mail;
 class UserController extends Controller
 {
 
-    
+
     public function index(Request $request)
     {
         $request->validate([
@@ -240,14 +240,14 @@ class UserController extends Controller
         return response()->json($orders);
     }
 
-    public function getReciepts(Request $request)
+    public function getReceipts(Request $request)
     {
         $client = User::find($request->user["id"])->client;
 
         if (!$client) {
             return response()->json(['message' => 'Client not found'], 404);
         }
-        $reciepts = $client->reciepts;
-        return response()->json($reciepts);
+        $receipts = $client->receipts;
+        return response()->json($receipts);
     }
 }

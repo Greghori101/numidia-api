@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/guest-order', [UserController::class, 'create']);
 Route::post('/create-user', [AuthController::class, 'create_user_department']);
+Route::get('/files', [AuthController::class,'getFile']);
 
 Route::prefix('products')
     ->controller(ProductController::class)

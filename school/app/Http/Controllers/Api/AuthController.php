@@ -10,7 +10,9 @@ use App\Models\Supervisor;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -166,5 +168,14 @@ class AuthController extends Controller
             ->post(env('AUTH_API') . '/auth/' . $provider . '/login', $data);
 
         return response()->json($response->body(), 200);
+    }
+    public function getFile(Request $request)
+    {
+        $url = $request->url;
+        if (Storage::exists($url)) {
+            return Storage::get($url);
+        } else {
+            return response()->json(Response::HTTP_NOT_FOUND);
+        }
     }
 }

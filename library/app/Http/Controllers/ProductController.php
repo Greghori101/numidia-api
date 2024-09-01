@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\File;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -54,19 +55,24 @@ class ProductController extends Controller
             'tags' => $request->tags,
             'level' => $request->level
         ]);
+
         if ($request->hasFile('pictures')) {
             $pictures = $request->file('pictures');
             foreach ($pictures as $picture) {
 
-                $name = $picture->getClientOriginalName();
-                $content = file_get_contents($picture->getRealPath());
-                $extension = $picture->getClientOriginalExtension();
+                $file = $picture;
 
+                $file_extension = $picture->extension();
+
+                $bytes = random_bytes(ceil(64 / 2));
+                $hex = bin2hex($bytes);
+                $file_name = substr($hex, 0, 64);
+
+                $file_url = '/posts/' .  $file_name . '.' . $file_extension;
+                Storage::put($file_url, file_get_contents($file));
                 $product->pictures()->save(
                     new File([
-                        'name' => $name,
-                        'content' => base64_encode($content),
-                        'extension' => $extension,
+                        'url' => $file_url,
                     ])
                 );
             }
@@ -101,23 +107,26 @@ class ProductController extends Controller
         $product->level = $request->level;
 
         $product->pictures()->delete();
-        if ($request->hasFile('pictures')) {
-            $pictures = $request->file('pictures');
-            foreach ($pictures as $picture) {
 
-                $name = $picture->getClientOriginalName();
-                $content = file_get_contents($picture->getRealPath());
-                $extension = $picture->getClientOriginalExtension();
+        $images =  $request->file('pictures');
+        if ($images) {
+            foreach ($images as $image) {
+                $file = $image;
 
-                $product->pictures()->save(
-                    new File([
-                        'name' => $name,
-                        'content' => base64_encode($content),
-                        'extension' => $extension,
-                    ])
-                );
+                $file_extension = $image->extension();
+
+                $bytes = random_bytes(ceil(64 / 2));
+                $hex = bin2hex($bytes);
+                $file_name = substr($hex, 0, 64);
+
+                $file_url = '/posts/' .  $file_name . '.' . $file_extension;
+
+                Storage::put($file_url, file_get_contents($file));
+
+                $product->pictures()->create(['url' => $file_url]);
             }
         }
+        
 
         $product->save();
 

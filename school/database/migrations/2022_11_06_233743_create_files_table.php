@@ -16,14 +16,12 @@ return new class extends Migration
     {
         Schema::create('files', function (Blueprint $table) {
             $table->uuid('id')->primary()->unique();
-            $table->string('name');
-            $table->string('extension');
+            $table->string('url');
             $table->string('fileable_type')->nullable();
             $table->uuid('fileable_id')->nullable();
             $table->timestamps();
         });
 
-        DB::statement("ALTER TABLE files ADD content MEDIUMBLOB");
     }
 
     /**

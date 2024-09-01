@@ -11,9 +11,7 @@ class File extends Model
     use HasFactory,HasUuids;
 
     protected $fillable = [
-        'name',
-        'extension',
-        'content'
+        'url',
     ];
 
     protected $keyType = 'string';
