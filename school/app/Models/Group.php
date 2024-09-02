@@ -82,6 +82,6 @@ class Group extends Model
     }
     public function tickets()
     {
-        return $this->hasMany(Ticket::class);
+        return $this->hasMany(Ticket::class,'dawarat_id');
     }
 }

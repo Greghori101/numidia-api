@@ -26,7 +26,7 @@ class TicketController extends Controller
             'location' => $request->location,
             'discount' => $request->discount,
             'title' => 'dawarat: ' .  $dawarat->teacher->user->name . '\nsubject: ' . $dawarat->module . '\nlevel: ' . $dawarat->level->year . ' ' . $dawarat->level->education . ' ' . $dawarat->level->specialty,
-            'date' => $dawarat->sessions()->orderBy('starts_at', 'desc')->first()->starts_at,
+            'date' => $dawarat->sessions()->orderBy('starts_at', 'desc')->first() ? $dawarat->sessions()->orderBy('starts_at', 'desc')->first()->starts_at : null,
             'price' => $dawarat->price_per_month,
         ]);
         $student->tickets()->save($ticket);
@@ -122,13 +122,14 @@ class TicketController extends Controller
 
         $user = $ticket->student->user;
 
+        $total =  ($ticket->price - $ticket->discount)<0 ?0 : ($ticket->price - $ticket->discount);
         $receipt = Receipt::create([
-            'total' => $ticket->price - $ticket->discount,
+            'total' =>$total,
             'type' => 'dawarat',
         ]);
 
         $employee = User::find($request->user['id']);
-        $employee()->save($receipt);
+        $employee->receipts()->save($receipt);
 
         $receipt->services()->save(ReceiptService::create([
             'discount' => $ticket->discount,
@@ -139,7 +140,7 @@ class TicketController extends Controller
         ]));
 
         $user->receipts()->save($receipt);
-        $data = ["amount" => ($ticket->price - $ticket->discount), "user" => $user];
+        $data = ["amount" => $total, "user" => $user];
         Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
             ->post(env('AUTH_API') . '/api/wallet/add', $data);
 

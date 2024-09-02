@@ -274,6 +274,6 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::put('/{id}', 'update');
             Route::delete('/{id}/cancel', 'cancel');
             Route::post('/{id}/pay', 'pay');
-            Route::delete('/{id}', 'delete');
+            Route::delete('/{id}', 'destroy');
         });
 });
