@@ -243,6 +243,7 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/details', 'all_details');
             Route::get('/teachers', 'teachers');
             Route::get('/', 'index');
+            Route::get('/all', 'all');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
             Route::put('/{id}', 'update');

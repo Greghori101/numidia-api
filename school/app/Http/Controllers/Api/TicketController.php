@@ -145,7 +145,7 @@ class TicketController extends Controller
             ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
         if ($updated) {
-            return response()->json(['data' => $ticket], 200);
+            return response()->json(['data' => $receipt], 200);
         }
 
         return response()->json(['message' => 'Failed to update Ticket'], 400);
