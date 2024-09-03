@@ -86,6 +86,7 @@ class GroupController extends Controller
             ->when($levelId, function ($q) use ($levelId) {
                 $q->where('level_id', $levelId);
             })
+            ->whereNot('type', 'dawarat')
             ->whereRaw('LOWER(module) LIKE ?', ["%$search%"])
             ->orderBy($sortBy, $sortDirection);
 
@@ -120,6 +121,7 @@ class GroupController extends Controller
             $query->when($levelId, function ($q) use ($levelId) {
                 $q->where('level_id', $levelId);
             })
+                ->whereNot('type', 'dawarat')
                 ->whereRaw('LOWER(module) LIKE ?', ["%$search%"])
                 ->orderBy($sortBy, $sortDirection)
                 ->with(['level']);
@@ -335,7 +337,7 @@ class GroupController extends Controller
             'debt' => $checkoutToRemove ?
                 $student->groups()->where('group_id', $id)->first()->pivot->debt + $checkoutToRemove->price - $checkoutToRemove->discount
                 : $student->groups()->where('group_id', $id)->first()->pivot->debt,
-            
+
         ];
 
         $group->students()->syncWithoutDetaching($students);
