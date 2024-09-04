@@ -161,6 +161,23 @@ class StudentController extends Controller
 
         return response()->json($groups, 200);
     }
+    public function student_tickets(Request $request, $id)
+    {
+        $search = $request->input('search', '');
+        $sortBy = $request->query('sortBy', 'created_at');
+        $sortDirection = $request->query('sortDirection', 'desc');
+        $student = Student::find($id);
+        $groups = $student->tickets()->with(['dawarat.teacher.user', 'dawarat.level', 'student.user'])->when($search, function ($query) use ($search) {
+            return $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('title', 'like', "%$search%")
+                    ->orWhere('status', 'like', "%$search%");
+            });
+        })->orderBy($sortBy, $sortDirection)->get();
+
+
+
+        return response()->json($groups, 200);
+    }
     public function group_notin_student($id)
     {
         $student = Student::find($id);

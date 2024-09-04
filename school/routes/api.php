@@ -31,7 +31,7 @@ Route::get('/teachers/all-details', [TeacherController::class, 'all_details']);
 Route::get('/groups/all-details', [GroupController::class, 'all']);
 Route::get('/dawarat/all-details', [DawaratController::class, 'all']);
 Route::post('/create-user', [AuthController::class, 'create_user_department']);
-Route::get('/files', [AuthController::class,'getFile']);
+Route::get('/files', [AuthController::class, 'getFile']);
 
 
 // Verified routes (require email verification)
@@ -98,6 +98,7 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/{id}', 'show');
             Route::get('/{id}/checkouts', 'student_checkouts');
             Route::get('/{id}/groups', 'student_group');
+            Route::get('/{id}/tickets', 'student_tickets');
             Route::get('/{id}/groups/unenrolled', 'group_notin_student');
             Route::get('/{id}/mark_sheet', 'student_mark_sheets');
             Route::post('/{student_id}/groups', 'student_group_add');

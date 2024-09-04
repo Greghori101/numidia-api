@@ -122,9 +122,9 @@ class TicketController extends Controller
 
         $user = $ticket->student->user;
 
-        $total =  ($ticket->price - $ticket->discount)<0 ?0 : ($ticket->price - $ticket->discount);
+        $total =  ($ticket->price - $ticket->discount) < 0 ? 0 : ($ticket->price - $ticket->discount);
         $receipt = Receipt::create([
-            'total' =>$total,
+            'total' => $total,
             'type' => 'dawarat',
         ]);
 
