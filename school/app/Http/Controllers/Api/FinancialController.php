@@ -440,7 +440,7 @@ class FinancialController extends Controller
         $students = Student::all()->count();
         $teachers = Teacher::all()->count();
         $users = User::all()->count();
-        $groups = Group::all()->count();
+        $groups = Group::whereNot('type','dawarat')->count();
         $financials = $response->json();
         $levels = Level::all()->count();
         $data = [

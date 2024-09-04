@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Http;
 
 class StudentController extends Controller
 {
-    
+
     public function index(Request $request)
     {
         $request->validate([
@@ -80,7 +80,7 @@ class StudentController extends Controller
                 'discount' => $group->discount,
                 'month' => $group->current_month,
                 'teacher_percentage' => $group->percentage,
-                'nb_session'=> $group->rest_session,
+                'nb_session' => $group->rest_session,
             ]);
             $student->groups()->attach([$group->id => [
                 'first_session' => $group->current_nb_session,
@@ -168,7 +168,8 @@ class StudentController extends Controller
 
         $groups = $level->groups()
             ->whereNotIn('id',  $student->groups->modelKeys())
-            ->with("level", "teacher.user",'students')
+            ->whereNot('type', 'dawarat')
+            ->with("level", "teacher.user", 'students')
             ->get();
         foreach ($groups as $group) {
             # code...
@@ -181,7 +182,7 @@ class StudentController extends Controller
     {
         $checkouts = Checkout::query()
             ->with(['group.teacher.user'])
-            ->when($id, function ($q) use ($id,$request) {
+            ->when($id, function ($q) use ($id, $request) {
                 return $q->where('student_id', 'like', "%$id%")->where('group_id', 'like', "%$request->group_id%");
             })->get();
         return response()->json($checkouts, 200);

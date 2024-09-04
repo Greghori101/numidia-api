@@ -37,7 +37,7 @@ class AuthController extends Controller
         }
     }
 
-    public function create_user(Request $request,$id)
+    public function create_user(Request $request, $id)
     {
         $user = User::create([
             'id' => $id,
@@ -146,11 +146,14 @@ class AuthController extends Controller
             ->post(env('AUTH_API') . '/api/login', $data);
 
         $data = json_decode($response->body(), true);
+        if (isset($data['id'])) {
+            $user = User::find($data['id']);
+            $data['user'] = $user;
 
-        $user = User::find($data['id']);
-        $data['user'] = $user;
-
-        return response()->json($data, 200);
+            return response()->json($data, 200);
+        } else {
+            return response()->json(['message' => 'invalid credentials'], 400);
+        }
     }
     public function provider_login(Request $request, $provider)
     {
