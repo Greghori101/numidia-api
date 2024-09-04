@@ -152,7 +152,7 @@ class AuthController extends Controller
 
             return response()->json($data, 200);
         } else {
-            return response()->json(['message' => 'invalid credentials'], 400);
+            return $data;
         }
     }
     public function provider_login(Request $request, $provider)

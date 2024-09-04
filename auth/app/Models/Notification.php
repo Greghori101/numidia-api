@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\NewNotifications;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,22 +34,9 @@ class Notification extends Model
         $model = static::query()->create($attributes);
 
         $user_id = $model->user_id;
-        $message =  'new notification';
-
-        $data = [
-            'user_id' => $user_id,
-            'message' => $message,
-        ];
-        $data = json_encode($data);
-
-        $web_socket_url = 'ws://localhost:8090?user_id=webserver';
-
-        Client\connect($web_socket_url)->then(function ($conn) use ($data) {
-            $conn->send($data);
-            $conn->close();
-        }, function ($e) {
-            echo "Could not connect: {$e->getMessage()}\n";
-        });
+        
+        broadcast(new NewNotifications($user_id));
+        
         return $model;
     }
 }
