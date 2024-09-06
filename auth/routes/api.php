@@ -44,7 +44,7 @@ Route::post('/users/create', [AuthController::class, 'create']);
 Route::get('/profile/{id}', [AuthController::class, 'show']);
 
 Route::get('/users', [AuthController::class, 'users']);
-Route::get('/files', [AuthController::class,'getFile']);
+Route::get('/files', [AuthController::class, 'getFile']);
 
 Route::prefix('posts')
     ->controller(PostController::class)
@@ -66,6 +66,7 @@ Route::prefix('notifications')
     });
 
 Route::middleware(['auth:api'])->group(function () {
+    Route::get('/users/{id}/avatar', [AuthController::class, 'getFile']);
     Route::post('/email/verify', [AuthController::class, 'verify']);
     Route::post('/email/resent/code', [AuthController::class, 'resent_verification',]);
     Route::get('/email/isverified', [AuthController::class, 'email_verified']);

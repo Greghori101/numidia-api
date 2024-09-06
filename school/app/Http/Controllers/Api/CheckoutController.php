@@ -12,6 +12,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
@@ -83,7 +84,7 @@ class CheckoutController extends Controller
 
     public function show($id)
     {
-        $checkout = Checkout::with(["student.user", "group.teacher.user"])->find($id);
+        $checkout = Checkout::with(["student.user", "group.teacher.user"])->findOrFail($id);
         return response()->json($checkout, 200);
     }
 
@@ -94,111 +95,113 @@ class CheckoutController extends Controller
             'checkouts' => ['array'],
         ]);
 
-        // Initialize variables
-        $ids = $request->checkouts;
-        $user = User::find($request->user["id"]);
-        $total = 0;
+        return DB::transaction(function () use ($request) {
+            // Initialize variables
+            $ids = $request->checkouts;
+            $user = User::findOrFail($request->user["id"]);
+            $total = 0;
 
-        // Create a new receipt
-        $receipt = new Receipt([
-            "total" => $total,
-            "type" => "debt",
-            'employee_id' => $user->id,
-        ]);
+            // Create a new receipt
+            $receipt = new Receipt([
+                "total" => $total,
+                "type" => "debt",
+                'employee_id' => $user->id,
+            ]);
 
-        // Process each checkout
-        foreach ($ids as $checkout) {
-            $id = $checkout['id'];
-            $paid_price = $checkout['paid_price'];
+            // Process each checkout
+            foreach ($ids as $checkout) {
+                $id = $checkout['id'];
+                $paid_price = $checkout['paid_price'];
 
-            $checkout = Checkout::find($id);
+                $checkout = Checkout::findOrFail($id);
 
-            // Check if the checkout is not paid
-            if ($checkout->status !== "paid") {
-                $group = $checkout->group;
-                $student = $group->students()->where($checkout->student)->first();
-                $teacher = $group->teacher;
-                $admin = User::where("role", "numidia")->first();
+                // Check if the checkout is not paid
+                if ($checkout->status !== "paid") {
+                    $group = $checkout->group;
+                    $student = $group->students()->where($checkout->student)->first();
+                    $teacher = $group->teacher;
+                    $admin = User::where("role", "numidia")->first();
 
-                // Update checkout details
-                $checkout->paid_price += $paid_price;
-                $checkout->pay_date = Carbon::now();
+                    // Update checkout details
+                    $checkout->paid_price += $paid_price;
+                    $checkout->pay_date = Carbon::now();
 
-                if ($checkout->paid_price >= ($checkout->price - $checkout->discount)) {
-                    $checkout->status = 'paid';
-                    $group->students()->updateExistingPivot($student->id, [
-                        "nb_session" => $student->pivot->nb_session +$checkout->nb_session,
+                    if ($checkout->paid_price >= ($checkout->price - $checkout->discount)) {
+                        $checkout->status = 'paid';
+                        $group->students()->updateExistingPivot($student->id, [
+                            "nb_session" => $student->pivot->nb_session + $checkout->nb_session,
+                        ]);
+                    } else {
+                        $checkout->status = 'paying';
+                    }
+
+
+
+                    // Save the checkout
+                    $checkout->save();
+
+                    // Update the total amount paid
+                    $total += $paid_price;
+                    $receipt->save();
+                    // Save the receipt and related services
+                    $receipt->services()->save(ReceiptService::create([
+                        'text' => $group->name . ' ' . $teacher->name . ' ' . $group->type,
+                        'price' => $paid_price,
+                        'receipt_id' => $receipt->id,
+                    ]));
+
+                    // Update the student's debt for the group
+                    $student->groups()->updateExistingPivot($group->id, [
+                        'debt' => $student->groups()->where('group_id', $group->id)->first()->pivot->debt - $paid_price
                     ]);
-                } else {
-                    $checkout->status = 'paying';
+                }
+            }
+
+            // If total is non-zero, finalize the receipt and send notifications
+            if ($total != 0) {
+                // Update teacher's wallet
+                $data = ["amount" => ($checkout->teacher_percentage * $total) / 100, "user" => $teacher->user];
+                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+                // Update admin's wallet
+                $data = ["amount" => ((100 - $checkout->teacher_percentage) * $total) / 100, "user" => $admin];
+                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+                // Update student's wallet
+                $data = ["amount" => $total, "user" => $student->user];
+                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                $receipt->total = $total;
+                $receipt->user_id = $student->user->id;
+                $receipt->employee_id = $user->id;
+                $receipt->save();
+                $receipt->load(['user', 'employee', 'services']);
+
+                // Notify admins about the payment
+                $admins = User::where('role', "numidia")->get();
+                foreach ($admins as $receiver) {
+                    Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                        ->post(env('AUTH_API') . '/api/notifications', [
+                            'client_id' => env('CLIENT_ID'),
+                            'client_secret' => env('CLIENT_SECRET'),
+                            'type' => "success",
+                            'title' => "New Payment",
+                            'content' => "The student: " . $student->user->name . " has paid the total: " . $total . ".00 DA",
+                            'displayed' => false,
+                            'id' => $receiver->id,
+                            'department' => env('DEPARTMENT'),
+                        ]);
                 }
 
-
-
-                // Save the checkout
-                $checkout->save();
-
-                // Update the total amount paid
-                $total += $paid_price;
-                $receipt->save();
-                // Save the receipt and related services
-                $receipt->services()->save(ReceiptService::create([
-                    'text' => $group->name . ' ' . $teacher->name . ' ' . $group->type,
-                    'price' => $paid_price,
-                    'receipt_id'=>$receipt->id,
-                ]));
-
-                // Update the student's debt for the group
-                $student->groups()->updateExistingPivot($group->id, [
-                    'debt' => $student->groups()->where('group_id', $group->id)->first()->pivot->debt - $paid_price
-                ]);
-            }
-        }
-
-        // If total is non-zero, finalize the receipt and send notifications
-        if ($total != 0) {
-            // Update teacher's wallet
-            $data = ["amount" => ($checkout->teacher_percentage * $total) / 100, "user" => $teacher->user];
-            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
-            // Update admin's wallet
-            $data = ["amount" => ((100 - $checkout->teacher_percentage) * $total) / 100, "user" => $admin];
-            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
-            // Update student's wallet
-            $data = ["amount" => $total, "user" => $student->user];
-            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                ->post(env('AUTH_API') . '/api/wallet/add', $data);
-            $receipt->total = $total;
-            $receipt->user_id = $student->user->id;
-            $receipt->employee_id = $user->id;
-            $receipt->save();
-            $receipt->load(['user', 'employee', 'services']);
-
-            // Notify admins about the payment
-            $admins = User::where('role', "numidia")->get();
-            foreach ($admins as $receiver) {
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                    ->post(env('AUTH_API') . '/api/notifications', [
-                        'client_id' => env('CLIENT_ID'),
-                        'client_secret' => env('CLIENT_SECRET'),
-                        'type' => "success",
-                        'title' => "New Payment",
-                        'content' => "The student: " . $student->user->name . " has paid the total: " . $total . ".00 DA",
-                        'displayed' => false,
-                        'id' => $receiver->id,
-                        'department' => env('DEPARTMENT'),
-                    ]);
+                // Return the receipt as JSON response
+                return response()->json($receipt, 200);
             }
 
-            // Return the receipt as JSON response
-            return response()->json($receipt, 200);
-        }
-
-        // Return a response indicating no payments were made
-        return response()->json(['message' => 'No payments were made'], 400);
+            // Return a response indicating no payments were made
+            return response()->json(['message' => 'No payments were made'], 400);
+        });
     }
 
 
@@ -209,80 +212,82 @@ class CheckoutController extends Controller
             'groups' => ['array'],
         ]);
 
-        // Initialize variables
-        $user = User::find($request->user["id"]);
-        $total = 0;
-        $hasPayment = false;
+        return DB::transaction(function () use ($request, $student_id) {
+            // Initialize variables
+            $user = User::findOrFail($request->user["id"]);
+            $total = 0;
+            $hasPayment = false;
 
-        $student = Student::findOrFail($student_id);
-        // Create a new receipt
-        $receipt = new Receipt([
-            "total" => $total,
-            "type" => "sessions",
-            'employee_id' => $user->id,
-            'user_id' => $student->user->id,
-        ]);
+            $student = Student::findOrFail($student_id);
+            // Create a new receipt
+            $receipt = new Receipt([
+                "total" => $total,
+                "type" => "sessions",
+                'employee_id' => $user->id,
+                'user_id' => $student->user->id,
+            ]);
 
-        // Process each group
-        foreach ($request->groups as $groupData) {
-            $paid_price = $groupData['paid_price'];
-            $nb_paid_session = $groupData['nb_paid_session'];
-            $group = Group::findOrFail($groupData['id']);
+            // Process each group
+            foreach ($request->groups as $groupData) {
+                $paid_price = $groupData['paid_price'];
+                $nb_paid_session = $groupData['nb_paid_session'];
+                $group = Group::findOrFail($groupData['id']);
 
-            // Check if the student has no remaining debt for the group
-            $pivot = $student->groups()->where('group_id', $group->id)->first()->pivot;
-            if ($pivot->debt <= 0) {
-                $hasPayment = true;
+                // Check if the student has no remaining debt for the group
+                $pivot = $student->groups()->where('group_id', $group->id)->first()->pivot;
+                if ($pivot->debt <= 0) {
+                    $hasPayment = true;
 
-                // Update the student's wallet
-                $data = ["amount" => $paid_price, "user" => $student->user];
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                    // Update the student's wallet
+                    $data = ["amount" => $paid_price, "user" => $student->user];
+                    Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                        ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
-                // Update the receipt and total
-                $total += $paid_price;
-                $service = ReceiptService::create([
-                    'text' => $group->name,
-                    'price' => $paid_price,
-                    'qte' => $nb_paid_session,
-                    'receipt_id' => $receipt->id,
-                ]);
-
-                // Update student's group pivot table
-                $student->groups()->updateExistingPivot($group->id, [
-                    'nb_paid_session' => $pivot->nb_paid_session + $nb_paid_session,
-                ]);
-            }
-        }
-
-        // Finalize receipt and send notifications if any payments were made
-        if ($hasPayment) {
-            $receipt->total = $total;
-            $receipt->save();
-            $receipt->load('user', 'services'); // Load related user and services
-
-            // Notify admins about the payment
-            $admins = User::where('role', "numidia")->get();
-            foreach ($admins as $receiver) {
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
-                    ->post(env('AUTH_API') . '/api/notifications', [
-                        'client_id' => env('CLIENT_ID'),
-                        'client_secret' => env('CLIENT_SECRET'),
-                        'type' => "success",
-                        'title' => "New Payment",
-                        'content' => "The student: " . $student->user->name . " has paid the total: " . $total . ".00 DA",
-                        'displayed' => false,
-                        'id' => $receiver->id,
-                        'department' => env('DEPARTMENT'),
+                    // Update the receipt and total
+                    $total += $paid_price;
+                    $service = ReceiptService::create([
+                        'text' => $group->name,
+                        'price' => $paid_price,
+                        'qte' => $nb_paid_session,
+                        'receipt_id' => $receipt->id,
                     ]);
+
+                    // Update student's group pivot table
+                    $student->groups()->updateExistingPivot($group->id, [
+                        'nb_paid_session' => $pivot->nb_paid_session + $nb_paid_session,
+                    ]);
+                }
             }
 
-            // Return the receipt as JSON response
-            return response()->json($receipt, 200);
-        }
+            // Finalize receipt and send notifications if any payments were made
+            if ($hasPayment) {
+                $receipt->total = $total;
+                $receipt->save();
+                $receipt->load('user', 'services'); // Load related user and services
 
-        // Return a response indicating no payments were made
-        return response()->json(['message' => 'No payments were made'], 400);
+                // Notify admins about the payment
+                $admins = User::where('role', "numidia")->get();
+                foreach ($admins as $receiver) {
+                    Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                        ->post(env('AUTH_API') . '/api/notifications', [
+                            'client_id' => env('CLIENT_ID'),
+                            'client_secret' => env('CLIENT_SECRET'),
+                            'type' => "success",
+                            'title' => "New Payment",
+                            'content' => "The student: " . $student->user->name . " has paid the total: " . $total . ".00 DA",
+                            'displayed' => false,
+                            'id' => $receiver->id,
+                            'department' => env('DEPARTMENT'),
+                        ]);
+                }
+
+                // Return the receipt as JSON response
+                return response()->json($receipt, 200);
+            }
+
+            // Return a response indicating no payments were made
+            return response()->json(['message' => 'No payments were made'], 400);
+        });
     }
 
 
@@ -297,16 +302,18 @@ class CheckoutController extends Controller
             'teacher_percentage' => ['required', 'string'],
             'notes' => ['required', 'string'],
         ]);
-        $checkout = Checkout::findOrFail($id);
-        $checkout->update([
-            'status' => $request->status,
-            'discount' => $request->discount,
-            'price' => $request->price,
-            'pay_date' => $request->pay_date,
-            'teacher_percentage' => $request->teacher_percentage,
-            'notes' => $request->notes,
-        ]);
+        return DB::transaction(function () use ($request, $id) {
+            $checkout = Checkout::findOrFail($id);
+            $checkout->update([
+                'status' => $request->status,
+                'discount' => $request->discount,
+                'price' => $request->price,
+                'pay_date' => $request->pay_date,
+                'teacher_percentage' => $request->teacher_percentage,
+                'notes' => $request->notes,
+            ]);
 
-        return response()->json(200);
+            return response()->json(200);
+        });
     }
 }

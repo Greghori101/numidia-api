@@ -50,7 +50,7 @@ class TeacherController extends Controller
     public function show(Request $request, $id)
     {
         $month =  $request->query('month', 1);
-        $teacher = Teacher::find($id);
+        $teacher = Teacher::findOrFail($id);
         $teacher->load(['user', 'groups.level', 'groups.presences' => function ($query) use ($month) {
             $query->where('presences.month', $month);
         }, 'groups.students.checkouts' => function ($query) use ($month) {
@@ -67,12 +67,12 @@ class TeacherController extends Controller
             'explanation' => ['required', 'string'],
         ]);
         $explanation = $request->explanation;
-        $session = Session::find($id);
+        $session = Session::findOrFail($id);
         $session->state = 'rejected';
     }
     public function  approve_session($id)
     {
-        $session = Session::find($id);
+        $session = Session::findOrFail($id);
         $session->state = 'approved';
     }
 

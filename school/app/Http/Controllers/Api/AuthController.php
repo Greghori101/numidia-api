@@ -13,52 +13,75 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
 
     public function create_user_department(Request $request)
     {
-        $user = User::create([
-            'id' => $request->id,
-            'email' => $request->email,
-            'name' => $request->name,
-            'role' => $request->role,
-            'phone_number' => $request->phone_number,
-            'gender' => $request->gender,
+        $request->validate([
+            'id' => ['required', 'uuid', 'unique:users,id'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'name' => ['required', 'string', 'max:255'],
+            'role' => ['required', 'in:student,supervisor'],
+            'phone_number' => ['required', 'string', 'max:15'],
+            'gender' => ['required', 'in:male,female,other'],
+            'level_id' => ['required_if:role,student', 'exists:levels,id'],
         ]);
-        if ($user->role == 'student') {
-            $level = Level::find($request->level_id);
-            $student = new Student();
-            $user->student()->save($student);
-            $level->students()->save($student);
-        } elseif ($user->role == 'supervisor') {
-            $user->supervisor()->save(new Supervisor());
-        }
+        return DB::transaction(function () use ($request) {
+            $user = User::create([
+                'id' => $request->id,
+                'email' => $request->email,
+                'name' => $request->name,
+                'role' => $request->role,
+                'phone_number' => $request->phone_number,
+                'gender' => $request->gender,
+            ]);
+            if ($user->role == 'student') {
+                $level = Level::findOrFail($request->level_id);
+                $student = new Student();
+                $user->student()->save($student);
+                $level->students()->save($student);
+            } elseif ($user->role == 'supervisor') {
+                $user->supervisor()->save(new Supervisor());
+            }
+        });
     }
 
     public function create_user(Request $request, $id)
     {
-        $user = User::create([
-            'id' => $id,
-            'email' => $request->email,
-            'name' => $request->name,
-            'role' => $request->role,
-            'phone_number' => $request->phone_number,
-            'gender' => $request->gender,
+        $request->validate([
+            'id' => ['required', 'uuid', 'unique:users,id'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'name' => ['required', 'string', 'max:255'],
+            'role' => ['required', 'in:student,supervisor'],
+            'phone_number' => ['required', 'string', 'max:15'],
+            'gender' => ['required', 'in:male,female,other'],
+            'level_id' => ['required_if:role,student', 'exists:levels,id'],
         ]);
-        if ($user->role == 'student') {
-            $level = Level::find($request->level_id);
-            $student = new Student();
-            $user->student()->save($student);
-            $level->students()->save($student);
-        } elseif ($user->role == 'supervisor') {
-            $user->supervisor()->save(new Supervisor());
-        }
+        return DB::transaction(function () use ($request, $id) {
+            $user = User::create([
+                'id' => $id,
+                'email' => $request->email,
+                'name' => $request->name,
+                'role' => $request->role,
+                'phone_number' => $request->phone_number,
+                'gender' => $request->gender,
+            ]);
+            if ($user->role == 'student') {
+                $level = Level::findOrFail($request->level_id);
+                $student = new Student();
+                $user->student()->save($student);
+                $level->students()->save($student);
+            } elseif ($user->role == 'supervisor') {
+                $user->supervisor()->save(new Supervisor());
+            }
+        });
     }
     public function verify_user_existence(Request $request, $id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
         if ($user) {
             return response()->json(['message' => "found"], 200);
         } else {
@@ -76,61 +99,64 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users',],
             'password' => ['required', 'confirmed'],
         ]);
-        $request->merge([
-            'role' => strtolower($request->role),
-        ]);
 
-        $user = User::create([
-            'email' => $request->email,
-            'name' => $request->name,
-            'phone_number' => $request->phone_number,
-            'role' => $request->role,
-            'gender' => $request->gender,
-        ]);
-
-        if ($user->role == 'teacher') {
-            $user->teacher()->save(new Teacher([
-                'modules' => implode("|", $request->modules),
-                'levels' => implode("|", $request->levels),
-                'percentage' => $request->percentage,
-            ]));
-        } elseif ($user->role == 'student') {
-            $level = Level::find($request->level_id);
-            $student = new Student();
-            $user->student()->save($student);
-            $level->students()->save($student);
-        } elseif ($user->role == 'supervisor') {
-            $user->supervisor()->save(new Supervisor());
-        }
-
-
-        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-            ->post(env('AUTH_API') . '/api/register', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                'id' => $user->id,
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => $request->password,
+        return DB::transaction(function () use ($request) {
+            $request->merge([
+                'role' => strtolower($request->role),
             ]);
-        $users = User::where('role', '<>', "student")
-            ->where('role', '<>', "teacher")
-            ->where('role', '<>', "supervisor")
-            ->get();
-        foreach ($users as $reciever) {
+
+            $user = User::create([
+                'email' => $request->email,
+                'name' => $request->name,
+                'phone_number' => $request->phone_number,
+                'role' => $request->role,
+                'gender' => $request->gender,
+            ]);
+
+            if ($user->role == 'teacher') {
+                $user->teacher()->save(new Teacher([
+                    'modules' => implode("|", $request->modules),
+                    'levels' => implode("|", $request->levels),
+                    'percentage' => $request->percentage,
+                ]));
+            } elseif ($user->role == 'student') {
+                $level = Level::find($request->level_id);
+                $student = new Student();
+                $user->student()->save($student);
+                $level->students()->save($student);
+            } elseif ($user->role == 'supervisor') {
+                $user->supervisor()->save(new Supervisor());
+            }
+
+
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/notifications', [
+                ->post(env('AUTH_API') . '/api/register', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
-                    'type' => "success",
-                    'title' => "New Registration",
-                    'content' => $user->name . " have been registred to numidia platform",
-                    'displayed' => false,
-                    'id' => $reciever->id,
-                    'department' => env('DEPARTMENT'),
+                    'id' => $user->id,
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'password' => $request->password,
                 ]);
-        }
-        return response()->json($response->body(), 200);
+            $users = User::where('role', '<>', "student")
+                ->where('role', '<>', "teacher")
+                ->where('role', '<>', "supervisor")
+                ->get();
+            foreach ($users as $reciever) {
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/notifications', [
+                        'client_id' => env('CLIENT_ID'),
+                        'client_secret' => env('CLIENT_SECRET'),
+                        'type' => "success",
+                        'title' => "New Registration",
+                        'content' => $user->name . " have been registred to numidia platform",
+                        'displayed' => false,
+                        'id' => $reciever->id,
+                        'department' => env('DEPARTMENT'),
+                    ]);
+            }
+            return response()->json($response->body(), 200);
+        });
     }
     public function login(Request $request)
     {

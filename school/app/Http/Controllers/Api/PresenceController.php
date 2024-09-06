@@ -15,6 +15,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Models\User;
 
+use Illuminate\Support\Facades\DB;
+
 class PresenceController extends Controller
 {
     public function sessions(Request $request)
@@ -93,39 +95,41 @@ class PresenceController extends Controller
             'presence' => ['required'],
             'student' => ['required'],
         ]);
-        $presence = Presence::find($request->presence);
+        return DB::transaction(function () use ($request) {
+            $presence = Presence::findOrFail($request->presence);
 
-        if ($presence) {
-            $presence->students()->syncWithoutDetaching([$request->student => ['status' => 'present']]);
-        }
-
-        $student = Student::with('groups')->find($request->student,);
-        foreach ($student->groups as $group) {
-            if ($group->pivot->debt > 0) {
-                return response()->json(['message' => 'this student :' . $student->user->name . ' has debt'], 200);
+            if ($presence) {
+                $presence->students()->syncWithoutDetaching([$request->student => ['status' => 'present']]);
             }
-        }
-        $status = $student->presences()
-            ->orderBy('created_at', 'desc')
-            ->take(2)
-            ->get()
-            ->filter(function ($presence) use ($group) {
-                return $presence->pivot->status === 'absent' && $presence->group_id === $group->id;
-            })
-            ->count() !== 2;
-        if (!$status) {
-            return response()->json(['message' => 'this student :' . $student->user->name . ' has too many absence'], 200);
-        }
-        $group = $student->groups()->where($presence->group_id)->first();
-        if ($group->nb_session = 1) {
-            return response()->json(['message' => 'this student :' . $student->user->name . ' left with the last the session in group :' . $group->module], 200);
-        } else if ($group->nb_session == 0) {
-            return response()->json(['message' => 'this student :' . $student->user->name . ' has no sessions left in group :' . $group->module], 200);
-        } else if ($group->nb_session < 0) {
-            return response()->json(['message' => 'this student :' . $student->user->name . ' has debt in group :' . $group->module], 200);
-        }
 
-        return response()->json(200);
+            $student = Student::with('groups')->findOrFail($request->student,);
+            foreach ($student->groups as $group) {
+                if ($group->pivot->debt > 0) {
+                    return response()->json(['message' => 'this student :' . $student->user->name . ' has debt'], 200);
+                }
+            }
+            $status = $student->presences()
+                ->orderBy('created_at', 'desc')
+                ->take(2)
+                ->get()
+                ->filter(function ($presence) use ($group) {
+                    return $presence->pivot->status === 'absent' && $presence->group_id === $group->id;
+                })
+                ->count() !== 2;
+            if (!$status) {
+                return response()->json(['message' => 'this student :' . $student->user->name . ' has too many absence'], 200);
+            }
+            $group = $student->groups()->where($presence->group_id)->first();
+            if ($group->nb_session = 1) {
+                return response()->json(['message' => 'this student :' . $student->user->name . ' left with the last the session in group :' . $group->module], 200);
+            } else if ($group->nb_session == 0) {
+                return response()->json(['message' => 'this student :' . $student->user->name . ' has no sessions left in group :' . $group->module], 200);
+            } else if ($group->nb_session < 0) {
+                return response()->json(['message' => 'this student :' . $student->user->name . ' has debt in group :' . $group->module], 200);
+            }
+
+            return response()->json(200);
+        });
     }
     public function remove_presence(Request $request)
     {
@@ -133,68 +137,72 @@ class PresenceController extends Controller
             'presence' => ['required'],
             'student' => ['required'],
         ]);
-        $presence = Presence::find($request->presence);
+        return DB::transaction(function () use ($request) {
+            $presence = Presence::findOrFail($request->presence);
 
-        if ($presence) {
-            $presence->students()->syncWithoutDetaching([$request->student => ['status' => 'absent']]);
-        }
+            if ($presence) {
+                $presence->students()->syncWithoutDetaching([$request->student => ['status' => 'absent']]);
+            }
 
 
-        return response()->json([], 200);
+            return response()->json([], 200);
+        });
     }
 
-    public function presences(Request $request)
+    public function presences()
     {
-        $presences = Presence::all();
+        return DB::transaction(function () {
+            $presences = Presence::all();
 
-        foreach ($presences as $presence) {
-            if ($presence->status != "canceled" && $presence->status != "ended") {
-                if ($presence->starts_at <= Carbon::now() && Carbon::now() <= $presence->ends_at) {
-                    $presence->update(["status" => "started"]);
-                } elseif (Carbon::now() > $presence->ends_at) {
-                    $presence->update(["status" => "ended"]);
+            foreach ($presences as $presence) {
+                if ($presence->status != "canceled" && $presence->status != "ended") {
+                    if ($presence->starts_at <= Carbon::now() && Carbon::now() <= $presence->ends_at) {
+                        $presence->update(["status" => "started"]);
+                    } elseif (Carbon::now() > $presence->ends_at) {
+                        $presence->update(["status" => "ended"]);
 
-                    $group = Group::find($presence->group_id);
-                    if ($presence->type !== "free") {
-                        $group->update([
-                            "current_nb_session" => $group->current_nb_session + 1,
-                        ]);
-                    }
+                        $group = Group::findOrFail($presence->group_id);
+                        if ($presence->type !== "free") {
+                            $group->update([
+                                "current_nb_session" => $group->current_nb_session + 1,
+                            ]);
+                        }
 
-                    foreach ($group->students as $student) {
+                        foreach ($group->students as $student) {
 
-                        $status = $student->presences()
-                            ->orderBy('created_at', 'desc')
-                            ->take(2)
-                            ->get()
-                            ->filter(function ($presence) use ($group) {
-                                return $presence->pivot->status === 'absent' && $presence->group_id === $group->id;
-                            })
-                            ->count() !== 2;
+                            $status = $student->presences()
+                                ->orderBy('created_at', 'desc')
+                                ->take(2)
+                                ->get()
+                                ->filter(function ($presence) use ($group) {
+                                    return $presence->pivot->status === 'absent' && $presence->group_id === $group->id;
+                                })
+                                ->count() !== 2;
 
-                        if ($student->pivot->status === "active" && $status) {
+                            if ($student->pivot->status === "active" && $status) {
 
-                            if ($presence->type !== "free") {
-                                $group->students()->updateExistingPivot($student->id, [
-                                    "nb_session" => $student->pivot->nb_session - 1,
-                                ]);
+                                if ($presence->type !== "free") {
+                                    $group->students()->updateExistingPivot($student->id, [
+                                        "nb_session" => $student->pivot->nb_session - 1,
+                                    ]);
+                                }
+
+                                if ($group->current_nb_session > $group->nb_session) {
+                                    $group->update([
+                                        "current_nb_session" =>   $group->type === "dawarat" ? $group->current_nb_session : 1,
+                                        'current_month' => $group->type === "dawarat" ? $group->current_month : $group->current_month + 1,
+                                    ]);
+                                }
+                            } else if (!$status) {
+                                $student->groups()->updateExistingPivot($group->id, ['status' => 'stopped', 'last_session' => $group->current_nb_session, 'last_month' => $group->current_month]);
                             }
-
-                            if ($group->current_nb_session > $group->nb_session) {
-                                $group->update([
-                                    "current_nb_session" =>   $group->type === "dawarat" ? $group->current_nb_session : 1,
-                                    'current_month' => $group->type === "dawarat" ? $group->current_month : $group->current_month + 1,
-                                ]);
-                            }
-                        } else if (!$status) {
-                            $student->groups()->updateExistingPivot($group->id, ['status' => 'stopped', 'last_session' => $group->current_nb_session, 'last_month' => $group->current_month]);
                         }
                     }
                 }
             }
-        }
 
-        return response()->json(200);
+            return response()->json(200);
+        });
     }
 
     public function cancel_session(Request $request, $session_id)
@@ -205,51 +213,53 @@ class PresenceController extends Controller
             'ends_at' => ['required'],
         ]);
 
-        $session = Session::find($session_id);
-        $starts_at = Carbon::parse($request->starts_at);
-        $ends_at = Carbon::parse($request->ends_at);
+        return DB::transaction(function () use ($request, $session_id) {
+            $session = Session::findOrFail($session_id);
+            $starts_at = Carbon::parse($request->starts_at);
+            $ends_at = Carbon::parse($request->ends_at);
 
 
-        $presence = Presence::where([
-            'group_id' => $request->group_id,
-            'starts_at' => $starts_at,
-            'ends_at' => $ends_at,
-        ])->first();
+            $presence = Presence::where([
+                'group_id' => $request->group_id,
+                'starts_at' => $starts_at,
+                'ends_at' => $ends_at,
+            ])->first();
 
-        if (!$presence) {
-            if ($session->repeating != "once") {
-                $session->exceptions()->save(new ExceptionSession(['date' => $starts_at]));
-                $group = Group::find($request->group_id);
-                $session = Session::create([
-                    "classroom" => $session->classroom,
-                    "starts_at" => $starts_at,
-                    "ends_at" => $ends_at,
-                    "repeating" => "once",
-                    "status" => "canceled",
-                ]);
-                $group->sessions()->save($session);
-            } else {
-                $session->update(["status" => "canceled"]);
+            if (!$presence) {
+                if ($session->repeating != "once") {
+                    $session->exceptions()->save(new ExceptionSession(['date' => $starts_at]));
+                    $group = Group::findOrFail($request->group_id);
+                    $session = Session::create([
+                        "classroom" => $session->classroom,
+                        "starts_at" => $starts_at,
+                        "ends_at" => $ends_at,
+                        "repeating" => "once",
+                        "status" => "canceled",
+                    ]);
+                    $group->sessions()->save($session);
+                } else {
+                    $session->update(["status" => "canceled"]);
+                }
+            } else if ($presence->status != "ended") {
+                if ($session->repeating != "once") {
+                    $session->exceptions()->save(new ExceptionSession(['date' => $starts_at]));
+                    $group = Group::findOrFail($request->group_id);
+                    $session = Session::create([
+                        "classroom" => $session->classroom,
+                        "starts_at" => $starts_at,
+                        "ends_at" => $ends_at,
+                        "repeating" => "once",
+                        "status" => "canceled",
+                    ]);
+                    $group->sessions()->save($session);
+                } else {
+                    $session->update(["status" => "canceled"]);
+                }
+                $presence->update(['status' => 'canceled', "session_id" => $session->id]);
             }
-        } else if ($presence->status != "ended") {
-            if ($session->repeating != "once") {
-                $session->exceptions()->save(new ExceptionSession(['date' => $starts_at]));
-                $group = Group::find($request->group_id);
-                $session = Session::create([
-                    "classroom" => $session->classroom,
-                    "starts_at" => $starts_at,
-                    "ends_at" => $ends_at,
-                    "repeating" => "once",
-                    "status" => "canceled",
-                ]);
-                $group->sessions()->save($session);
-            } else {
-                $session->update(["status" => "canceled"]);
-            }
-            $presence->update(['status' => 'canceled', "session_id" => $session->id]);
-        }
 
-        return response()->json(200);
+            return response()->json(200);
+        });
     }
 
     public function presence_sheets(Request $request)
@@ -283,40 +293,42 @@ class PresenceController extends Controller
             'starts_at' => ['required'],
             'ends_at' => ['required'],
         ]);
-        $group_id = $request->group_id;
-        $session_id = $request->session_id;
-        $session = Session::findOrFail($session_id);
-        $starts_at = Carbon::parse($request->starts_at);
-        $ends_at = Carbon::parse($request->ends_at);
-        $group = Group::find($group_id);
-        $presence = Presence::where('starts_at', $starts_at)
-            ->where('ends_at', $ends_at)
-            ->where('group_id', $group_id)
-            ->first();
+        return DB::transaction(function () use ($request) {
+            $group_id = $request->group_id;
+            $session_id = $request->session_id;
+            $session = Session::findOrFail($session_id);
+            $starts_at = Carbon::parse($request->starts_at);
+            $ends_at = Carbon::parse($request->ends_at);
+            $group = Group::findOrFail($group_id);
+            $presence = Presence::where('starts_at', $starts_at)
+                ->where('ends_at', $ends_at)
+                ->where('group_id', $group_id)
+                ->first();
 
-        if (!$presence) {
-            $presence = Presence::create([
-                'group_id' => $group_id,
-                'session_id' => $session_id,
-                'starts_at' => $starts_at,
-                'ends_at' => $ends_at,
-                'month' => $group->current_month,
-                'session_number' => $group->current_nb_session,
-                'type' => $group->type === "revision" || $group->type === "dawarat" ? $group->type  : 'normal',
-                'status' => $session->status,
-            ]);
-        }
-
-        foreach ($group->students as $student) {
-            if ($student->pivot->status === "active") {
-                $group = $student->groups()->where('group_id', $group_id)->first();
-                $type =  $group->pivot->status === "active"  ? ($presence->type === "free" ? "free" : ($group->pivot->debt > 0 ? 'in debt' : 'normal')) : "stopped";
-                $student->presences()->attach([$presence->id => ['status' => 'absent', 'type' => $type]]);
+            if (!$presence) {
+                $presence = Presence::create([
+                    'group_id' => $group_id,
+                    'session_id' => $session_id,
+                    'starts_at' => $starts_at,
+                    'ends_at' => $ends_at,
+                    'month' => $group->current_month,
+                    'session_number' => $group->current_nb_session,
+                    'type' => $group->type === "revision" || $group->type === "dawarat" ? $group->type  : 'normal',
+                    'status' => $session->status,
+                ]);
             }
-        }
 
-        $presence->load('group.teacher.user', 'students.user');
+            foreach ($group->students as $student) {
+                if ($student->pivot->status === "active") {
+                    $group = $student->groups()->where('group_id', $group_id)->first();
+                    $type =  $group->pivot->status === "active"  ? ($presence->type === "free" ? "free" : ($group->pivot->debt > 0 ? 'in debt' : 'normal')) : "stopped";
+                    $student->presences()->attach([$presence->id => ['status' => 'absent', 'type' => $type]]);
+                }
+            }
 
-        return response()->json($presence, 200);
+            $presence->load('group.teacher.user', 'students.user');
+
+            return response()->json($presence, 200);
+        });
     }
 }

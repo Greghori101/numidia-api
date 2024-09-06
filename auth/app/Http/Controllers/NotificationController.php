@@ -32,7 +32,7 @@ class NotificationController extends Controller
 
     public function index(Request $request)
     {
-        $user = User::find($request->user()->id);
+        $user = User::findOrFail($request->user()->id);
         $notify = $user->received_notifications->where('displayed', 0)->count() > 0;
         $notifications = $user->received_notifications()->where('displayed', 0)->get();
         $data = ['notifications' => $notifications, 'notify' => $notify];
@@ -40,19 +40,19 @@ class NotificationController extends Controller
     }
     public function show($id)
     {
-        $notification = Notification::find($id);
+        $notification = Notification::findOrFail($id);
         return $notification;
     }
     public function all(Request $request)
     {
-        $user = User::find($request->user()->id);
+        $user = User::findOrFail($request->user()->id);
         $notifications = $user->received_notifications->all();
 
         return response()->json($notifications,200);
     }
     public function seen($id)
     {
-        $notification = Notification::find($id);
+        $notification = Notification::findOrFail($id);
         $notification->update(['displayed' => true]);
 
         return Response(200);
@@ -60,21 +60,21 @@ class NotificationController extends Controller
 
     public function seen_all(Request $request)
     {
-        $user = User::find($request->user()->id);
+        $user = User::findOrFail($request->user()->id);
         $user->received_notifications()->update(['displayed' => true]);
         return response()->json(200);
     }
 
     public function delete($id)
     {
-        $notification = Notification::find($id);
+        $notification = Notification::findOrFail($id);
         $notification->delete();
 
         return Response(200);
     }
     public function delete_all(Request $request)
     {
-        $user = User::find($request->user()->id);
+        $user = User::findOrFail($request->user()->id);
         $user->received_notifications()->where('displayed', 1)->delete();
 
         return Response(200);

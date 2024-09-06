@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Models\Supervisor;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 
 class ParentController extends Controller
 {
@@ -48,13 +49,8 @@ class ParentController extends Controller
     }
     public function show($id)
     {
-        $parent = Supervisor::where('id', $id)->first();
-        $temp = [];
-        foreach ($parent->students as $student) {
-            $temp[] = $student->user;
-            # code...
-        }
-        $parent['students'] = $temp;
+        $parent = Supervisor::with(['students.user'])->findOrFail($id);
+
         return $parent;
     }
 
@@ -67,28 +63,30 @@ class ParentController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'phone_number' => $request->phone_number,
-            'role' => "student",
-            'gender' => $request->gender,
-        ]);
-        $user->student()->save(new Student());
-
-
-        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-            ->post(env('AUTH_API') . '/api/users/create', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                'id' => $user->id,
+        return DB::transaction(function () use ($request) {
+            $user = User::create([
                 'name' => $request->name,
-                'email' => $request->email,
+                'phone_number' => $request->phone_number,
+                'role' => "student",
+                'gender' => $request->gender,
             ]);
+            $user->student()->save(new Student());
 
 
-        return response()->json(200);
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/users/create', [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'id' => $user->id,
+                    'name' => $request->name,
+                    'email' => $request->email,
+                ]);
+
+
+            return response()->json(200);
+        });
     }
 
     public function students()

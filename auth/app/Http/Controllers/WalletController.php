@@ -12,7 +12,7 @@ class WalletController extends Controller
 {
     public function add(Request $request)
     {
-        $user = User::find($request->user["id"]);
+        $user = User::findOrFail($request->user["id"]);
         $user->wallet->balance += $request['amount'];
         $user->wallet->save();
 
@@ -22,7 +22,7 @@ class WalletController extends Controller
     }
     public function show($id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
         return response()->json($user->wallet, 200);
     }
 
@@ -30,7 +30,7 @@ class WalletController extends Controller
     {
         // Determine the user based on the provided ID or the authenticated user
         if ($id) {
-            $user = User::find($id);
+            $user = User::findOrFail($id);
         } else {
             $user = $request->user();
         }

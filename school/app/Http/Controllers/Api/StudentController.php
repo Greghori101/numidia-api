@@ -10,6 +10,8 @@ use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
+use Illuminate\Support\Facades\DB;
+
 class StudentController extends Controller
 {
 
@@ -33,7 +35,6 @@ class StudentController extends Controller
         $query = Student::query();
         $level = Level::find($levelId);
         if ($level) {
-
             $query = $level->students();
         }
 
@@ -61,7 +62,7 @@ class StudentController extends Controller
 
     public function show($id)
     {
-        $student = Student::with(['level', 'user', 'user.receipts.employee', 'groups.teacher.user'])->find($id);
+        $student = Student::with(['level', 'user', 'user.receipts.employee', 'groups.teacher.user'])->findOrFail($id);
         return $student;
     }
     public function student_group_add(Request $request, $student_id)
@@ -69,95 +70,97 @@ class StudentController extends Controller
         $request->validate([
             'groups' => ['required', 'array'],
         ]);
-        $student = Student::find($student_id);
-        $groups = $request->groups;
+        return DB::transaction(function () use ($request, $student_id) {
+            $student = Student::findOrFail($student_id);
+            $groups = $request->groups;
 
-        foreach ($groups as $group) {
-            $group = (object) $group;
+            foreach ($groups as $group) {
+                $group = (object) $group;
 
-            $checkout = Checkout::create([
-                'price' => $group->price_per_month / $group->nb_session * $group->rest_session,
-                'discount' => $group->discount,
-                'month' => $group->current_month,
-                'teacher_percentage' => $group->percentage,
-                'nb_session' => $group->rest_session,
-            ]);
-            $student->groups()->attach([$group->id => [
-                'first_session' => $group->current_nb_session,
-                'first_month' => $group->current_month,
-                'debt' => ($checkout->price - $checkout->discount),
+                $checkout = Checkout::create([
+                    'price' => $group->price_per_month / $group->nb_session * $group->rest_session,
+                    'discount' => $group->discount,
+                    'month' => $group->current_month,
+                    'teacher_percentage' => $group->percentage,
+                    'nb_session' => $group->rest_session,
+                ]);
+                $student->groups()->attach([$group->id => [
+                    'first_session' => $group->current_nb_session,
+                    'first_month' => $group->current_month,
+                    'debt' => ($checkout->price - $checkout->discount),
+                ]]);
+                $data = ["amount" => (-$checkout->price + $checkout->discount), "user" => $student->user];
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+                $student->checkouts()->save($checkout);
+                $group = Group::findOrFail($group->id);
+                $group->checkouts()->save($checkout);
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/notifications', [
+                        'client_id' => env('CLIENT_ID'),
+                        'client_secret' => env('CLIENT_SECRET'),
+                        'type' => "info",
+                        'title' => "new group members",
+                        'content' => "new student has been added",
+                        'displayed' => false,
+                        'id' => $group->teacher->user->id,
+                        'department' => env('DEPARTMENT'),
+                    ]);
+            }
+
+            return response()->json(200);
+        });
+    }
+    public function student_group_remove($student_id, $group_id)
+    {
+        return DB::transaction(function () use ($student_id, $group_id) {
+            $student = Student::findOrFail($student_id);
+            $group = Group::findOrFail($group_id);
+
+            $rest_session = $group->nb_session - $group->current_nb_session + 1;
+
+
+            $checkoutToRemove = Checkout::where('student_id', $student_id)
+                ->where('group_id', $group->id)
+                ->where('status', 'pending')
+                ->where('paid_price', 0)
+                ->first();
+
+            if ($checkoutToRemove) {
+                $data = ["amount" => ($checkoutToRemove->price - $checkoutToRemove->discount), "user" => $student->user];
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/wallet/add', $data);
+
+                $checkoutToRemove->delete();
+            }
+
+            $student->groups()->syncWithoutDetaching([$group->id => [
+                'last_session' => $group->current_nb_session,
+                'last_month' => $group->current_month,
+                'status' => 'stopped',
+                'debt' => $checkoutToRemove ? $student->groups()->where('group_id', $group_id)->pivot->debt + $checkoutToRemove->price - $checkoutToRemove->discount : $student->groups()->where('group_id', $group_id)->pivot->debt,
+
             ]]);
-            $data = ["amount" => (-$checkout->price + $checkout->discount), "user" => $student->user];
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
-            $student->checkouts()->save($checkout);
-            $group = Group::find($group->id);
-            $group->checkouts()->save($checkout);
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/notifications', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
-                    'type' => "info",
-                    'title' => "new group members",
-                    'content' => "new student has been added",
+                    'type' => "warning",
+                    'title' => "group members",
+                    'content' => "A student has been removed",
                     'displayed' => false,
                     'id' => $group->teacher->user->id,
                     'department' => env('DEPARTMENT'),
                 ]);
-        }
-
-        return response()->json(200);
-    }
-    public function student_group_remove($student_id, $group_id)
-    {
-        $student = Student::find($student_id);
-        $group = Group::find($group_id);
-
-        $rest_session = $group->nb_session - $group->current_nb_session + 1;
-
-
-        $checkoutToRemove = Checkout::where('student_id', $student_id)
-            ->where('group_id', $group->id)
-            ->where('status', 'pending')
-            ->where('paid_price', 0)
-            ->first();
-
-        if ($checkoutToRemove) {
-            $data = ["amount" => ($checkoutToRemove->price - $checkoutToRemove->discount), "user" => $student->user];
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
-            $checkoutToRemove->delete();
-        }
-
-        $student->groups()->syncWithoutDetaching([$group->id => [
-            'last_session' => $group->current_nb_session,
-            'last_month' => $group->current_month,
-            'status' => 'stopped',
-            'debt' => $checkoutToRemove ? $student->groups()->where('group_id', $group_id)->pivot->debt + $checkoutToRemove->price - $checkoutToRemove->discount : $student->groups()->where('group_id', $group_id)->pivot->debt,
-
-        ]]);
-
-        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-            ->post(env('AUTH_API') . '/api/notifications', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                'type' => "warning",
-                'title' => "group members",
-                'content' => "A student has been removed",
-                'displayed' => false,
-                'id' => $group->teacher->user->id,
-                'department' => env('DEPARTMENT'),
-            ]);
-        return response()->json(200);
+            return response()->json(200);
+        });
     }
     public function student_group($id)
     {
-        $student = Student::find($id);
+        $student = Student::findOrFail($id);
         $groups = $student->groups()->with(["teacher.user", "level"])->get();
-
-
 
         return response()->json($groups, 200);
     }
@@ -166,21 +169,18 @@ class StudentController extends Controller
         $search = $request->input('search', '');
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
-        $student = Student::find($id);
+        $student = Student::findOrFail($id);
         $groups = $student->tickets()->with(['dawarat.teacher.user', 'dawarat.level', 'student.user'])->when($search, function ($query) use ($search) {
             return $query->where(function ($subQuery) use ($search) {
                 $subQuery->where('title', 'like', "%$search%")
                     ->orWhere('status', 'like', "%$search%");
             });
         })->orderBy($sortBy, $sortDirection)->get();
-
-
-
         return response()->json($groups, 200);
     }
     public function group_notin_student($id)
     {
-        $student = Student::find($id);
+        $student = Student::findOrFail($id);
         $level = $student->level;
 
         $groups = $level->groups()

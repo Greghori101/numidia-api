@@ -6,11 +6,14 @@ use App\Models\Order;
 use App\Models\Receipt;
 use Illuminate\Http\Request;
 
+use Illuminate\Support\Facades\DB;
 class ReceiptController extends Controller
 {
     public function create_receipt(Request $request)
     {
-        $order = Order::findOrFail($request->order_id);
+
+        return DB::transaction(function () use ($request) {
+             $order = Order::findOrFail($request->order_id);
         $receipt = new Receipt([
             'total' => $request->total,
             'date' => now(),
@@ -21,6 +24,8 @@ class ReceiptController extends Controller
         $receipt->save();
 
         return response()->json(['message' => 'Receipt generated successfully'], 201);
+        });
+       
     }
 
     public function show_receipt($receipt_id)

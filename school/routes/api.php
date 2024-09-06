@@ -271,6 +271,7 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->controller(TicketController::class)
         ->group(function () {
             Route::get('/', 'index');
+            Route::get('/waiting', 'getWaiting');
             Route::get('/{id}', 'show');
             Route::post('/', 'create');
             Route::put('/{id}', 'update');

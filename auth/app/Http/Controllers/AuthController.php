@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Http\Response;
 
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -92,89 +93,94 @@ class AuthController extends Controller
     }
     public function register(Request $request)
     {
-        $user = User::create([
-            'id' => $request->id,
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'code' => Str::upper(Str::random(6)),
-            'phone_number' => $request->phone_number,
-            'gender' => $request->gender,
-        ]);
-
-        $content = Storage::get('default-profile-picture.jpeg');
-
-
-        $bytes = random_bytes(ceil(64 / 2));
-        $hex = bin2hex($bytes);
-        $file_name = substr($hex, 0, 64);
-        $file_url = '/avatars/' .  $file_name . '.jpeg';
-        Storage::put($file_url, $content);
-        $user->profile_picture()->update(['url' => $file_url]);
-
-        $user->wallet()->save(new Wallet());
-        try {
-            $data = [
-                'url' =>
-                env('APP_URL') .
-                    '/api/email/verify?id=' .
-                    $user->id .
-                    '&code=' .
-                    $user->code,
-                'name' => $user->name,
-                'email' => $user->email,
-                'code' => $user->code,
+        return DB::transaction(function () use ($request) {
+            $user = User::create([
+                'id' => $request->id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'code' => Str::upper(Str::random(6)),
                 'phone_number' => $request->phone_number,
                 'gender' => $request->gender,
-            ];
-            Mail::to($user)->queue(new VerifyEmail($data));
-        } catch (\Throwable $th) {
-        }
-        return response()->json($data, 200);
+            ]);
+
+            $content = Storage::get('default-profile-picture.jpeg');
+
+
+            $bytes = random_bytes(ceil(64 / 2));
+            $hex = bin2hex($bytes);
+            $file_name = substr($hex, 0, 64);
+            $file_url = '/avatars/' .  $file_name . '.jpeg';
+            Storage::put($file_url, $content);
+            $user->profile_picture()->update(['url' => $file_url]);
+
+            $user->wallet()->save(new Wallet());
+            try {
+                $data = [
+                    'url' =>
+                    env('APP_URL') .
+                        '/api/email/verify?id=' .
+                        $user->id .
+                        '&code=' .
+                        $user->code,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'code' => $user->code,
+                    'phone_number' => $request->phone_number,
+                    'gender' => $request->gender,
+                ];
+                Mail::to($user)->queue(new VerifyEmail($data));
+            } catch (\Throwable $th) {
+            }
+            return response()->json($data, 200);
+        });
     }
     public function create(Request $request)
     {
-        $password = Str::upper(Str::random(6));
-        $user = User::create([
-            'id' => $request->id,
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($password),
-            'phone_number' => $request->phone_number,
-            'gender' => $request->gender,
-        ]);
 
-        $content = Storage::get('default-profile-picture.jpeg');
-
-
-        $bytes = random_bytes(ceil(64 / 2));
-        $hex = bin2hex($bytes);
-        $file_name = substr($hex, 0, 64);
-        $file_url = '/avatars/' .  $file_name . '.jpeg';
-        Storage::put($file_url, $content);
-        $user->profile_picture()->update(['url' => $file_url]);
-
-
-        $user->wallet()->save(new Wallet());
-        try {
-            $data = [
-                'url' =>
-                env('APP_URL') .
-                    '/api/email/verify?id=' .
-                    $user->id .
-                    '&code=' .
-                    $user->password,
-                'name' => $user->name,
-                'email' => $user->email,
-                'code' => $password,
+        return DB::transaction(function () use ($request) {
+            $password = Str::upper(Str::random(6));
+            $user = User::create([
+                'id' => $request->id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($password),
                 'phone_number' => $request->phone_number,
                 'gender' => $request->gender,
-            ];
-            $user->save();
-            Mail::to($user)->queue(new WelcomeEmail($data));
-        } catch (\Throwable $th) {
-        }
-        return response()->json(200);
+            ]);
+
+            $content = Storage::get('default-profile-picture.jpeg');
+
+
+            $bytes = random_bytes(ceil(64 / 2));
+            $hex = bin2hex($bytes);
+            $file_name = substr($hex, 0, 64);
+            $file_url = '/avatars/' .  $file_name . '.jpeg';
+            Storage::put($file_url, $content);
+            $user->profile_picture()->update(['url' => $file_url]);
+
+
+            $user->wallet()->save(new Wallet());
+            try {
+                $data = [
+                    'url' =>
+                    env('APP_URL') .
+                        '/api/email/verify?id=' .
+                        $user->id .
+                        '&code=' .
+                        $user->password,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'code' => $password,
+                    'phone_number' => $request->phone_number,
+                    'gender' => $request->gender,
+                ];
+                $user->save();
+                Mail::to($user)->queue(new WelcomeEmail($data));
+            } catch (\Throwable $th) {
+            }
+            return response()->json(200);
+        });
     }
     public function update(Request $request, $id = null)
     {
@@ -183,21 +189,23 @@ class AuthController extends Controller
             'phone_number' => ['required', 'string', 'max:10'],
             'gender' => ['required', 'in:male,female'],
         ]);
-        if ($id) {
-            $user = User::find($id);
-        } else {
-            $user = User::find($request->user()->id);
-        }
-        if (!$user) {
-            abort(404);
-        }
-        $user->update([
-            'name' => $request->name,
-            'phone_number' => $request->phone_number,
-            'gender' => $request->gender,
-        ]);
+        return DB::transaction(function () use ($request, $id) {
+            if ($id) {
+                $user = User::find($id);
+            } else {
+                $user = User::find($request->user()->id);
+            }
+            if (!$user) {
+                abort(404);
+            }
+            $user->update([
+                'name' => $request->name,
+                'phone_number' => $request->phone_number,
+                'gender' => $request->gender,
+            ]);
 
-        return response()->json(200);
+            return response()->json(200);
+        });
     }
     public function logout(Request $request)
     {
@@ -217,49 +225,53 @@ class AuthController extends Controller
             'email' => 'required|string',
             'password' => ['required', 'confirmed'],
         ]);
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            abort(404);
-        }
-        if ($request->code != $user->code) {
-            $message = 'wrong code';
-            abort(401, $message);
-        } else {
-            $user->markEmailAsVerified();
-            $user->code = null;
-            $user->password = Hash::make($request->input('password'));
-            $user->save();
-        }
+        return DB::transaction(function () use ($request) {
+            $user = User::where('email', $request->email)->first();
+            if (!$user) {
+                abort(404);
+            }
+            if ($request->code != $user->code) {
+                $message = 'wrong code';
+                abort(401, $message);
+            } else {
+                $user->markEmailAsVerified();
+                $user->code = null;
+                $user->password = Hash::make($request->input('password'));
+                $user->save();
+            }
 
-        return response(200);
+            return response(200);
+        });
     }
     public function forgotpassword(Request $request)
     {
         $request->validate([
             'email' => 'required|string',
         ]);
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            abort(404);
-        }
-        $url = '';
-        $user->code = Str::random(6);
+        return DB::transaction(function () use ($request) {
+            $user = User::where('email', $request->email)->first();
+            if (!$user) {
+                abort(404);
+            }
+            $url = '';
+            $user->code = Str::random(6);
 
-        $user->save();
-        try {
-            //code...
-            // Email the user new password
-            $data = [
-                'name' => $user->name,
-                'email' => $user->email,
-                'code' => $user->code,
-                'url' => $url,
-            ];
-            Mail::to($user)->queue(new ForgotPasswordEmail($data));
-        } catch (\Throwable $th) {
-        }
+            $user->save();
+            try {
+                //code...
+                // Email the user new password
+                $data = [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'code' => $user->code,
+                    'url' => $url,
+                ];
+                Mail::to($user)->queue(new ForgotPasswordEmail($data));
+            } catch (\Throwable $th) {
+            }
 
-        return response(200);
+            return response(200);
+        });
     }
     public function verify(Request $request)
     {
@@ -267,27 +279,29 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email', 'max:255'],
             'code' => ['required', 'string'],
         ]);
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            abort(404);
-        } else {
-            if ($user->hasVerifiedEmail()) {
-                return response()->json('Email Already Verified', 200);
-            } elseif ($request->code == $user->code) {
-                $user->markEmailAsVerified();
-                $user->code = null;
-                $user->save();
-                $data = [
-                    'message' => 'verified',
-                ];
-                return response()->json($data, 200);
+        return DB::transaction(function () use ($request) {
+            $user = User::where('email', $request->email)->first();
+            if (!$user) {
+                abort(404);
             } else {
-                return response()->json(
-                    'the code you have entered is wrong',
-                    403
-                );
+                if ($user->hasVerifiedEmail()) {
+                    return response()->json('Email Already Verified', 200);
+                } elseif ($request->code == $user->code) {
+                    $user->markEmailAsVerified();
+                    $user->code = null;
+                    $user->save();
+                    $data = [
+                        'message' => 'verified',
+                    ];
+                    return response()->json($data, 200);
+                } else {
+                    return response()->json(
+                        'the code you have entered is wrong',
+                        403
+                    );
+                }
             }
-        }
+        });
     }
     public function resent_verification(Request $request)
     {
@@ -363,29 +377,31 @@ class AuthController extends Controller
     }
     public function change_password(Request $request)
     {
-        $user = User::find($request->user()->id);
+        return DB::transaction(function () use ($request) {
+            $user = User::find($request->user()->id);
 
-        $request->validate([
-            'old_password' => 'required',
-            'password' => 'required|confirmed',
-        ]);
+            $request->validate([
+                'old_password' => 'required',
+                'password' => 'required|confirmed',
+            ]);
 
-        if (!Hash::check($request->input('old_password'), $user->password)) {
-            return response()->json(['message' => 'Old password is incorrect'], 401);
-        }
+            if (!Hash::check($request->input('old_password'), $user->password)) {
+                return response()->json(['message' => 'Old password is incorrect'], 401);
+            }
 
-        $user->password = Hash::make($request->input('password'));
-        $user->save();
+            $user->password = Hash::make($request->input('password'));
+            $user->save();
 
-        Notification::create([
-            'type' => "info",
-            'title' => "Password Changed",
-            'content' => "Your password has been changed at " . Carbon::now(),
-            'displayed' => false,
-            'id' => $user->id,
-        ]);
+            Notification::create([
+                'type' => "info",
+                'title' => "Password Changed",
+                'content' => "Your password has been changed at " . Carbon::now(),
+                'displayed' => false,
+                'id' => $user->id,
+            ]);
 
-        return response()->json(['message' => 'Password changed successfully'], 200);
+            return response()->json(['message' => 'Password changed successfully'], 200);
+        });
     }
     public function verify_token(Request $request)
     {
@@ -394,29 +410,31 @@ class AuthController extends Controller
     }
     public function change_profile_picture(Request $request, $id = null)
     {
-        if (!$id) {
-            $id = $request->user()->id;
-        }
-        $user = User::find($id);
-        if ($user->profile_picture && Storage::exists($user->profile_picture->url)) {
-            Storage::delete($user->profile_picture->url);
-        }
+        return DB::transaction(function () use ($request, $id) {
+            if (!$id) {
+                $id = $request->user()->id;
+            }
+            $user = User::find($id);
+            if ($user->profile_picture && Storage::exists($user->profile_picture->url)) {
+                Storage::delete($user->profile_picture->url);
+            }
 
-        $file = $request->file("profile_picture");
+            $file = $request->file("profile_picture");
 
-        if ($file) {
-            $bytes = random_bytes(ceil(64 / 2));
-            $hex = bin2hex($bytes);
-            $file_name = substr($hex, 0, 64);
-            $file_url = '/avatars/' .  $file_name . $file->extension();
-            Storage::put($file_url, file_get_contents($file));
-            $user->profile_picture()->update(['url' => $file_url]);
-            return response()->json(['message' => 'Profile picture updated successfully'], Response::HTTP_OK);
-        } else {
+            if ($file) {
+                $bytes = random_bytes(ceil(64 / 2));
+                $hex = bin2hex($bytes);
+                $file_name = substr($hex, 0, 64);
+                $file_url = '/avatars/' .  $file_name . $file->extension();
+                Storage::put($file_url, file_get_contents($file));
+                $user->profile_picture()->update(['url' => $file_url]);
+                return response()->json(['message' => 'Profile picture updated successfully'], Response::HTTP_OK);
+            } else {
 
-            return response()->json(['message' => 'Profile picture was missing, please upload image'], Response::HTTP_BAD_REQUEST);
-        }
-        return response()->json(['message' => 'Profile picture changed successfully'], 200);
+                return response()->json(['message' => 'Profile picture was missing, please upload image'], Response::HTTP_BAD_REQUEST);
+            }
+            return response()->json(['message' => 'Profile picture changed successfully'], 200);
+        });
     }
     public function users(Request $request)
     {
@@ -427,6 +445,17 @@ class AuthController extends Controller
     public function getFile(Request $request)
     {
         $url = $request->url;
+        if (Storage::exists($url)) {
+            return Storage::get($url);
+        } else {
+            return response()->json(Response::HTTP_NOT_FOUND);
+        }
+    }
+
+    public function getFileById($id)
+    {
+        $user  = User::findOrFail($id);
+        $url = $user->profile_picture->url;
         if (Storage::exists($url)) {
             return Storage::get($url);
         } else {

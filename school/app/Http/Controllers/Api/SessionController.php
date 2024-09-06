@@ -9,17 +9,19 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
+use Illuminate\Support\Facades\DB;
+
 class SessionController extends Controller
 {
     public function index()
     {
-        $sessions = Session::with(["exceptions", "group.teacher.user","group.level"])->get();
+        $sessions = Session::with(["exceptions", "group.teacher.user", "group.level"])->get();
         return response()->json($sessions, 200);
     }
 
     public function show($id)
     {
-        $session = Session::with(['group', 'exceptions'])->find($id);
+        $session = Session::with(['group', 'exceptions'])->findOrFail($id);
         return response()->json($session, 200);
     }
 
@@ -29,14 +31,14 @@ class SessionController extends Controller
             'date' => ['required', 'date'],
         ]);
 
-        $session = Session::find($id);
+        $session = Session::findOrFAil($id);
         $session->exceptions()->save(new ExceptionSession(['date' => Carbon::parse($request->date)]));
         return response()->json($session, 200);
     }
 
     public function delete($id)
     {
-        $session = Session::find($id);
+        $session = Session::findOrFail($id);
 
         $session->delete();
 
@@ -45,36 +47,39 @@ class SessionController extends Controller
 
     public function update(Request $request, $id)
     {
-        $session = Session::find($id);
+
         $request->validate([
             'classroom' => ['required'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date'],
         ]);
-        $session->update([
-            'classroom' => $request->classroom,
-            'starts_at' => Carbon::parse($request->starts_at),
-            'ends_at' => Carbon::parse($request->ends_at),
-        ]);
-        $session->save();
+        return DB::transaction(function () use ($request, $id) {
+            $session = Session::findOrFail($id);
+            $session->update([
+                'classroom' => $request->classroom,
+                'starts_at' => Carbon::parse($request->starts_at),
+                'ends_at' => Carbon::parse($request->ends_at),
+            ]);
+            $session->save();
 
-        foreach ($session->group->students as $student) {
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/notifications', [
-                    'client_id' => env('CLIENT_ID'),
-                    'client_secret' => env('CLIENT_SECRET'),
-                    'type' => "info",
-                    'title' => " Session updated",
-                    'content' => "new session has been created at " . Carbon::parse($request->starts_at),
-                    'displayed' => false,
-                    'id' => $student->user->id,
-                    'department' => env('DEPARTMENT'),
-                ]);
-        }
+            foreach ($session->group->students as $student) {
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/notifications', [
+                        'client_id' => env('CLIENT_ID'),
+                        'client_secret' => env('CLIENT_SECRET'),
+                        'type' => "info",
+                        'title' => " Session updated",
+                        'content' => "new session has been created at " . Carbon::parse($request->starts_at),
+                        'displayed' => false,
+                        'id' => $student->user->id,
+                        'department' => env('DEPARTMENT'),
+                    ]);
+            }
 
-        return response()->json(200);
+            return response()->json(200);
+        });
     }
-    
+
     public function all_details()
     {
         $sessions = Session::with(["exceptions", "group.teacher.user", "group.level"])->get();

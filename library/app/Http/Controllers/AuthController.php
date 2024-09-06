@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
+use Illuminate\Support\Facades\DB;
+
 class AuthController extends Controller
 {
 
@@ -41,29 +43,32 @@ class AuthController extends Controller
         return response()->json($response->body(), 200);
     }
 
-    public function create_user(Request $request,$id)
+    public function create_user(Request $request, $id)
     {
-        $user = User::create([
-            'id' => $id,
-            'email' => $request->email,
-            'name' => $request->name,
-            'role' => $request->role,
-            'phone_number' => $request->phone_number,
-            'gender' => $request->gender,
-        ]);
 
-        $address = new Address([
-            'city' => $request->city,
-            'wilaya' => $request->wilaya,
-            'street' => $request->street,
-        ]);
+        return DB::transaction(function () use ($request, $id) {
+            $user = User::create([
+                'id' => $id,
+                'email' => $request->email,
+                'name' => $request->name,
+                'role' => $request->role,
+                'phone_number' => $request->phone_number,
+                'gender' => $request->gender,
+            ]);
 
-        $user->address()->save($address);
+            $address = new Address([
+                'city' => $request->city,
+                'wilaya' => $request->wilaya,
+                'street' => $request->street,
+            ]);
+
+            $user->address()->save($address);
+        });
     }
 
     public function verify_user_existence(Request $request, $id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
         if ($user) {
             return response()->json(['message' => "found"], 200);
         } else {

@@ -105,7 +105,6 @@ class FinancialController extends Controller
 
         return response()->json($data, 200);
     }
-
     public function get_employee_receipts(Request $request)
     {
         // Validate request parameters
@@ -322,7 +321,6 @@ class FinancialController extends Controller
 
         return response()->json($data, 200);
     }
-
     public function employee(Request $request)
     {
         $request->validate([
@@ -364,8 +362,6 @@ class FinancialController extends Controller
         $data['fees_not_paid'] = -$totalFeeInscriptionsNotPaid;
         return response()->json($data, 200);
     }
-
-
     public function expense()
     {
         $expenses = Expense::selectRaw('date, SUM(total) as total_price')
@@ -430,7 +426,6 @@ class FinancialController extends Controller
 
         return response()->json($data, 200);
     }
-
     public function stats(Request $request)
     {
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
@@ -440,7 +435,7 @@ class FinancialController extends Controller
         $students = Student::all()->count();
         $teachers = Teacher::all()->count();
         $users = User::all()->count();
-        $groups = Group::whereNot('type','dawarat')->count();
+        $groups = Group::whereNot('type', 'dawarat')->count();
         $financials = $response->json();
         $levels = Level::all()->count();
         $data = [

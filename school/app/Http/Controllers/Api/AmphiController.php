@@ -7,10 +7,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Amphi;
 use App\Models\Section;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AmphiController extends Controller
 {
-    
+
 
     public function index(Request $request)
     {
@@ -20,6 +21,7 @@ class AmphiController extends Controller
             'perPage' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
         ]);
+
         $sortBy = $request->query('sortBy', 'created_at');
         $sortDirection = $request->query('sortDirection', 'desc');
         $perPage = $request->query('perPage', 10);
@@ -40,7 +42,7 @@ class AmphiController extends Controller
 
     public function show($id)
     {
-        $amphi = Amphi::find($id);
+        $amphi = Amphi::findOrFail($id);
 
         if (!$amphi) {
             return response()->json(['message' => 'Amphi not found'], 404);
@@ -64,25 +66,27 @@ class AmphiController extends Controller
             'sections.*.starting_column' => 'required|integer',
         ]);
 
-        // Create the Amphi
-        $amphi = Amphi::create($request->except('sections'));
+        return DB::transaction(function () use ($request) {
+            // Create the Amphi
+            $amphi = Amphi::create($request->except('sections'));
 
-        // Create the associated Sections
-        $sectionsData = $request->input('sections');
-        $sections = [];
+            // Create the associated Sections
+            $sectionsData = $request->input('sections');
+            $sections = [];
 
-        foreach ($sectionsData as $sectionData) {
-            $sections[] = new Section($sectionData);
-        }
+            foreach ($sectionsData as $sectionData) {
+                $sections[] = new Section($sectionData);
+            }
 
-        $amphi->sections()->saveMany($sections);
+            $amphi->sections()->saveMany($sections);
 
-        return response()->json(['data' => $amphi], 201);
+            return response()->json(['data' => $amphi], 201);
+        });
     }
 
     public function update(Request $request, $id)
     {
-        $amphi = Amphi::find($id);
+        $amphi = Amphi::findOrFail($id);
 
         if (!$amphi) {
             return response()->json(['message' => 'Amphi not found'], 404);
@@ -101,38 +105,42 @@ class AmphiController extends Controller
             'sections.*.name' => 'required|string',
         ]);
 
-        $amphi->fill($request->except('sections'));
-        $amphi->save();
+        return DB::transaction(function () use ($request, $amphi) {
+            $amphi->fill($request->except('sections'));
+            $amphi->save();
 
-        $sectionsData = $request->input('sections');
+            $sectionsData = $request->input('sections');
 
-        foreach ($sectionsData as $sectionData) {
-            if (isset($sectionData['id'])) {
-                $section = Section::find($sectionData['id']);
-                $section->update($sectionData);
-            } else {
-                $amphi->sections()->create($sectionData);
+            foreach ($sectionsData as $sectionData) {
+                if (isset($sectionData['id'])) {
+                    $section = Section::find($sectionData['id']);
+                    $section->update($sectionData);
+                } else {
+                    $amphi->sections()->create($sectionData);
+                }
             }
-        }
 
-        return response()->json(['data' => $amphi], 200);
+            return response()->json(['data' => $amphi], 200);
+        });
     }
 
 
     public function destroy($id)
     {
-        $amphi = Amphi::find($id);
+        $amphi = Amphi::findOrFail($id);
 
         if (!$amphi) {
             return response()->json(['message' => 'Amphi not found'], 404);
         }
 
-        $deleted = $amphi->delete();
+        return DB::transaction(function () use ($amphi) {
+            $deleted = $amphi->delete();
 
-        if ($deleted) {
-            return response()->json(['message' => 'Amphi deleted successfully'], 204);
-        }
+            if ($deleted) {
+                return response()->json(['message' => 'Amphi deleted successfully'], 204);
+            }
 
-        return response()->json(['message' => 'Failed to delete Amphi'], 400);
+            return response()->json(['message' => 'Failed to delete Amphi'], 400);
+        });
     }
 }

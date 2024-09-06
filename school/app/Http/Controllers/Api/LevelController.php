@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Level;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+
 class LevelController extends Controller
 {
-    
+
     public function index(Request $request)
     {
         $request->validate([
@@ -37,7 +39,7 @@ class LevelController extends Controller
     }
     public function show($id)
     {
-        $level = Level::with(['groups'])->find($id);
+        $level = Level::with(['groups'])->findOrFail($id);
 
         return response()->json($level, 200);
     }
@@ -50,28 +52,32 @@ class LevelController extends Controller
             'year' => ['required', 'integer'],
             Rule::unique('levels')->where(function ($query) use ($request) {
                 return $query->where('education', $request->education)
-                             ->where('year', $request->year)
-                             ->where('specialty', $request->specialty);
+                    ->where('year', $request->year)
+                    ->where('specialty', $request->specialty);
             }),
         ]);
 
-        $level = Level::create([
-            'education' => $request->education,
-            'specialty' => $request->specialty,
-            'year' => $request->year,
-        ]);
-        $level->save();
+        return DB::transaction(function () use ($request) {
+            $level = Level::create([
+                'education' => $request->education,
+                'specialty' => $request->specialty,
+                'year' => $request->year,
+            ]);
+            $level->save();
 
-        return response()->json(200);
+            return response()->json(200);
+        });
     }
 
     public function delete($id)
     {
-        $level = Level::find($id);
+        return DB::transaction(function () use ($id) {
+            $level = Level::findOrFail($id);
 
-        $level->delete();
+            $level->delete();
 
-        return response()->json(200);
+            return response()->json(200);
+        });
     }
 
     public function update(Request $request, $id)
@@ -82,21 +88,23 @@ class LevelController extends Controller
             'year' => ['required', 'integer'],
             Rule::unique('levels')->where(function ($query) use ($request) {
                 return $query->where('education', $request->education)
-                             ->where('year', $request->year)
-                             ->where('specialty', $request->specialty);
+                    ->where('year', $request->year)
+                    ->where('specialty', $request->specialty);
             }),
         ]);
-        $level = Level::updateOrCreate(
-            ['id' => $id],
-            [
-                'education' => $request->education,
-                'specialty' => $request->specialty,
-                'year' => $request->year,
-            ]
-        );
+        return DB::transaction(function () use ($request, $id) {
+            $level = Level::updateOrCreate(
+                ['id' => $id],
+                [
+                    'education' => $request->education,
+                    'specialty' => $request->specialty,
+                    'year' => $request->year,
+                ]
+            );
 
-        $level->save();
+            $level->save();
 
-        return response()->json(200);
+            return response()->json(200);
+        });
     }
 }

@@ -30,7 +30,7 @@ class ReceiptController extends Controller
             'id' => 'required|exists:users,id',
         ]);
 
-        $receipt = Receipt::find($id);
+        $receipt = Receipt::findOrFail($id);
         $receipt->update($request->all());
 
         return response()->json($receipt);
@@ -38,7 +38,7 @@ class ReceiptController extends Controller
 
     public function delete($id)
     {
-        $receipt = Receipt::find($id);
+        $receipt = Receipt::findOrFail($id);
         $receipt->delete();
 
         return response()->json(null, 204);

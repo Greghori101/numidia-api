@@ -7,6 +7,7 @@ use App\Models\Expense;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class ExpensesController extends Controller
@@ -41,7 +42,7 @@ class ExpensesController extends Controller
 
     public function show($id)
     {
-        $expense = Expense::with(['user'])->find($id);
+        $expense = Expense::with(['user'])->findOrFail($id);
         return response()->json($expense, 200);
     }
 
@@ -53,46 +54,49 @@ class ExpensesController extends Controller
             'date' => 'required|date',
             'description' => 'required|string',
         ]);
-        $expense = Expense::create([
-            'total' => $request->total,
-            'type' => $request->type,
-            'date' => $request->date,
-            'description' => $request->description,
 
-        ]);
-        $user = User::find($request->user["id"]);
-        $user->expenses()->save($expense);
+        return DB::transaction(function () use ($request) {
+            $expense = Expense::create([
+                'total' => $request->total,
+                'type' => $request->type,
+                'date' => $request->date,
+                'description' => $request->description,
 
-        $admin = User::where("role", "numidia")->first();
+            ]);
+            $user = User::findOrFail($request->user["id"]);
+            $user->expenses()->save($expense);
 
-        $data = ["amount" => -$request->total, "user" => $admin];
-        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-            ->post(env('AUTH_API') . '/api/wallet/add', $data);
+            $admin = User::where("role", "numidia")->first();
 
-
-
-        $users = User::where('role', "numidia")
-            ->get();
-        foreach ($users as $receiver) {
+            $data = ["amount" => -$request->total, "user" => $admin];
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/notifications', [
-                    'client_id' => env('CLIENT_ID'),
-                    'client_secret' => env('CLIENT_SECRET'),
-                    'type' => "info",
-                    'title' => "New Chargers",
-                    'content' => "The user:" . $user->name . " has charged: " . $request->total . ".00 DA",
-                    'displayed' => false,
-                    'id' => $receiver->id,
-                    'department' => env('DEPARTMENT'),
-                ]);
-        }
+                ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
-        return response()->json($expense, 201);
+
+
+            $users = User::where('role', "numidia")
+                ->get();
+            foreach ($users as $receiver) {
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                    ->post(env('AUTH_API') . '/api/notifications', [
+                        'client_id' => env('CLIENT_ID'),
+                        'client_secret' => env('CLIENT_SECRET'),
+                        'type' => "info",
+                        'title' => "New Chargers",
+                        'content' => "The user:" . $user->name . " has charged: " . $request->total . ".00 DA",
+                        'displayed' => false,
+                        'id' => $receiver->id,
+                        'department' => env('DEPARTMENT'),
+                    ]);
+            }
+
+            return response()->json($expense, 201);
+        });
     }
 
     public function delete($id)
     {
-        $expense = Expense::find($id);
+        $expense = Expense::findOrFail($id);
 
         if ($expense) {
             $expense->delete();
@@ -104,7 +108,7 @@ class ExpensesController extends Controller
 
     public function update(Request $request, $id)
     {
-        $expense = Expense::find($id);
+        $expense = Expense::findOrFail($id);
         $request->validate([
             'total' => 'required|numeric',
             'type' => 'required|string',
