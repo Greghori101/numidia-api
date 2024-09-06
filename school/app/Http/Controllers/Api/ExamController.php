@@ -43,8 +43,9 @@ class ExamController extends Controller
                         'content' => $questionData['content'],
                         'answer' => $questionData['answer'],
                     ]);
-                    $file = $questionData['audio'];
-                    if ($file) {
+
+                    if (isset($questionData['audio'])) {
+                        $file = $questionData['audio'];
                         $content = file_get_contents($file);
                         $extension = $file->getClientOriginalExtension();
                         $question->audio()->create([
