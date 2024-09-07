@@ -72,7 +72,9 @@ class FinancialController extends Controller
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                 ]);
-            $user['profile_picture'] = $response->json()['profile_picture'];
+            if (isset($response->json()['profile_picture'])) {
+                $user['profile_picture'] = $response->json()['profile_picture'];
+            }
 
             // Categorize employee receipts
             $employeeReceiptsByType = $user->employee_receipts->groupBy('type');
