@@ -149,62 +149,6 @@ class PresenceController extends Controller
         });
     }
 
-    public function presences()
-    {
-        return DB::transaction(function () {
-            $presences = Presence::all();
-
-            foreach ($presences as $presence) {
-                if ($presence->status != "canceled" && $presence->status != "ended") {
-                    if ($presence->starts_at <= Carbon::now() && Carbon::now() <= $presence->ends_at) {
-                        $presence->update(["status" => "started"]);
-                    } elseif (Carbon::now() > $presence->ends_at) {
-                        $presence->update(["status" => "ended"]);
-
-                        $group = Group::findOrFail($presence->group_id);
-                        if ($presence->type !== "free") {
-                            $group->update([
-                                "current_nb_session" => $group->current_nb_session + 1,
-                            ]);
-                        }
-
-                        foreach ($group->students as $student) {
-
-                            $status = $student->presences()
-                                ->orderBy('created_at', 'desc')
-                                ->take(2)
-                                ->get()
-                                ->filter(function ($presence) use ($group) {
-                                    return $presence->pivot->status === 'absent' && $presence->group_id === $group->id;
-                                })
-                                ->count() !== 2;
-
-                            if ($student->pivot->status === "active" && $status) {
-
-                                if ($presence->type !== "free") {
-                                    $group->students()->updateExistingPivot($student->id, [
-                                        "nb_session" => $student->pivot->nb_session - 1,
-                                    ]);
-                                }
-
-                                if ($group->current_nb_session > $group->nb_session) {
-                                    $group->update([
-                                        "current_nb_session" =>   $group->type === "dawarat" ? $group->current_nb_session : 1,
-                                        'current_month' => $group->type === "dawarat" ? $group->current_month : $group->current_month + 1,
-                                    ]);
-                                }
-                            } else if (!$status) {
-                                $student->groups()->updateExistingPivot($group->id, ['status' => 'stopped', 'last_session' => $group->current_nb_session, 'last_month' => $group->current_month]);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return response()->json(200);
-        });
-    }
-
     public function cancel_session(Request $request, $session_id)
     {
         $request->validate([
@@ -296,10 +240,10 @@ class PresenceController extends Controller
         return DB::transaction(function () use ($request) {
             $group_id = $request->group_id;
             $session_id = $request->session_id;
-            $session = Session::findOrFail($session_id);
+            $session = Session::find($session_id);
             $starts_at = Carbon::parse($request->starts_at);
             $ends_at = Carbon::parse($request->ends_at);
-            $group = Group::findOrFail($group_id);
+            $group = Group::find($group_id);
             $presence = Presence::where('starts_at', $starts_at)
                 ->where('ends_at', $ends_at)
                 ->where('group_id', $group_id)

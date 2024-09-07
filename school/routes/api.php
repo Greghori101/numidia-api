@@ -260,7 +260,6 @@ Route::middleware(['auth-api-token'])->group(function () {
         ->controller(PresenceController::class)
         ->group(function () {
             Route::get('/sessions', 'sessions');
-            Route::get('/presences', 'presences');
             Route::get('/sessions/{session_id}/cancel', 'cancel_session');
             Route::get('/presence/sheets', 'presence_sheets');
             Route::post('/presence', 'create_presence');
