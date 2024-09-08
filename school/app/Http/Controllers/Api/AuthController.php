@@ -137,6 +137,9 @@ class AuthController extends Controller
                     'name' => $request->name,
                     'email' => $request->email,
                     'password' => $request->password,
+                    'phone_number' => $request->phone_number,
+                    'gender' => $request->gender,
+
                 ]);
             $users = User::where('role', '<>', "student")
                 ->where('role', '<>', "teacher")

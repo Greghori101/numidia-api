@@ -41,8 +41,8 @@ Route::middleware(['auth-api-token'])->group(function () {
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
             Route::post('/', 'store');
-            Route::delete('/{id}', 'delete');
             Route::put('/{id}', 'update');
+            Route::delete('/{id}', 'delete');
             Route::get('/orders', 'getOrders');
             Route::get('/receipts', 'getReceipts');
         });

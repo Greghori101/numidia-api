@@ -52,7 +52,7 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'name' => $request->name,
                 'role' => $request->role,
-                'phone_number' => $request->phone_number,
+                
                 'gender' => $request->gender,
             ]);
 
@@ -63,6 +63,17 @@ class AuthController extends Controller
             ]);
 
             $user->address()->save($address);
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->post(env('AUTH_API') . '/api/users/create', [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+                'id' => $user->id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone_number' => $request->phone_number,
+                'gender' => $request->gender,
+
+            ]);
         });
     }
 

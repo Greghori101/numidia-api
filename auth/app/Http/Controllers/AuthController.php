@@ -106,13 +106,12 @@ class AuthController extends Controller
 
             $content = Storage::get('default-profile-picture.jpeg');
 
-
             $bytes = random_bytes(ceil(64 / 2));
             $hex = bin2hex($bytes);
             $file_name = substr($hex, 0, 64);
             $file_url = '/avatars/' .  $file_name . '.jpeg';
             Storage::put($file_url, $content);
-            $user->profile_picture()->update(['url' => $file_url]);
+            $user->profile_picture()->updateOrCreate(['url' => $file_url]);
 
             $user->wallet()->save(new Wallet());
             try {
@@ -151,13 +150,12 @@ class AuthController extends Controller
 
             $content = Storage::get('default-profile-picture.jpeg');
 
-
             $bytes = random_bytes(ceil(64 / 2));
             $hex = bin2hex($bytes);
             $file_name = substr($hex, 0, 64);
             $file_url = '/avatars/' .  $file_name . '.jpeg';
             Storage::put($file_url, $content);
-            $user->profile_picture()->update(['url' => $file_url]);
+            $user->profile_picture()->updateOrCreate(['url' => $file_url]);
 
 
             $user->wallet()->save(new Wallet());

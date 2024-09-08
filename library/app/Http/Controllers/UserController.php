@@ -33,7 +33,7 @@ class UserController extends Controller
         $perPage = $request->query('perPage', 10);
         $search = $request->query('search', '');
 
-        $usersQuery = User::query()->where('role', 'client');
+        $usersQuery = User::with('address')->where('role', 'client');
 
         $usersQuery->when($search, function ($query) use ($search) {
             return $query->where(function ($subQuery) use ($search) {
@@ -68,7 +68,6 @@ class UserController extends Controller
             ]);
 
             $client = Client::create([]);
-            $password = Str::upper(Str::random(6));
             $user = User::create([
                 'email' => $request->email,
                 'name' => $request->name,
@@ -87,21 +86,6 @@ class UserController extends Controller
 
             $user->address()->save($address);
             $client->save();
-
-
-            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/register', [
-                    'client_id' => env('CLIENT_ID'),
-                    'client_secret' => env('CLIENT_SECRET'),
-                    'id' => $user->id,
-                    'name' => $request->name,
-                    'email' => $request->email,
-                    'password' => $request->password,
-                    'role' => $request->role,
-                    'phone_number' => $request->phone_number,
-                    'gender' => $request->gender,
-                ]);
-
 
             $order = Order::create([
                 'status' => 'pending',
@@ -132,7 +116,17 @@ class UserController extends Controller
 
             $order->total = $total;
             $order->save();
-
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+                ->post(env('AUTH_API') . '/api/users/create', [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'id' => $user->id,
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'role' => $request->role,
+                    'phone_number' => $request->phone_number,
+                    'gender' => $request->gender,
+                ]);
             return response()->json(200);
         });
     }
@@ -176,13 +170,12 @@ class UserController extends Controller
             $user->address()->save($address);
             $client->save();
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/register', [
+                ->post(env('AUTH_API') . '/api/users/create', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                     'id' => $user->id,
                     'name' => $request->name,
                     'email' => $request->email,
-                    'password' => $request->password,
                     'role' => $request->role,
                     'phone_number' => $request->phone_number,
                     'gender' => $request->gender,
@@ -194,10 +187,16 @@ class UserController extends Controller
 
     public function show($id)
     {
-        $client = User::with(['address', 'client.receipts', 'client.orders'])->findOrFail($id);
+        $client = User::with(['address', 'client.receipts', 'client.orders.products.pictures','client.orders.client'])->findOrFail($id);
         if (!$client) {
             return response()->json(['message' => 'Client not found'], 404);
         }
+        $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
+            ->get(env('AUTH_API') . '/api/profile/' . $client->id, [
+                'client_id' => env('CLIENT_ID'),
+                'client_secret' => env('CLIENT_SECRET'),
+            ]);
+        $client['profile_picture'] = $response->json()['profile_picture'];
         return response()->json($client);
     }
 
@@ -220,7 +219,6 @@ class UserController extends Controller
 
             $client->user()->update([
                 'email' => $request->email,
-                'password' => $request->password,
                 'name' => $request->name,
                 'role' => 'client',
                 'phone_number' => $request->phone_number,

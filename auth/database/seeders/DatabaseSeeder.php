@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
         $file_name = substr($hex, 0, 64);
         $file_url = '/avatars/' .  $file_name . '.jpeg';
         Storage::put($file_url, $content);
-        $user->profile_picture()->create(['url' => $file_url]);
+        $user->profile_picture()->updateOrCreate(['url' => $file_url]);
 
 
         $user->wallet()->save(new Wallet());

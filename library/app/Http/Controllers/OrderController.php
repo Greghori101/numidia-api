@@ -172,13 +172,12 @@ class OrderController extends Controller
             $user->address()->save($address);
             $client->save();
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-                ->post(env('AUTH_API') . '/api/register', [
+                ->post(env('AUTH_API') . '/api/users/create', [
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                     'id' => $user->id,
                     'name' => $request->name,
                     'email' => $request->email,
-                    'password' => $request->password,
                     'role' => $request->role,
                     'phone_number' => $request->phone_number,
                     'gender' => $request->gender,
