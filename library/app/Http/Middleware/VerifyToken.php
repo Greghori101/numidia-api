@@ -24,13 +24,26 @@ class VerifyToken
             'client_id' => env('CLIENT_ID'),
             'client_secret' => env('CLIENT_SECRET'),
         ]);
+        if ($response->failed()) {
+            $statusCode = $response->status();
+            $errorBody = $response->json();
+            abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+        }
 
+        if ($response->serverError()) {
+            abort(500, 'Server error occurred');
+        }
+
+        if ($response->clientError()) {
+            abort($response->status(), 'Client error occurred');
+        }
         if ($response->status() === 200) {
             $data = $response->json();
             $user = $data['user'];
             $request->merge(['user' => $user]);
             return $next($request);
         }
+
         abort(401, 'Unauthenticated');
     }
 }

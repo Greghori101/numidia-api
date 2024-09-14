@@ -220,7 +220,19 @@ class AttendanceController extends Controller
                                         } else {
                                             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                                                 ->get(env('AUTH_API') . '/api/wallet/' . $student->user->id);
-
+                                                if ($response->failed()) {
+                                                    $statusCode = $response->status();
+                                                    $errorBody = $response->json();
+                                                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                                                }
+                                        
+                                                if ($response->serverError()) {
+                                                    abort(500, 'Server error occurred');
+                                                }
+                                        
+                                                if ($response->clientError()) {
+                                                    abort($response->status(), 'Client error occurred');
+                                                }
                                             if ($response) {
                                                 $balance = json_decode($response->body(), true)['balance'];
 
@@ -253,21 +265,58 @@ class AttendanceController extends Controller
                                         }
                                         $checkout->save();
                                         if ($price > 0) {
-                                            $admin = User::where("role", "numidia")->first();
+                                            $admin = User::where("role", "admin")->first();
                                             // Update teacher's wallet
                                             $data = ["amount" => ($checkout->teacher_percentage * $price) / 100, "user" => $checkout->group->teacher->user];
-                                            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                                            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                                                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                                                if ($response->failed()) {
+                                                    $statusCode = $response->status();
+                                                    $errorBody = $response->json();
+                                                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                                                }
+                                        
+                                                if ($response->serverError()) {
+                                                    abort(500, 'Server error occurred');
+                                                }
+                                        
+                                                if ($response->clientError()) {
+                                                    abort($response->status(), 'Client error occurred');
+                                                }
                                             // Update admin's wallet
                                             $data = ["amount" => ((100 - $checkout->teacher_percentage) * $price) / 100, "user" => $admin];
-                                            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                                            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                                                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                                                if ($response->failed()) {
+                                                    $statusCode = $response->status();
+                                                    $errorBody = $response->json();
+                                                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                                                }
+                                        
+                                                if ($response->serverError()) {
+                                                    abort(500, 'Server error occurred');
+                                                }
+                                        
+                                                if ($response->clientError()) {
+                                                    abort($response->status(), 'Client error occurred');
+                                                }
                                         }
                                         $data = ["amount" => $price, "user" => $student->user];
                                         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                                             ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                                            if ($response->failed()) {
+                                                $statusCode = $response->status();
+                                                $errorBody = $response->json();
+                                                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                                            }
+                                    
+                                            if ($response->serverError()) {
+                                                abort(500, 'Server error occurred');
+                                            }
+                                    
+                                            if ($response->clientError()) {
+                                                abort($response->status(), 'Client error occurred');
+                                            }
                                         $student->checkouts()->save($checkout);
                                         $group->checkouts()->save($checkout);
                                     }

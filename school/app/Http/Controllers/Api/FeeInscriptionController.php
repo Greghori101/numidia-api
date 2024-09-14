@@ -60,7 +60,19 @@ class FeeInscriptionController extends Controller
                 $data = ["amount" => $student->fee_inscription->total -  $request->total, "user" => $student->user];
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 $student->fee_inscription()->update([
                     'total' => $request->total,
                     'date' => $request->date,
@@ -75,6 +87,19 @@ class FeeInscriptionController extends Controller
                 $data = ["amount" => -$request->total, "user" => $student->user];
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
             }
 
 
@@ -106,9 +131,21 @@ class FeeInscriptionController extends Controller
 
                 // Update wallet and fee inscription details
                 $data = ["amount" => $student->fee_inscription->total - $request->total, "user" => $student->user];
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 $student->fee_inscription->update([
                     'total' => $request->total,
                     'date' => $request->date,
@@ -126,30 +163,67 @@ class FeeInscriptionController extends Controller
 
                 // Update the student's wallet
                 $data = ["amount" => -$request->total, "user" => $student->user];
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
             }
 
             // Handle the payment for inscription fee
-            $admin = User::where("role", "numidia")->first();
+            $admin = User::where("role", "admin")->first();
 
             // Update admin's wallet
             $data = ["amount" => $request->total, "user" => $admin];
-            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             // Update student's wallet and fee inscription status
             $data = ["amount" => $request->total, "user" => $student->user];
-            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             $student->fee_inscription()->update([
                 'paid' => true,
                 'pay_date' => Carbon::now(),
             ]);
 
             // Create a new receipt
-            Receipt::create([
+            $receipt = Receipt::create([
                 'total' => $request->total,
                 'type' => 'inscription fee',
                 'user_id' => $student->user->id,
@@ -157,9 +231,9 @@ class FeeInscriptionController extends Controller
             ]);
 
             // Send notifications to all admins
-            $admins = User::where('role', "numidia")->get();
+            $admins = User::where('role', "admin")->get();
             foreach ($admins as $admin) {
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/notifications', [
                         'client_id' => env('CLIENT_ID'),
                         'client_secret' => env('CLIENT_SECRET'),
@@ -170,9 +244,22 @@ class FeeInscriptionController extends Controller
                         'id' => $admin->id,
                         'department' => env('DEPARTMENT'),
                     ]);
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
             }
 
-            return response()->json(['message' => 'Payment processed successfully'], 200);
+            return response()->json($receipt, 200);
         });
     }
 
@@ -187,7 +274,19 @@ class FeeInscriptionController extends Controller
                 $data = ["amount" => $student->fee_inscription->total, "user" => $student->user];
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 $feeInscription->delete();
                 return response()->json(null, 204);
             } else {
@@ -211,7 +310,19 @@ class FeeInscriptionController extends Controller
                 $data = ["amount" => $student->fee_inscription->total -  $request->total, "user" => $student->user];
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 $feeInscription->update([
                     'total' => $request->total,
                     'date' => $request->date,

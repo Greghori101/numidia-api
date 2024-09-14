@@ -24,9 +24,9 @@ class AuthController extends Controller
             'id' => ['required', 'uuid', 'unique:users,id'],
             'email' => ['required', 'email', 'unique:users,email'],
             'name' => ['required', 'string', 'max:255'],
-            'role' => ['required', 'in:student,supervisor'],
+            'role' => ['required', 'string'],
             'phone_number' => ['required', 'string', 'max:15'],
-            'gender' => ['required', 'in:male,female,other'],
+            'gender' => ['required', 'in:male,female'],
             'level_id' => ['required_if:role,student', 'exists:levels,id'],
         ]);
         return DB::transaction(function () use ($request) {
@@ -55,9 +55,9 @@ class AuthController extends Controller
             'id' => ['required', 'uuid', 'unique:users,id'],
             'email' => ['required', 'email', 'unique:users,email'],
             'name' => ['required', 'string', 'max:255'],
-            'role' => ['required', 'in:student,supervisor'],
+            'role' => ['required', 'string'],
             'phone_number' => ['required', 'string', 'max:15'],
-            'gender' => ['required', 'in:male,female,other'],
+            'gender' => ['required', 'in:male,female'],
             'level_id' => ['required_if:role,student', 'exists:levels,id'],
         ]);
         return DB::transaction(function () use ($request, $id) {
@@ -139,24 +139,51 @@ class AuthController extends Controller
                     'password' => $request->password,
                     'phone_number' => $request->phone_number,
                     'gender' => $request->gender,
+                    'permissions' => $request->permissions,
 
                 ]);
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
+
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
+            }
             $users = User::where('role', '<>', "student")
                 ->where('role', '<>', "teacher")
                 ->where('role', '<>', "supervisor")
                 ->get();
-            foreach ($users as $reciever) {
+            foreach ($users as $receiver) {
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                     ->post(env('AUTH_API') . '/api/notifications', [
                         'client_id' => env('CLIENT_ID'),
                         'client_secret' => env('CLIENT_SECRET'),
                         'type' => "success",
                         'title' => "New Registration",
-                        'content' => $user->name . " have been registred to numidia platform",
+                        'content' => $user->name . " have been registered to numidia platform",
                         'displayed' => false,
-                        'id' => $reciever->id,
+                        'id' => $receiver->id,
                         'department' => env('DEPARTMENT'),
                     ]);
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             }
             return response()->json($response->body(), 200);
         });
@@ -173,7 +200,19 @@ class AuthController extends Controller
 
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/login', $data);
+        if ($response->failed()) {
+            $statusCode = $response->status();
+            $errorBody = $response->json();
+            abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+        }
 
+        if ($response->serverError()) {
+            abort(500, 'Server error occurred');
+        }
+
+        if ($response->clientError()) {
+            abort($response->status(), 'Client error occurred');
+        }
         $data = json_decode($response->body(), true);
         if (isset($data['id'])) {
             $user = User::find($data['id']);
@@ -198,7 +237,19 @@ class AuthController extends Controller
 
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/auth/' . $provider . '/login', $data);
+        if ($response->failed()) {
+            $statusCode = $response->status();
+            $errorBody = $response->json();
+            abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+        }
 
+        if ($response->serverError()) {
+            abort(500, 'Server error occurred');
+        }
+
+        if ($response->clientError()) {
+            abort($response->status(), 'Client error occurred');
+        }
         return response()->json($response->body(), 200);
     }
     public function getFile(Request $request)

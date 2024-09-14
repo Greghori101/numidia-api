@@ -12,7 +12,6 @@ class Permission extends Model
 
     protected $fillable = [
         'name',
-        'department',
         'user_id',
     ];
     protected $keyType = 'string';

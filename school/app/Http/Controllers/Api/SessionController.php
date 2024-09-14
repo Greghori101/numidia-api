@@ -74,6 +74,19 @@ class SessionController extends Controller
                         'id' => $student->user->id,
                         'department' => env('DEPARTMENT'),
                     ]);
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
             }
 
             return response()->json(200);

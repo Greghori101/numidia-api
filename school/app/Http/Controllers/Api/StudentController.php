@@ -92,7 +92,19 @@ class StudentController extends Controller
                 $data = ["amount" => (-$checkout->price + $checkout->discount), "user" => $student->user];
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 $student->checkouts()->save($checkout);
                 $group = Group::findOrFail($group->id);
                 $group->checkouts()->save($checkout);
@@ -107,6 +119,20 @@ class StudentController extends Controller
                         'id' => $group->teacher->user->id,
                         'department' => env('DEPARTMENT'),
                     ]);
+
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
             }
 
             return response()->json(200);
@@ -131,7 +157,19 @@ class StudentController extends Controller
                 $data = ["amount" => ($checkoutToRemove->price - $checkoutToRemove->discount), "user" => $student->user];
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 $checkoutToRemove->delete();
             }
 
@@ -154,6 +192,19 @@ class StudentController extends Controller
                     'id' => $group->teacher->user->id,
                     'department' => env('DEPARTMENT'),
                 ]);
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             return response()->json(200);
         });
     }

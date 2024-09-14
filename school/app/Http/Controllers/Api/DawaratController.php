@@ -161,7 +161,19 @@ class DawaratController extends Controller
                     'id' => $teacher->user->id,
                     'department' => env('DEPARTMENT'),
                 ]);
-
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
 
             return response()->json($group, 200);
         });
@@ -294,7 +306,7 @@ class DawaratController extends Controller
 
             // Notify students
             foreach ($group->students as $student) {
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                $response= Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/notifications', [
                         'client_id' => env('CLIENT_ID'),
                         'client_secret' => env('CLIENT_SECRET'),
@@ -305,6 +317,19 @@ class DawaratController extends Controller
                         'id' => $student->user->id,
                         'department' => env('DEPARTMENT'),
                     ]);
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
             }
 
             return response()->json($session, 200);
@@ -331,6 +356,19 @@ class DawaratController extends Controller
                 $data = ["amount" => $checkoutToRemove->price - $checkoutToRemove->discount, "user" => $student->user];
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 $checkoutToRemove->delete();
             }
 

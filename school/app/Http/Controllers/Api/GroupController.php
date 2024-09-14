@@ -181,7 +181,19 @@ class GroupController extends Controller
                     'department' => env('DEPARTMENT'),
                 ]);
 
-
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             return response()->json($group, 200);
         });
     }
@@ -260,7 +272,19 @@ class GroupController extends Controller
                     $data = ["amount" => - ($checkout->price - $checkout->discount), "user" => $student->user];
                     $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                         ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                        if ($response->failed()) {
+                            $statusCode = $response->status();
+                            $errorBody = $response->json();
+                            abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                        }
+                
+                        if ($response->serverError()) {
+                            abort(500, 'Server error occurred');
+                        }
+                
+                        if ($response->clientError()) {
+                            abort($response->status(), 'Client error occurred');
+                        }
                     $student->checkouts()->save($checkout);
                     $group->checkouts()->save($checkout);
                     $students[$studentId] = [
@@ -287,6 +311,19 @@ class GroupController extends Controller
                     $data = ["amount" => $checkoutToRemove->price - $checkoutToRemove->discount, "user" => $student->user];
                     $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                         ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                        if ($response->failed()) {
+                            $statusCode = $response->status();
+                            $errorBody = $response->json();
+                            abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                        }
+                
+                        if ($response->serverError()) {
+                            abort(500, 'Server error occurred');
+                        }
+                
+                        if ($response->clientError()) {
+                            abort($response->status(), 'Client error occurred');
+                        }
                     $checkoutToRemove->delete();
                 }
                 $students[$studentIdToRemove] =  [
@@ -313,6 +350,19 @@ class GroupController extends Controller
                     'id' => $group->teacher->user->id,
                     'department' => env('DEPARTMENT'),
                 ]);
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
 
             return response()->json(200);
         });
@@ -337,6 +387,19 @@ class GroupController extends Controller
                 $data = ["amount" => $checkoutToRemove->price - $checkoutToRemove->discount, "user" => $student->user];
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 $checkoutToRemove->delete();
             }
 
@@ -427,7 +490,7 @@ class GroupController extends Controller
 
             // Notify students
             foreach ($group->students as $student) {
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/notifications', [
                         'client_id' => env('CLIENT_ID'),
                         'client_secret' => env('CLIENT_SECRET'),
@@ -438,6 +501,19 @@ class GroupController extends Controller
                         'id' => $student->user->id,
                         'department' => env('DEPARTMENT'),
                     ]);
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
             }
 
             return response()->json($session, 200);

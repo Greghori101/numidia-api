@@ -120,7 +120,7 @@ class CheckoutController extends Controller
                     $group = $checkout->group;
                     $student = $group->students()->where($checkout->student)->first();
                     $teacher = $group->teacher;
-                    $admin = User::where("role", "numidia")->first();
+                    $admin = User::where("role", "admin")->first();
 
                     // Update checkout details
                     $checkout->paid_price += $paid_price;
@@ -161,18 +161,55 @@ class CheckoutController extends Controller
             if ($total != 0) {
                 // Update teacher's wallet
                 $data = ["amount" => ($checkout->teacher_percentage * $total) / 100, "user" => $teacher->user];
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                $response =Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 // Update admin's wallet
                 $data = ["amount" => ((100 - $checkout->teacher_percentage) * $total) / 100, "user" => $admin];
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                $response= Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 // Update student's wallet
                 $data = ["amount" => $total, "user" => $student->user];
-                Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                     ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
                 $receipt->total = $total;
                 $receipt->user_id = $student->user->id;
                 $receipt->employee_id = $user->id;
@@ -180,9 +217,9 @@ class CheckoutController extends Controller
                 $receipt->load(['user', 'employee', 'services']);
 
                 // Notify admins about the payment
-                $admins = User::where('role', "numidia")->get();
+                $admins = User::where('role', "admin")->get();
                 foreach ($admins as $receiver) {
-                    Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                    $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                         ->post(env('AUTH_API') . '/api/notifications', [
                             'client_id' => env('CLIENT_ID'),
                             'client_secret' => env('CLIENT_SECRET'),
@@ -193,6 +230,19 @@ class CheckoutController extends Controller
                             'id' => $receiver->id,
                             'department' => env('DEPARTMENT'),
                         ]);
+                        if ($response->failed()) {
+                            $statusCode = $response->status();
+                            $errorBody = $response->json();
+                            abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                        }
+                
+                        if ($response->serverError()) {
+                            abort(500, 'Server error occurred');
+                        }
+                
+                        if ($response->clientError()) {
+                            abort($response->status(), 'Client error occurred');
+                        }
                 }
 
                 // Return the receipt as JSON response
@@ -240,9 +290,21 @@ class CheckoutController extends Controller
 
                     // Update the student's wallet
                     $data = ["amount" => $paid_price, "user" => $student->user];
-                    Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                    $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                         ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                        if ($response->failed()) {
+                            $statusCode = $response->status();
+                            $errorBody = $response->json();
+                            abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                        }
+                
+                        if ($response->serverError()) {
+                            abort(500, 'Server error occurred');
+                        }
+                
+                        if ($response->clientError()) {
+                            abort($response->status(), 'Client error occurred');
+                        }
                     // Update the receipt and total
                     $total += $paid_price;
                     $service = ReceiptService::create([
@@ -266,9 +328,9 @@ class CheckoutController extends Controller
                 $receipt->load('user', 'services'); // Load related user and services
 
                 // Notify admins about the payment
-                $admins = User::where('role', "numidia")->get();
+                $admins = User::where('role', "admin")->get();
                 foreach ($admins as $receiver) {
-                    Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+                     $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                         ->post(env('AUTH_API') . '/api/notifications', [
                             'client_id' => env('CLIENT_ID'),
                             'client_secret' => env('CLIENT_SECRET'),
@@ -279,6 +341,20 @@ class CheckoutController extends Controller
                             'id' => $receiver->id,
                             'department' => env('DEPARTMENT'),
                         ]);
+                        if ($response->failed()) {
+                            $statusCode = $response->status();
+                            $errorBody = $response->json();
+                            abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                        }
+                
+                        if ($response->serverError()) {
+                            abort(500, 'Server error occurred');
+                        }
+                
+                        if ($response->clientError()) {
+                            abort($response->status(), 'Client error occurred');
+                        }
+
                 }
 
                 // Return the receipt as JSON response

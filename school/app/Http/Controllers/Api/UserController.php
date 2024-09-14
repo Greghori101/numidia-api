@@ -64,6 +64,19 @@ class UserController extends Controller
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                 ]);
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
+
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
+            }
             $user['activities'] = $response->json()['activities'];
             $user['profile_picture'] = $response->json()['profile_picture'];
             $user['wallet'] = $response->json()['wallet'];
@@ -97,7 +110,19 @@ class UserController extends Controller
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                 ]);
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
 
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
+            }
             $user['profile_picture'] = $response->json()['profile_picture'];
             $user['wallet'] = $response->json()['wallet'];
 
@@ -151,8 +176,22 @@ class UserController extends Controller
                     'phone_number' => $request->phone_number,
                     'role' => $request->role,
                     'gender' => $request->gender,
-                ]);
+                    'permissions' => $request->permissions,
 
+                ]);
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
+
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
+            }
             if ($user->role == 'teacher') {
                 $user->teacher()->save(new Teacher([
                     'modules' => implode("|", $request->modules),
@@ -181,11 +220,24 @@ class UserController extends Controller
                         'client_secret' => env('CLIENT_SECRET'),
                         'type' => "success",
                         'title' => "New Registration",
-                        'content' => $user->name . " have been registred to numidia platform",
+                        'content' => $user->name . " have been registered to numidia platform",
                         'displayed' => false,
                         'id' => $receiver->id,
                         'department' => env('DEPARTMENT'),
                     ]);
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             }
             return response()->json(200);
         });
@@ -261,6 +313,19 @@ class UserController extends Controller
                         'id' => $receiver->id,
                         'department' => env('DEPARTMENT'),
                     ]);
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             }
             return response()->json(true, 200);
         });
@@ -298,6 +363,33 @@ class UserController extends Controller
                 $student = $user->student;
                 $level->students()->save($student);
                 return Student::with(['user', 'level'])->findOrFail($student->id);
+            }
+
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json', 'Authorization' => 'Bearer ' . $request->bearerToken()])
+                ->put(env('AUTH_API') . '/api/users/' . $id, [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'id' => $user->id,
+                    'email' => $request->email,
+                    'name' => $request->name,
+                    'phone_number' => $request->phone_number,
+                    'role' => $request->role,
+                    'gender' => $request->gender,
+                    'permissions' => $request->permissions,
+
+                ]);
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
+
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
             }
 
             return response()->json(['message' => 'User data updated successfully'], 200);

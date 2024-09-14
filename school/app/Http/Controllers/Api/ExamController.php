@@ -10,6 +10,7 @@ use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ExamController extends Controller
 {
@@ -36,32 +37,34 @@ class ExamController extends Controller
                 'date' => $data['date'],
             ]);
 
-            DB::transaction(function () use ($data, $exam) {
-                foreach ($data['questions'] as $questionData) {
-                    $question = $exam->questions()->create([
-                        'nb_choice' => $questionData['nb_choice'],
-                        'content' => $questionData['content'],
-                        'answer' => $questionData['answer'],
-                    ]);
+            foreach ($data['questions'] as $questionData) {
+                $question = $exam->questions()->create([
+                    'nb_choice' => $questionData['nb_choice'],
+                    'content' => $questionData['content'],
+                    'answer' => $questionData['answer'],
+                ]);
 
-                    if (isset($questionData['audio'])) {
-                        $file = $questionData['audio'];
-                        $content = file_get_contents($file);
-                        $extension = $file->getClientOriginalExtension();
-                        $question->audio()->create([
-                            'name' => 'question audio',
-                            'content' => base64_encode($content),
-                            'extension' => $extension,
-                        ]);
-                    }
+                if (isset($questionData['audio'])) {
+                    $file = $questionData['audio'];
+                    $file_extension = $file->extension();
 
+                    $bytes = random_bytes(ceil(64 / 2));
+                    $hex = bin2hex($bytes);
+                    $file_name = substr($hex, 0, 64);
 
+                    $file_url = '/exams/' .  $file_name . '.' . $file_extension;
 
-                    foreach ($questionData['choices'] as $choiceData) {
-                        $question->choices()->create(['content' => $choiceData['content']]);
-                    }
+                    Storage::put($file_url, file_get_contents($file));
+
+                    $question->audio()->create(['url' => $file_url]);
                 }
-            });
+
+
+
+                foreach ($questionData['choices'] as $choiceData) {
+                    $question->choices()->create(['content' => $choiceData['content']]);
+                }
+            }
 
             return response()->json(200);
         });

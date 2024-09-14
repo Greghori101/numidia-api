@@ -11,6 +11,7 @@ use App\Models\File;
 use App\Models\Notification;
 use Laravel\Passport\Token;
 use App\Models\User;
+use App\Models\Permission;
 use App\Models\Wallet;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -44,6 +45,7 @@ class AuthController extends Controller
             $data = [
                 'id' => $user->id,
                 'wallet' => $user->wallet,
+                'permissions' => $user->permissions,
                 'verified' => $user->hasVerifiedEmail(),
                 'token' => $accessToken->accessToken,
                 'access_token_id' => $token->id,
@@ -60,7 +62,7 @@ class AuthController extends Controller
 
             return response()->json($data, 200);
         } else {
-            return abort(403);
+            return abort(401);
         }
     }
     public function show($id)
@@ -104,6 +106,11 @@ class AuthController extends Controller
                 'gender' => $request->gender,
             ]);
 
+            if ($request->permissions) {
+                foreach ($request->permissions as $permission) {
+                    Permission::create(['name' => $permission, 'user_id' => $user->id]);
+                }
+            }
             $content = Storage::get('default-profile-picture.jpeg');
 
             $bytes = random_bytes(ceil(64 / 2));
@@ -157,7 +164,11 @@ class AuthController extends Controller
             Storage::put($file_url, $content);
             $user->profile_picture()->updateOrCreate(['url' => $file_url]);
 
-
+            if ($request->permissions) {
+                foreach ($request->permissions as $permission) {
+                    Permission::create(['name' => $permission, 'user_id' => $user->id]);
+                }
+            }
             $user->wallet()->save(new Wallet());
             try {
                 $data = [
@@ -195,6 +206,12 @@ class AuthController extends Controller
             }
             if (!$user) {
                 abort(404);
+            }
+            if ($request->permissions) {
+                $user->permissions()->delete();
+                foreach ($request->permissions as $permission) {
+                    Permission::create(['name' => $permission, 'user_id' => $user->id]);
+                }
             }
             $user->update([
                 'name' => $request->name,

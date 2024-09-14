@@ -127,6 +127,19 @@ class UserController extends Controller
                     'phone_number' => $request->phone_number,
                     'gender' => $request->gender,
                 ]);
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             return response()->json(200);
         });
     }
@@ -180,7 +193,19 @@ class UserController extends Controller
                     'phone_number' => $request->phone_number,
                     'gender' => $request->gender,
                 ]);
-
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             return response()->json(200);
         });
     }
@@ -196,6 +221,19 @@ class UserController extends Controller
                 'client_id' => env('CLIENT_ID'),
                 'client_secret' => env('CLIENT_SECRET'),
             ]);
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
+    
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+    
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
+            }
         $client['profile_picture'] = $response->json()['profile_picture'];
         return response()->json($client);
     }

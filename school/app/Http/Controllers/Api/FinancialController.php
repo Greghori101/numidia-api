@@ -72,6 +72,19 @@ class FinancialController extends Controller
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                 ]);
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             if (isset($response->json()['profile_picture'])) {
                 $user['profile_picture'] = $response->json()['profile_picture'];
             }
@@ -159,6 +172,19 @@ class FinancialController extends Controller
                     'client_id' => env('CLIENT_ID'),
                     'client_secret' => env('CLIENT_SECRET'),
                 ]);
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             $user['profile_picture'] = $response->json()['profile_picture'];
 
             // Categorize employee receipts
@@ -432,7 +458,19 @@ class FinancialController extends Controller
     {
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->get(env('AUTH_API') . '/api/wallet/' . $request->user["id"]);
-
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
+    
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+    
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
+            }
         $parents = Supervisor::all()->count();
         $students = Student::all()->count();
         $teachers = Teacher::all()->count();

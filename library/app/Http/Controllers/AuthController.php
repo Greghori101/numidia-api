@@ -25,7 +25,19 @@ class AuthController extends Controller
 
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->post(env('AUTH_API') . '/api/login', $data);
+        if ($response->failed()) {
+            $statusCode = $response->status();
+            $errorBody = $response->json();
+            abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+        }
 
+        if ($response->serverError()) {
+            abort(500, 'Server error occurred');
+        }
+
+        if ($response->clientError()) {
+            abort($response->status(), 'Client error occurred');
+        }
         $data = json_decode($response->body(), true);
 
 
@@ -39,7 +51,19 @@ class AuthController extends Controller
         $data['client_secret'] = env('CLIENT_SECRET');
         $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
             ->get(env('AUTH_API') . '/api/logout', $data);
+        if ($response->failed()) {
+            $statusCode = $response->status();
+            $errorBody = $response->json();
+            abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+        }
 
+        if ($response->serverError()) {
+            abort(500, 'Server error occurred');
+        }
+
+        if ($response->clientError()) {
+            abort($response->status(), 'Client error occurred');
+        }
         return response()->json($response->body(), 200);
     }
 
@@ -52,7 +76,7 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'name' => $request->name,
                 'role' => $request->role,
-                
+
                 'gender' => $request->gender,
             ]);
 
@@ -64,16 +88,29 @@ class AuthController extends Controller
 
             $user->address()->save($address);
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
-            ->post(env('AUTH_API') . '/api/users/create', [
-                'client_id' => env('CLIENT_ID'),
-                'client_secret' => env('CLIENT_SECRET'),
-                'id' => $user->id,
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone_number' => $request->phone_number,
-                'gender' => $request->gender,
+                ->post(env('AUTH_API') . '/api/users/create', [
+                    'client_id' => env('CLIENT_ID'),
+                    'client_secret' => env('CLIENT_SECRET'),
+                    'id' => $user->id,
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'phone_number' => $request->phone_number,
+                    'gender' => $request->gender,
 
-            ]);
+                ]);
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
+
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
+            }
         });
     }
 

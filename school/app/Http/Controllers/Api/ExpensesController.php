@@ -66,15 +66,27 @@ class ExpensesController extends Controller
             $user = User::findOrFail($request->user["id"]);
             $user->expenses()->save($expense);
 
-            $admin = User::where("role", "numidia")->first();
+            $admin = User::where("role", "admin")->first();
 
             $data = ["amount" => -$request->total, "user" => $admin];
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
 
 
-
-            $users = User::where('role', "numidia")
+            $users = User::where('role', "admin")
                 ->get();
             foreach ($users as $receiver) {
                 $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
@@ -88,6 +100,19 @@ class ExpensesController extends Controller
                         'id' => $receiver->id,
                         'department' => env('DEPARTMENT'),
                     ]);
+                    if ($response->failed()) {
+                        $statusCode = $response->status();
+                        $errorBody = $response->json();
+                        abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                    }
+            
+                    if ($response->serverError()) {
+                        abort(500, 'Server error occurred');
+                    }
+            
+                    if ($response->clientError()) {
+                        abort($response->status(), 'Client error occurred');
+                    }
             }
 
             return response()->json($expense, 201);

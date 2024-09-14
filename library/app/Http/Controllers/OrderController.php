@@ -102,12 +102,25 @@ class OrderController extends Controller
             } else if ($order->status != "pending") {
                 return response()->json(['message' => 'check order status'], 400);
             }
-            $admin = User::where("role", "=", "numidia")->first();
+            $admin = User::where("role", "=", "admin")->first();
             $data = ["amount" => $order->total, "user" => $admin];
 
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json',])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
 
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             $data = json_decode($response->body(), true);
 
 
@@ -123,7 +136,7 @@ class OrderController extends Controller
 
             $receipt->save();
             $order->load(["products", "client.user"]);
-            return response()->json(['receipt' => $receipt, 'order' => $order, 'message' => 'Status updated successfully'], 200);
+            return response()->json($receipt, 200);
         });
     }
 
@@ -182,7 +195,19 @@ class OrderController extends Controller
                     'phone_number' => $request->phone_number,
                     'gender' => $request->gender,
                 ]);
-
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
 
             $order = Order::create([
                 'status' => 'pending',

@@ -35,9 +35,21 @@ class TicketController extends Controller
             $dawarat->tickets()->save($ticket);
 
             $data = ["amount" => - ($ticket->price - $ticket->discount), "user" => $student->user];
-            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             return response()->json(['data' => $ticket], 201);
         });
     }
@@ -118,9 +130,21 @@ class TicketController extends Controller
             $request->validate([]);
 
             $data = ["amount" => (($ticket->price - $ticket->discount) - ($request->price - $request->discount)), "user" => $ticket->student->user];
-            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             $updated = $ticket->update([
                 'row' => $request->row,
                 'seat' => $request->seat,
@@ -174,14 +198,26 @@ class TicketController extends Controller
 
             $user->receipts()->save($receipt);
             $data = ["amount" => $total, "user" => $user];
-            Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
+            $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
-
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $errorBody = $response->json();
+                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+                }
+        
+                if ($response->serverError()) {
+                    abort(500, 'Server error occurred');
+                }
+        
+                if ($response->clientError()) {
+                    abort($response->status(), 'Client error occurred');
+                }
             if ($updated) {
-                return response()->json(['data' => $receipt], 200);
+                return response()->json($receipt, 200);
             }
 
-            return response()->json(['message' => 'Failed to update Ticket'], 400);
+            return response()->json(['message' => 'Failed to pay Ticket'], 400);
         });
     }
 
