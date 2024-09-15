@@ -37,19 +37,19 @@ class TicketController extends Controller
             $data = ["amount" => - ($ticket->price - $ticket->discount), "user" => $student->user];
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
-                if ($response->failed()) {
-                    $statusCode = $response->status();
-                    $errorBody = $response->json();
-                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
-                }
-        
-                if ($response->serverError()) {
-                    abort(500, 'Server error occurred');
-                }
-        
-                if ($response->clientError()) {
-                    abort($response->status(), 'Client error occurred');
-                }
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
+
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
+            }
             return response()->json(['data' => $ticket], 201);
         });
     }
@@ -67,7 +67,7 @@ class TicketController extends Controller
         $perPage = $request->query('perPage', 10);
         $search = $request->query('search', '');
 
-        $ticketsQuery = Ticket::with(['dawarat.teacher.user', 'dawarat.level', 'student.user'])->when($search, function ($query) use ($search) {
+        $ticketsQuery = Ticket::with(['dawarat.teacher.user', 'dawarat.level', 'student.user', 'dawarat.amphi.sections'])->when($search, function ($query) use ($search) {
             return $query->where(function ($subQuery) use ($search) {
                 $subQuery->where('title', 'like', "%$search%")
                     ->orWhere('status', 'like', "%$search%");
@@ -92,7 +92,7 @@ class TicketController extends Controller
         $perPage = $request->query('perPage', 10);
         $search = $request->query('search', '');
 
-        $ticketsQuery = Ticket::with(['dawarat.teacher.user', 'dawarat.level', 'student.user'])
+        $ticketsQuery = Ticket::with(['dawarat.teacher.user', 'dawarat.level', 'student.user', 'dawarat.amphi.sections'])
             ->where('status', 'waiting')
             ->when($search, function ($query) use ($search) {
                 return $query->where(function ($subQuery) use ($search) {
@@ -109,7 +109,7 @@ class TicketController extends Controller
 
     public function show($id)
     {
-        $ticket = Ticket::findOrFail($id);
+        $ticket = Ticket::findOrFail($id)->load(['dawarat.teacher.user', 'dawarat.level', 'student.user', 'dawarat.amphi.sections']);
 
         if (!$ticket) {
             return response()->json(['message' => 'Ticket not found'], 404);
@@ -123,7 +123,7 @@ class TicketController extends Controller
 
         return DB::transaction(function () use ($request, $id) {
             $ticket = Ticket::findOrFail($id);
-            if (!$ticket || $ticket->status !== 'paid' || $ticket->status !== 'canceled') {
+            if (!$ticket || $ticket->status === 'paid' || $ticket->status === 'canceled') {
                 return response()->json(['message' => 'Ticket not found'], 404);
             }
 
@@ -132,23 +132,22 @@ class TicketController extends Controller
             $data = ["amount" => (($ticket->price - $ticket->discount) - ($request->price - $request->discount)), "user" => $ticket->student->user];
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
-                if ($response->failed()) {
-                    $statusCode = $response->status();
-                    $errorBody = $response->json();
-                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
-                }
-        
-                if ($response->serverError()) {
-                    abort(500, 'Server error occurred');
-                }
-        
-                if ($response->clientError()) {
-                    abort($response->status(), 'Client error occurred');
-                }
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
+
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
+            }
             $updated = $ticket->update([
                 'row' => $request->row,
                 'seat' => $request->seat,
-                'price' => $request->price,
                 'location' => $request->location,
                 'discount' => $request->discount,
             ]);
@@ -200,19 +199,19 @@ class TicketController extends Controller
             $data = ["amount" => $total, "user" => $user];
             $response = Http::withHeaders(['decode_content' => false, 'Accept' => 'application/json'])
                 ->post(env('AUTH_API') . '/api/wallet/add', $data);
-                if ($response->failed()) {
-                    $statusCode = $response->status();
-                    $errorBody = $response->json();
-                    abort($statusCode, $errorBody['message'] ?? 'Unknown error');
-                }
-        
-                if ($response->serverError()) {
-                    abort(500, 'Server error occurred');
-                }
-        
-                if ($response->clientError()) {
-                    abort($response->status(), 'Client error occurred');
-                }
+            if ($response->failed()) {
+                $statusCode = $response->status();
+                $errorBody = $response->json();
+                abort($statusCode, $errorBody['message'] ?? 'Unknown error');
+            }
+
+            if ($response->serverError()) {
+                abort(500, 'Server error occurred');
+            }
+
+            if ($response->clientError()) {
+                abort($response->status(), 'Client error occurred');
+            }
             if ($updated) {
                 return response()->json($receipt, 200);
             }
@@ -254,18 +253,17 @@ class TicketController extends Controller
         return DB::transaction(function () use ($id) {
             $ticket = Ticket::findOrFail($id);
 
-        if (!$ticket) {
-            return response()->json(['message' => 'Ticket not found'], 404);
-        }
+            if (!$ticket) {
+                return response()->json(['message' => 'Ticket not found'], 404);
+            }
 
-        $deleted = $ticket->delete();
+            $deleted = $ticket->delete();
 
-        if ($deleted) {
-            return response()->json(['message' => 'Ticket deleted successfully'], 204);
-        }
+            if ($deleted) {
+                return response()->json(['message' => 'Ticket deleted successfully'], 204);
+            }
 
-        return response()->json(['message' => 'Failed to delete Ticket'], 400);
+            return response()->json(['message' => 'Failed to delete Ticket'], 400);
         });
-        
     }
 }
