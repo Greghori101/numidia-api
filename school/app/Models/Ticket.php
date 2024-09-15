@@ -53,6 +53,6 @@ class Ticket extends Model
     }
     public function dawarat()
     {
-        return $this->belongsTo(group::class,'dawarat_id');
+        return $this->belongsTo(Group::class,'dawarat_id');
     }
 }
